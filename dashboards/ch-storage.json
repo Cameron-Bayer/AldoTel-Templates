@@ -53,7 +53,7 @@
     },
     {
       "name": "Part events / 5 min (inserts, merges, mutations)",
-      "x": 0, "y": 4, "w": 12, "h": 5,
+      "x": 0, "y": 4, "w": 12, "h": 6,
       "config": {
         "displayType": "stacked_bar",
         "configType": "sql",
@@ -64,7 +64,7 @@
     },
     {
       "name": "Merge duration p95 / max (ms)",
-      "x": 12, "y": 4, "w": 12, "h": 5,
+      "x": 12, "y": 4, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -76,7 +76,7 @@
     },
     {
       "name": "Bytes written — inserted vs merged / 5 min",
-      "x": 0, "y": 9, "w": 12, "h": 5,
+      "x": 0, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -88,7 +88,7 @@
     },
     {
       "name": "Rows processed — inserted vs merged / 5 min",
-      "x": 12, "y": 9, "w": 12, "h": 5,
+      "x": 12, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -99,7 +99,7 @@
     },
     {
       "name": "Largest tables by disk",
-      "x": 0, "y": 14, "w": 24, "h": 6,
+      "x": 0, "y": 16, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -110,7 +110,7 @@
     },
     {
       "name": "Active parts per table (too-many-parts watch)",
-      "x": 0, "y": 20, "w": 24, "h": 6,
+      "x": 0, "y": 22, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -121,7 +121,7 @@
     },
     {
       "name": "Recent merges (last 6h)",
-      "x": 0, "y": 26, "w": 24, "h": 6,
+      "x": 0, "y": 28, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",

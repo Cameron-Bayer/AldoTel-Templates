@@ -10,7 +10,7 @@
   "tiles": [
     {
       "name": "Log volume by severity",
-      "x": 0, "y": 0, "w": 12, "h": 5,
+      "x": 0, "y": 0, "w": 12, "h": 6,
       "config": {
         "displayType": "stacked_bar",
         "sourceId": "{{LOGS_SOURCE_ID}}",
@@ -22,7 +22,7 @@
     },
     {
       "name": "Error / fatal rate by service",
-      "x": 12, "y": 0, "w": 12, "h": 5,
+      "x": 12, "y": 0, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{LOGS_SOURCE_ID}}",
@@ -35,7 +35,7 @@
     },
     {
       "name": "Top error messages",
-      "x": 0, "y": 5, "w": 24, "h": 6,
+      "x": 0, "y": 6, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "sourceId": "{{LOGS_SOURCE_ID}}",
@@ -51,7 +51,7 @@
     },
     {
       "name": "New log patterns in last 24h (vs prior 7d)",
-      "x": 0, "y": 11, "w": 24, "h": 6,
+      "x": 0, "y": 12, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -62,7 +62,7 @@
     },
     {
       "name": "Live error stream",
-      "x": 0, "y": 17, "w": 24, "h": 7,
+      "x": 0, "y": 18, "w": 24, "h": 7,
       "config": {
         "displayType": "search",
         "sourceId": "{{LOGS_SOURCE_ID}}",

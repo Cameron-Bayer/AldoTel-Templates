@@ -161,7 +161,7 @@
     },
     {
       "name": "Ingest throughput — spans accepted vs refused",
-      "x": 0, "y": 15, "w": 12, "h": 5,
+      "x": 0, "y": 15, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -175,7 +175,7 @@
     },
     {
       "name": "Request rate & errors (traces)",
-      "x": 12, "y": 15, "w": 12, "h": 5,
+      "x": 12, "y": 15, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{TRACES_SOURCE_ID}}",

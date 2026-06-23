@@ -65,7 +65,7 @@
     },
     {
       "name": "Spans: accepted vs refused vs failed",
-      "x": 0, "y": 4, "w": 12, "h": 5,
+      "x": 0, "y": 4, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -81,7 +81,7 @@
     },
     {
       "name": "Exporter sent spans",
-      "x": 12, "y": 4, "w": 12, "h": 5,
+      "x": 12, "y": 4, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -93,7 +93,7 @@
     },
     {
       "name": "Exporter queue size vs capacity",
-      "x": 0, "y": 9, "w": 12, "h": 5,
+      "x": 0, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -107,7 +107,7 @@
     },
     {
       "name": "Processor incoming vs outgoing items (gap = dropped)",
-      "x": 12, "y": 9, "w": 12, "h": 5,
+      "x": 12, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -121,7 +121,7 @@
     },
     {
       "name": "Accepted log records vs metric points",
-      "x": 0, "y": 14, "w": 12, "h": 5,
+      "x": 0, "y": 16, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -135,7 +135,7 @@
     },
     {
       "name": "Scraper: scraped vs errored metric points",
-      "x": 12, "y": 14, "w": 12, "h": 5,
+      "x": 12, "y": 16, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -149,7 +149,7 @@
     },
     {
       "name": "Collector memory (RSS / heap)",
-      "x": 0, "y": 19, "w": 12, "h": 5,
+      "x": 0, "y": 22, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -164,7 +164,7 @@
     },
     {
       "name": "Collector CPU seconds (rate)",
-      "x": 12, "y": 19, "w": 12, "h": 5,
+      "x": 12, "y": 22, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",

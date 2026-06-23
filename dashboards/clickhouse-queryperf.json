@@ -48,7 +48,7 @@
     },
     {
       "name": "Query rate by kind",
-      "x": 0, "y": 4, "w": 12, "h": 5,
+      "x": 0, "y": 4, "w": 12, "h": 6,
       "config": {
         "displayType": "stacked_bar",
         "configType": "sql",
@@ -59,7 +59,7 @@
     },
     {
       "name": "Query duration p95 / p99 (ms)",
-      "x": 12, "y": 4, "w": 12, "h": 5,
+      "x": 12, "y": 4, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -70,7 +70,7 @@
     },
     {
       "name": "Peak memory per query p95 (bytes)",
-      "x": 0, "y": 9, "w": 12, "h": 5,
+      "x": 0, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -81,7 +81,7 @@
     },
     {
       "name": "Query exceptions",
-      "x": 12, "y": 9, "w": 12, "h": 5,
+      "x": 12, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -92,7 +92,7 @@
     },
     {
       "name": "Slowest queries (last 6h)",
-      "x": 0, "y": 14, "w": 24, "h": 6,
+      "x": 0, "y": 16, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",
@@ -103,7 +103,7 @@
     },
     {
       "name": "Top ClickHouse error codes (last 24h)",
-      "x": 0, "y": 20, "w": 24, "h": 6,
+      "x": 0, "y": 22, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "configType": "sql",

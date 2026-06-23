@@ -6,6 +6,8 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Changed
+- **Roomier graphs** — chart tiles (`line`, `stacked_bar`, `heatmap`, `pie`) get an extra
+  grid row of height for better readability; number/table/markdown tiles unchanged, `y` reflowed.
 - **Taller tiles** — every tile's height increased by 1 grid row across all 10 dashboards,
   with `y` positions reflowed so nothing overlaps (KPIs 3→4, charts 4→5, tables 5→6).
 - **Number formatting consistency** — ratio "rates" now render as true percentages and all

@@ -8,7 +8,7 @@
   "tiles": [
     {
       "name": "Request rate by service",
-      "x": 0, "y": 0, "w": 12, "h": 5,
+      "x": 0, "y": 0, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -21,7 +21,7 @@
     },
     {
       "name": "Error rate %",
-      "x": 12, "y": 0, "w": 12, "h": 5,
+      "x": 12, "y": 0, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -37,7 +37,7 @@
     },
     {
       "name": "Latency p50 / p95 / p99",
-      "x": 0, "y": 5, "w": 12, "h": 5,
+      "x": 0, "y": 6, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -54,7 +54,7 @@
     },
     {
       "name": "Errors by status message",
-      "x": 12, "y": 5, "w": 12, "h": 5,
+      "x": 12, "y": 6, "w": 12, "h": 6,
       "config": {
         "displayType": "pie",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -67,7 +67,7 @@
     },
     {
       "name": "Slowest routes (p95)",
-      "x": 0, "y": 10, "w": 24, "h": 6,
+      "x": 0, "y": 12, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
         "sourceId": "{{TRACES_SOURCE_ID}}",
@@ -85,7 +85,7 @@
     },
     {
       "name": "Latency anomaly — p95 vs 7-day baseline (z-score)",
-      "x": 0, "y": 16, "w": 24, "h": 6,
+      "x": 0, "y": 18, "w": 24, "h": 7,
       "config": {
         "displayType": "line",
         "configType": "sql",
@@ -96,7 +96,7 @@
     },
     {
       "name": "Server latency distribution (heatmap)",
-      "x": 0, "y": 22, "w": 24, "h": 6,
+      "x": 0, "y": 25, "w": 24, "h": 7,
       "config": {
          "displayType": "heatmap",
          "sourceId": "{{TRACES_SOURCE_ID}}",

@@ -8,7 +8,7 @@
   "tiles": [
     {
       "name": "Query rate (vs previous week)",
-      "x": 0, "y": 0, "w": 12, "h": 5,
+      "x": 0, "y": 0, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -21,7 +21,7 @@
     },
     {
       "name": "Failed queries",
-      "x": 12, "y": 0, "w": 12, "h": 5,
+      "x": 12, "y": 0, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -33,7 +33,7 @@
     },
     {
       "name": "Running queries",
-      "x": 0, "y": 5, "w": 6, "h": 4,
+      "x": 0, "y": 6, "w": 6, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -45,7 +45,7 @@
     },
     {
       "name": "Max replication lag (s)",
-      "x": 6, "y": 5, "w": 6, "h": 4,
+      "x": 6, "y": 6, "w": 6, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -61,7 +61,7 @@
     },
     {
       "name": "Readonly replicas",
-      "x": 12, "y": 5, "w": 6, "h": 4,
+      "x": 12, "y": 6, "w": 6, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -73,7 +73,7 @@
     },
     {
       "name": "Memory tracking",
-      "x": 18, "y": 5, "w": 6, "h": 4,
+      "x": 18, "y": 6, "w": 6, "h": 4,
       "config": {
         "displayType": "number",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -86,7 +86,7 @@
     },
     {
       "name": "Merges in progress",
-      "x": 0, "y": 9, "w": 12, "h": 5,
+      "x": 0, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -98,7 +98,7 @@
     },
     {
       "name": "Mutations in progress",
-      "x": 12, "y": 9, "w": 12, "h": 5,
+      "x": 12, "y": 10, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -110,7 +110,7 @@
     },
     {
       "name": "Inserted rows rate",
-      "x": 0, "y": 14, "w": 12, "h": 5,
+      "x": 0, "y": 16, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -122,7 +122,7 @@
     },
     {
       "name": "SELECT vs INSERT queries",
-      "x": 12, "y": 14, "w": 12, "h": 5,
+      "x": 12, "y": 16, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -136,7 +136,7 @@
     },
     {
       "name": "Page-cache read bytes: cache vs source",
-      "x": 0, "y": 19, "w": 12, "h": 5,
+      "x": 0, "y": 22, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
@@ -151,7 +151,7 @@
     },
     {
       "name": "Async insert bytes",
-      "x": 12, "y": 19, "w": 12, "h": 5,
+      "x": 12, "y": 22, "w": 12, "h": 6,
       "config": {
         "displayType": "line",
         "sourceId": "{{METRICS_SOURCE_ID}}",
