@@ -1,0 +1,111 @@
+{
+  "name": "Services — RED (Rate / Errors / Duration)",
+  "tags": ["clickstack-templates", "apm", "traces", "tmpl:services-red"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",
+      "sourceId": "{{TRACES_SOURCE_ID}}", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Request rate by service",
+      "x": 0, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "groupBy": "ServiceName",
+        "select": [
+          { "aggFn": "count", "alias": "requests",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Error rate %",
+      "x": 12, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "asRatio": true,
+        "numberFormat": { "output": "percent" },
+        "select": [
+          { "aggFn": "count", "alias": "errors",
+            "where": "SpanKind:Server AND StatusCode:Error", "whereLanguage": "lucene" },
+          { "aggFn": "count", "alias": "total",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Latency p50 / p95 / p99",
+      "x": 0, "y": 4, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "quantile", "level": 0.5,  "valueExpression": "Duration", "alias": "p50",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" },
+          { "aggFn": "quantile", "level": 0.95, "valueExpression": "Duration", "alias": "p95",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" },
+          { "aggFn": "quantile", "level": 0.99, "valueExpression": "Duration", "alias": "p99",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ],
+        "numberFormat": { "output": "duration" }
+      }
+    },
+    {
+      "name": "Errors by status message",
+      "x": 12, "y": 4, "w": 12, "h": 4,
+      "config": {
+        "displayType": "pie",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "groupBy": "StatusMessage",
+        "select": [
+          { "aggFn": "count", "alias": "errors",
+            "where": "StatusCode:Error", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Slowest routes (p95)",
+      "x": 0, "y": 8, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "groupBy": "SpanAttributes['http.route']",
+        "orderBy": "p95 DESC",
+        "onClick": { "type": "search", "target": { "mode": "id", "id": "{{TRACES_SOURCE_ID}}" },
+          "whereTemplate": "SpanAttributes['http.route'] = '{{SpanAttributes['http.route']}}'", "whereLanguage": "sql" },
+        "select": [
+          { "aggFn": "quantile", "level": 0.95, "valueExpression": "Duration", "alias": "p95",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" },
+          { "aggFn": "count", "alias": "requests",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Latency anomaly — p95 vs 7-day baseline (z-score)",
+      "x": 0, "y": 13, "w": 24, "h": 5,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "sqlTemplate": "WITH points AS (\n  SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n         quantile(0.95)(Duration)/1e6 AS p95_ms\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 7 DAY\n  GROUP BY t\n)\nSELECT t,\n       p95_ms,\n       (p95_ms - avg(p95_ms) OVER ()) / nullIf(stddevPop(p95_ms) OVER (), 0) AS z_score\nFROM points\nORDER BY t"
+      }
+    },
+    {
+      "name": "Server latency distribution (heatmap)",
+      "x": 0, "y": 18, "w": 24, "h": 5,
+      "config": {
+         "displayType": "heatmap",
+         "sourceId": "{{TRACES_SOURCE_ID}}",
+         "where": "SpanKind:Server",
+         "whereLanguage": "lucene",
+         "select": [
+           { "valueExpression": "Duration", "countExpression": "count()", "heatmapScaleType": "log" }
+         ]
+      }
+    }
+  ]
+}

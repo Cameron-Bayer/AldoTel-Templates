@@ -1,0 +1,134 @@
+{
+  "name": "ClickHouse — Storage & MergeTree",
+  "tags": ["clickstack-templates", "clickhouse", "tmpl:ch-storage"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Disk used (active parts)",
+      "x": 0, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "sqlTemplate": "SELECT sum(bytes_on_disk) FROM system.parts WHERE active"
+      }
+    },
+    {
+      "name": "Compression ratio (uncompressed / compressed)",
+      "x": 6, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT round(sum(data_uncompressed_bytes) / nullIf(sum(data_compressed_bytes), 0), 2) FROM system.parts WHERE active"
+      }
+    },
+    {
+      "name": "Active parts (total)",
+      "x": 12, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT count() FROM system.parts WHERE active"
+      }
+    },
+    {
+      "name": "Rows stored (active)",
+      "x": 18, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(rows) FROM system.parts WHERE active"
+      }
+    },
+    {
+      "name": "Part events / 5 min (inserts, merges, mutations)",
+      "x": 0, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "stacked_bar",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       countIf(event_type = 'NewPart') AS new_parts,\n       countIf(event_type = 'MergeParts') AS merges,\n       countIf(event_type = 'MutatePart') AS mutations\nFROM system.part_log\nWHERE event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Merge duration p95 / max (ms)",
+      "x": 12, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "duration" },
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       quantile(0.95)(duration_ms) AS p95_ms,\n       max(duration_ms) AS max_ms\nFROM system.part_log\nWHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Bytes written — inserted vs merged / 5 min",
+      "x": 0, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       sumIf(size_in_bytes, event_type = 'NewPart') AS inserted_bytes,\n       sumIf(size_in_bytes, event_type = 'MergeParts') AS merged_bytes\nFROM system.part_log\nWHERE event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Rows processed — inserted vs merged / 5 min",
+      "x": 12, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 5 MINUTE) AS t,\n       sumIf(rows, event_type = 'NewPart') AS inserted_rows,\n       sumIf(rows, event_type = 'MergeParts') AS merged_rows\nFROM system.part_log\nWHERE event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Largest tables by disk",
+      "x": 0, "y": 11, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT database,\n       table,\n       formatReadableSize(sum(bytes_on_disk)) AS disk,\n       sum(rows) AS rows,\n       count() AS parts,\n       round(sum(data_uncompressed_bytes) / nullIf(sum(data_compressed_bytes), 0), 2) AS compression\nFROM system.parts\nWHERE active\nGROUP BY database, table\nORDER BY sum(bytes_on_disk) DESC\nLIMIT 30"
+      }
+    },
+    {
+      "name": "Active parts per table (too-many-parts watch)",
+      "x": 0, "y": 16, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT database,\n       table,\n       count() AS active_parts,\n       sum(marks) AS marks,\n       any(part_type) AS part_type,\n       formatReadableSize(avg(bytes_on_disk)) AS avg_part_size\nFROM system.parts\nWHERE active\nGROUP BY database, table\nORDER BY active_parts DESC\nLIMIT 30"
+      }
+    },
+    {
+      "name": "Recent merges (last 6h)",
+      "x": 0, "y": 21, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT event_time,\n       database || '.' || table AS tbl,\n       duration_ms,\n       rows,\n       formatReadableSize(size_in_bytes) AS size,\n       merge_reason,\n       if(error = 0, 'ok', toString(error)) AS status\nFROM system.part_log\nWHERE event_type = 'MergeParts' AND event_time > now() - INTERVAL 6 HOUR\nORDER BY event_time DESC\nLIMIT 30"
+      }
+    }
+  ]
+}

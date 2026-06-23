@@ -1,0 +1,187 @@
+{
+  "name": "Executive Overview",
+  "tags": ["clickstack-templates", "overview", "tmpl:exec-overview"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",
+      "sourceId": "{{TRACES_SOURCE_ID}}", "whereLanguage": "sql" },
+    { "type": "QUERY_EXPRESSION", "name": "Namespace", "expression": "ResourceAttributes['k8s.namespace.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Span error rate (%)",
+      "x": 0, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "avg", "valueExpression": "if(StatusCode = 'Error', 100, 0)" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 1, "color": "chart-warning", "label": "Elevated" },
+          { "operator": "gt", "value": 5, "color": "chart-error", "label": "High" }
+        ]
+      }
+    },
+    {
+      "name": "Trace volume (spans)",
+      "x": 6, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "count" }
+        ]
+      }
+    },
+    {
+      "name": "Span latency p95",
+      "x": 12, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "numberFormat": { "output": "duration" },
+        "select": [
+          { "aggFn": "quantile", "level": 0.95, "valueExpression": "Duration / 1000000" }
+        ]
+      }
+    },
+    {
+      "name": "Log error rate (%)",
+      "x": 18, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "avg", "valueExpression": "if(SeverityText IN ('Error', 'Fatal'), 100, 0)" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 1, "color": "chart-warning", "label": "Elevated" },
+          { "operator": "gt", "value": 5, "color": "chart-error", "label": "High" }
+        ]
+      }
+    },
+    {
+      "name": "ClickHouse failed queries",
+      "x": 0, "y": 3, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_FailedQuery", "metricType": "sum" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 0, "color": "chart-warning", "label": "Failures present" }
+        ]
+      }
+    },
+    {
+      "name": "ClickHouse running queries",
+      "x": 6, "y": 3, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_Query", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "K8s nodes ready",
+      "x": 12, "y": 3, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value",
+            "metricName": "k8s.node.condition_ready", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Collector refused spans",
+      "x": 18, "y": 3, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "otelcol_receiver_refused_spans_total", "metricType": "sum" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 0, "color": "chart-error", "label": "Drops!" }
+        ]
+      }
+    },
+    {
+      "name": "Services by error rate — click a row to open Traces",
+      "x": 0, "y": 6, "w": 12, "h": 6,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "groupBy": "ServiceName",
+        "groupByColumnsOnLeft": true,
+        "orderBy": "err_pct DESC",
+        "select": [
+          { "alias": "spans", "aggFn": "count" },
+          { "alias": "err_pct", "aggFn": "avg", "valueExpression": "if(StatusCode = 'Error', 100, 0)" }
+        ],
+        "onClick": {
+          "type": "search",
+          "target": { "mode": "id", "id": "{{TRACES_SOURCE_ID}}" },
+          "whereTemplate": "ServiceName = '{{ServiceName}}'",
+          "whereLanguage": "sql"
+        }
+      }
+    },
+    {
+      "name": "Services by log errors — click a row to open Logs",
+      "x": 12, "y": 6, "w": 12, "h": 6,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "groupBy": "ServiceName",
+        "groupByColumnsOnLeft": true,
+        "orderBy": "errors DESC",
+        "select": [
+          { "alias": "logs", "aggFn": "count" },
+          { "alias": "errors", "aggFn": "sum", "valueExpression": "if(SeverityText IN ('Error', 'Fatal'), 1, 0)" }
+        ],
+        "onClick": {
+          "type": "search",
+          "target": { "mode": "id", "id": "{{LOGS_SOURCE_ID}}" },
+          "whereTemplate": "ServiceName = '{{ServiceName}}'",
+          "whereLanguage": "sql"
+        }
+      }
+    },
+    {
+      "name": "Ingest throughput — spans accepted vs refused",
+      "x": 0, "y": 12, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "alias": "accepted", "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "otelcol_receiver_accepted_spans_total", "metricType": "sum" },
+          { "alias": "refused", "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "otelcol_receiver_refused_spans_total", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Request rate & errors (traces)",
+      "x": 12, "y": 12, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "select": [
+          { "alias": "requests", "aggFn": "count" },
+          { "alias": "errors", "aggFn": "sum", "valueExpression": "if(StatusCode = 'Error', 1, 0)" }
+        ]
+      }
+    }
+  ]
+}

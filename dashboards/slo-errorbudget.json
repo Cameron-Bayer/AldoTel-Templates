@@ -1,0 +1,121 @@
+{
+  "name": "Services — SLO / Error Budget",
+  "tags": ["clickstack-templates", "apm", "slo", "tmpl:slo-errorbudget"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",
+      "sourceId": "{{TRACES_SOURCE_ID}}", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Availability (SLI)",
+      "x": 0, "y": 0, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "numberFormat": { "output": "percent", "mantissa": 3 },
+        "select": [
+          { "aggFn": "avg", "valueExpression": "if(StatusCode = 'Error', 0, 1)", "alias": "availability",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ],
+        "colorRules": [
+          { "operator": "lt", "value": 0.995, "color": "chart-error", "label": "Below 99.5%" },
+          { "operator": "lt", "value": 0.999, "color": "chart-warning", "label": "Below 99.9%" }
+        ]
+      }
+    },
+    {
+      "name": "Error rate (1 - SLI)",
+      "x": 8, "y": 0, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "numberFormat": { "output": "percent", "mantissa": 3 },
+        "select": [
+          { "aggFn": "avg", "valueExpression": "if(StatusCode = 'Error', 1, 0)", "alias": "error rate",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Total server requests",
+      "x": 16, "y": 0, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "count", "alias": "requests",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Availability over time (target 99.9%)",
+      "x": 0, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "asRatio": true,
+        "numberFormat": { "output": "percent", "mantissa": 2 },
+        "select": [
+          { "aggFn": "count", "alias": "good",
+            "where": "SpanKind:Server AND NOT StatusCode:Error", "whereLanguage": "lucene" },
+          { "aggFn": "count", "alias": "total",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Good vs bad requests by service",
+      "x": 12, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "stacked_bar",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "groupBy": "ServiceName",
+        "select": [
+          { "aggFn": "count", "alias": "bad",
+            "where": "SpanKind:Server AND StatusCode:Error", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Multi-window burn rate (SLO 99.9%)",
+      "x": 0, "y": 7, "w": 12, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window,\n       round(error_ratio, 5) AS error_ratio,\n       round(error_ratio / budget, 2) AS burn_rate\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY\n)\nORDER BY ord"
+      }
+    },
+    {
+      "name": "Error-budget burn rate over time (>1 = burning too fast)",
+      "x": 12, "y": 7, "w": 12, "h": 5,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL 10 MINUTE) AS t,\n       (countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)) / 0.001 AS burn_rate\nFROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\nWHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 1 DAY\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Errors by service",
+      "x": 0, "y": 12, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{TRACES_SOURCE_ID}}",
+        "groupBy": "ServiceName",
+        "orderBy": "errors DESC",
+        "onClick": { "type": "search", "target": { "mode": "id", "id": "{{TRACES_SOURCE_ID}}" },
+          "whereTemplate": "ServiceName = '{{ServiceName}}' AND StatusCode = 'Error'", "whereLanguage": "sql" },
+        "select": [
+          { "aggFn": "count", "alias": "errors",
+            "where": "SpanKind:Server AND StatusCode:Error", "whereLanguage": "lucene" },
+          { "aggFn": "count", "alias": "total",
+            "where": "SpanKind:Server", "whereLanguage": "lucene" }
+        ]
+      }
+    }
+  ]
+}

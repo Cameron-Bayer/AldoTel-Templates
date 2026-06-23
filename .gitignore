@@ -1,0 +1,20 @@
+# Secrets / credentials — never commit API keys
+.env
+.env.*
+*.key
+*.pem
+secrets.*
+*secret*
+*apikey*
+*api-key*
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+
+# Build / release artifacts
+*.zip
+dist/

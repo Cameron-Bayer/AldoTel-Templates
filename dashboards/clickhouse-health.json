@@ -1,0 +1,166 @@
+{
+  "name": "ClickHouse — Cluster Health",
+  "tags": ["clickstack-templates", "clickhouse", "tmpl:clickhouse-health"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Query rate (vs previous week)",
+      "x": 0, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "compareToPreviousPeriod": true,
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "queries",
+            "metricName": "ClickHouseProfileEvents_Query", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Failed queries",
+      "x": 12, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "failed",
+            "metricName": "ClickHouseProfileEvents_FailedQuery", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Running queries",
+      "x": 0, "y": 4, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_Query", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Max replication lag (s)",
+      "x": 6, "y": 4, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value",
+            "metricName": "ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay", "metricType": "gauge" }
+        ],
+        "colorRules": [
+          { "operator": "gte", "value": 30, "color": "chart-error", "label": "Critical" },
+          { "operator": "gte", "value": 5,  "color": "chart-warning", "label": "Warning" }
+        ]
+      }
+    },
+    {
+      "name": "Readonly replicas",
+      "x": 12, "y": 4, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_ReadonlyReplica", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Memory tracking",
+      "x": 18, "y": 4, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte" },
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_MemoryTracking", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Merges in progress",
+      "x": 0, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "merges",
+            "metricName": "ClickHouseMetrics_Merge", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Mutations in progress",
+      "x": 12, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "mutations",
+            "metricName": "ClickHouseMetrics_PartMutation", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Inserted rows rate",
+      "x": 0, "y": 11, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "rows",
+            "metricName": "ClickHouseProfileEvents_InsertedRows", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "SELECT vs INSERT queries",
+      "x": 12, "y": 11, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "select",
+            "metricName": "ClickHouseProfileEvents_SelectQuery", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "insert",
+            "metricName": "ClickHouseProfileEvents_InsertQuery", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Page-cache read bytes: cache vs source",
+      "x": 0, "y": 15, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "from cache",
+            "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromCacheBytes", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "from source",
+            "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromSourceBytes", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Async insert bytes",
+      "x": 12, "y": 15, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "bytes",
+            "metricName": "ClickHouseProfileEvents_AsyncInsertBytes", "metricType": "sum" }
+        ]
+      }
+    }
+  ]
+}

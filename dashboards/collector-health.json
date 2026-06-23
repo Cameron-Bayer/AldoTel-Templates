@@ -1,0 +1,178 @@
+{
+  "name": "OTel Collector — Pipeline Health",
+  "tags": ["clickstack-templates", "collector", "otel", "tmpl:collector-health"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Collector", "expression": "ResourceAttributes['service.instance.id']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "sum", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Refused spans (should be 0)",
+      "x": 0, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "otelcol_receiver_refused_spans_total", "metricType": "sum" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 0, "color": "chart-error", "label": "Dropping data" }
+        ]
+      }
+    },
+    {
+      "name": "Failed spans (should be 0)",
+      "x": 6, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "otelcol_receiver_failed_spans_total", "metricType": "sum" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 0, "color": "chart-error", "label": "Export failing" }
+        ]
+      }
+    },
+    {
+      "name": "Exporter queue size",
+      "x": 12, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value",
+            "metricName": "otelcol_exporter_queue_size", "metricType": "gauge" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 0, "color": "chart-warning", "label": "Queue building" }
+        ]
+      }
+    },
+    {
+      "name": "Exporter in-flight requests",
+      "x": 18, "y": 0, "w": 6, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value",
+            "metricName": "otelcol_exporter_in_flight_requests", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Spans: accepted vs refused vs failed",
+      "x": 0, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "accepted",
+            "metricName": "otelcol_receiver_accepted_spans_total", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "refused",
+            "metricName": "otelcol_receiver_refused_spans_total", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "failed",
+            "metricName": "otelcol_receiver_failed_spans_total", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Exporter sent spans",
+      "x": 12, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "sent",
+            "metricName": "otelcol_exporter_sent_spans_total", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Exporter queue size vs capacity",
+      "x": 0, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "queue size",
+            "metricName": "otelcol_exporter_queue_size", "metricType": "gauge" },
+          { "aggFn": "max", "valueExpression": "Value", "alias": "capacity",
+            "metricName": "otelcol_exporter_queue_capacity", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Processor incoming vs outgoing items (gap = dropped)",
+      "x": 12, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "incoming",
+            "metricName": "otelcol_processor_incoming_items_total", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "outgoing",
+            "metricName": "otelcol_processor_outgoing_items_total", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Accepted log records vs metric points",
+      "x": 0, "y": 11, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "log records",
+            "metricName": "otelcol_receiver_accepted_log_records_total", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "metric points",
+            "metricName": "otelcol_receiver_accepted_metric_points_total", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Scraper: scraped vs errored metric points",
+      "x": 12, "y": 11, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "scraped",
+            "metricName": "otelcol_scraper_scraped_metric_points", "metricType": "sum" },
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "errored",
+            "metricName": "otelcol_scraper_errored_metric_points", "metricType": "sum" }
+        ]
+      }
+    },
+    {
+      "name": "Collector memory (RSS / heap)",
+      "x": 0, "y": 15, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "rss",
+            "metricName": "otelcol_process_memory_rss_bytes", "metricType": "gauge" },
+          { "aggFn": "max", "valueExpression": "Value", "alias": "heap alloc",
+            "metricName": "otelcol_process_runtime_heap_alloc_bytes", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Collector CPU seconds (rate)",
+      "x": 12, "y": 15, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "cpu seconds",
+            "metricName": "otelcol_process_cpu_seconds_total", "metricType": "sum" }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,147 @@
+{
+  "_comment": "Drives preflight.ps1/.sh (compatibility check) and documents per-dashboard requirements. metricType maps to the otel_metrics_<type> table. required=false tiles degrade gracefully if the metric is absent.",
+  "dashboards": [
+    {
+      "file": "clickhouse-health.json",
+      "tmpl": "tmpl:clickhouse-health",
+      "name": "ClickHouse — Cluster Health",
+      "receivers": ["ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)"],
+      "checks": [
+        { "kind": "metric", "required": true,  "metricType": "sum",   "metricName": "ClickHouseProfileEvents_Query" },
+        { "kind": "metric", "required": true,  "metricType": "sum",   "metricName": "ClickHouseProfileEvents_FailedQuery" },
+        { "kind": "metric", "required": true,  "metricType": "sum",   "metricName": "ClickHouseProfileEvents_SelectQuery" },
+        { "kind": "metric", "required": true,  "metricType": "sum",   "metricName": "ClickHouseProfileEvents_InsertQuery" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "ClickHouseProfileEvents_InsertedRows" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "ClickHouseMetrics_Query" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_Merge" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_PartMutation" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_ReadonlyReplica" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "ClickHouseMetrics_MemoryTracking" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "ClickHouseProfileEvents_CachedReadBufferReadFromCacheBytes" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "ClickHouseProfileEvents_AsyncInsertBytes" }
+      ]
+    },
+    {
+      "file": "k8s-infrastructure.json",
+      "tmpl": "tmpl:k8s-infrastructure",
+      "name": "Kubernetes — Infrastructure",
+      "receivers": ["kubeletstats receiver", "k8s_cluster receiver"],
+      "checks": [
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.node.cpu.usage" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.node.memory.usage" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.deployment.available" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.deployment.desired" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.pod.phase" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.container.restarts" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "k8s.pod.memory.usage" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "k8s.node.filesystem.usage" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "k8s.node.filesystem.capacity" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "k8s.pod.cpu_limit_utilization" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "k8s.pod.memory_limit_utilization" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "k8s.node.condition_ready" }
+      ]
+    },
+    {
+      "file": "services-red.json",
+      "tmpl": "tmpl:services-red",
+      "name": "Services — RED (Rate / Errors / Duration)",
+      "receivers": ["Application traces (OTLP)"],
+      "checks": [
+        { "kind": "trace", "required": true,  "label": "server spans", "where": "SpanKind:Server" },
+        { "kind": "trace", "required": false, "label": "error spans",  "where": "SpanKind:Server AND StatusCode:Error" }
+      ]
+    },
+    {
+      "file": "logs-overview.json",
+      "tmpl": "tmpl:logs-overview",
+      "name": "Logs — Overview",
+      "receivers": ["Application/container logs (filelog or OTLP)"],
+      "checks": [
+        { "kind": "log", "required": true,  "label": "log volume", "where": "" },
+        { "kind": "log", "required": false, "label": "error logs", "where": "SeverityText:ERROR OR SeverityText:FATAL" }
+      ]
+    },
+    {
+      "file": "collector-health.json",
+      "tmpl": "tmpl:collector-health",
+      "name": "OTel Collector — Pipeline Health",
+      "receivers": ["OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)"],
+      "checks": [
+        { "kind": "metric", "required": true,  "metricType": "sum",   "metricName": "otelcol_receiver_accepted_spans_total" },
+        { "kind": "metric", "required": true,  "metricType": "sum",   "metricName": "otelcol_exporter_sent_spans_total" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "otelcol_exporter_queue_size" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "otelcol_exporter_queue_capacity" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "otelcol_processor_incoming_items_total" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "otelcol_receiver_accepted_log_records_total" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "otelcol_receiver_accepted_metric_points_total" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "otelcol_scraper_scraped_metric_points" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "otelcol_process_memory_rss_bytes" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "otelcol_process_cpu_seconds_total" }
+      ]
+    },
+    {
+      "file": "clickhouse-queryperf.json",
+      "tmpl": "tmpl:clickhouse-queryperf",
+      "name": "ClickHouse — Query Performance & Errors",
+      "receivers": [
+        "ClickHouse metrics scraped into OTel (for the summary number tiles)",
+        "Most tiles read system.query_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, and query_log must be enabled"
+      ],
+      "checks": [
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "ClickHouseMetrics_Query" },
+        { "kind": "metric", "required": true,  "metricType": "gauge", "metricName": "ClickHouseMetrics_MemoryTracking" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "ClickHouseProfileEvents_FailedQuery" }
+      ]
+    },
+    {
+      "file": "slo-errorbudget.json",
+      "tmpl": "tmpl:slo-errorbudget",
+      "name": "Services — SLO / Error Budget",
+      "receivers": ["Application traces (OTLP) with server spans and StatusCode"],
+      "checks": [
+        { "kind": "trace", "required": true,  "label": "server spans", "where": "SpanKind:Server" },
+        { "kind": "trace", "required": false, "label": "error spans",  "where": "SpanKind:Server AND StatusCode:Error" }
+      ]
+    },
+    {
+      "file": "ch-storage.json",
+      "tmpl": "tmpl:ch-storage",
+      "name": "ClickHouse — Storage & MergeTree",
+      "receivers": [
+        "All tiles read system.parts / system.part_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.parts and system.part_log (part_log must be enabled, which it is by default)"
+      ],
+      "checks": []
+    },
+    {
+      "file": "ch-keeper.json",
+      "tmpl": "tmpl:ch-keeper",
+      "name": "ClickHouse — Keeper & Replication",
+      "receivers": [
+        "ClickHouse metrics scraped into OTel (Keeper gauges/ProfileEvents)",
+        "Replication tables read system.replicas / system.replication_queue via Raw SQL — these are empty on single-node installs and populate only on replicated/clustered ClickHouse"
+      ],
+      "checks": [
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_ZooKeeperSession" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_ZooKeeperWatch" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_KeeperAliveConnections" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "ClickHouseProfileEvents_KeeperCommits" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "ClickHouseProfileEvents_KeeperRequestTotal" }
+      ]
+    },
+    {
+      "file": "exec-overview.json",
+      "tmpl": "tmpl:exec-overview",
+      "name": "Executive Overview",
+      "receivers": [
+        "Application traces (OTLP), application/container logs, ClickHouse metrics and K8s metrics — this is a cross-cutting roll-up; tiles degrade gracefully when a given signal is absent"
+      ],
+      "checks": [
+        { "kind": "trace", "required": false, "label": "server spans", "where": "SpanKind:Server" },
+        { "kind": "log",   "required": false, "label": "log volume",  "where": "" },
+        { "kind": "metric", "required": false, "metricType": "gauge", "metricName": "ClickHouseMetrics_Query" },
+        { "kind": "metric", "required": false, "metricType": "sum",   "metricName": "otelcol_receiver_accepted_spans_total" }
+      ]
+    }
+  ]
+}

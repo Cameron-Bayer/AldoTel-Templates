@@ -1,0 +1,116 @@
+{
+  "name": "ClickHouse — Query Performance & Errors",
+  "tags": ["clickstack-templates", "clickhouse", "tmpl:clickhouse-queryperf"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Instance", "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "sum", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Failed queries (rate)",
+      "x": 0, "y": 0, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value",
+            "metricName": "ClickHouseProfileEvents_FailedQuery", "metricType": "sum" }
+        ],
+        "colorRules": [
+          { "operator": "gt", "value": 0, "color": "chart-warning", "label": "Failures present" }
+        ]
+      }
+    },
+    {
+      "name": "Running queries (now)",
+      "x": 8, "y": 0, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_Query", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Memory tracking",
+      "x": 16, "y": 0, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value",
+            "metricName": "ClickHouseMetrics_MemoryTracking", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Query rate by kind",
+      "x": 0, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "stacked_bar",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       countIf(query_kind = 'Select') AS selects,\n       countIf(query_kind = 'Insert') AS inserts,\n       countIf(query_kind NOT IN ('Select','Insert')) AS other\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Query duration p95 / p99 (ms)",
+      "x": 12, "y": 3, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       quantile(0.95)(query_duration_ms) AS p95_ms,\n       quantile(0.99)(query_duration_ms) AS p99_ms\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Peak memory per query p95 (bytes)",
+      "x": 0, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       quantile(0.95)(memory_usage) AS p95_bytes,\n       max(memory_usage) AS max_bytes\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Query exceptions",
+      "x": 12, "y": 7, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL 1 MINUTE) AS t,\n       countIf(exception_code != 0) AS exceptions\nFROM system.query_log\nWHERE type IN ('QueryFinish','ExceptionWhileProcessing','ExceptionBeforeStart')\n  AND event_time > now() - INTERVAL 6 HOUR\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Slowest queries (last 6h)",
+      "x": 0, "y": 11, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT event_time,\n       user,\n       query_kind,\n       query_duration_ms,\n       formatReadableSize(memory_usage) AS memory,\n       read_rows,\n       substring(query, 1, 160) AS query\nFROM system.query_log\nWHERE type = 'QueryFinish' AND event_time > now() - INTERVAL 6 HOUR\nORDER BY query_duration_ms DESC\nLIMIT 20"
+      }
+    },
+    {
+      "name": "Top ClickHouse error codes (last 24h)",
+      "x": 0, "y": 16, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT replaceOne(MetricName, 'ClickHouseErrorMetric_', '') AS error,\n       toUInt64(max(Value) - min(Value)) AS errors_in_window\nFROM {{METRICS_SCHEMA}}.otel_metrics_sum\nWHERE MetricName LIKE 'ClickHouseErrorMetric_%' AND TimeUnix > now() - INTERVAL 24 HOUR\nGROUP BY error\nHAVING errors_in_window > 0\nORDER BY errors_in_window DESC\nLIMIT 20"
+      }
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "name": "Logs — Overview",
+  "tags": ["clickstack-templates", "logs", "tmpl:logs-overview"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Service", "expression": "ServiceName",
+      "sourceId": "{{LOGS_SOURCE_ID}}", "whereLanguage": "sql" },
+    { "type": "QUERY_EXPRESSION", "name": "Severity", "expression": "SeverityText",
+      "sourceId": "{{LOGS_SOURCE_ID}}", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Log volume by severity",
+      "x": 0, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "stacked_bar",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "groupBy": "SeverityText",
+        "select": [
+          { "aggFn": "count", "alias": "logs" }
+        ]
+      }
+    },
+    {
+      "name": "Error / fatal rate by service",
+      "x": 12, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "groupBy": "ServiceName",
+        "select": [
+          { "aggFn": "count", "alias": "errors",
+            "where": "SeverityText:ERROR OR SeverityText:FATAL", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "Top error messages",
+      "x": 0, "y": 4, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "groupBy": "Body",
+        "orderBy": "count DESC",
+        "onClick": { "type": "search", "target": { "mode": "id", "id": "{{LOGS_SOURCE_ID}}" },
+          "whereTemplate": "Body = '{{Body}}'", "whereLanguage": "sql" },
+        "select": [
+          { "aggFn": "count", "alias": "count",
+            "where": "SeverityText:ERROR OR SeverityText:FATAL", "whereLanguage": "lucene" }
+        ]
+      }
+    },
+    {
+      "name": "New log patterns in last 24h (vs prior 7d)",
+      "x": 0, "y": 9, "w": 24, "h": 5,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE SeverityText IN ('ERROR','FATAL') AND Timestamp > now() - INTERVAL 8 DAY\n)\nSELECT ServiceName, pattern,\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING prior_7d = 0 AND last_24h > 0\nORDER BY last_24h DESC\nLIMIT 50"
+      }
+    },
+    {
+      "name": "Live error stream",
+      "x": 0, "y": 14, "w": 24, "h": 6,
+      "config": {
+        "displayType": "search",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "select": "Timestamp, SeverityText, ServiceName, Body",
+        "where": "SeverityText:ERROR OR SeverityText:FATAL",
+        "whereLanguage": "lucene"
+      }
+    }
+  ]
+}

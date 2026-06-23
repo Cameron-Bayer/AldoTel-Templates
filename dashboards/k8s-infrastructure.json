@@ -1,0 +1,155 @@
+{
+  "name": "Kubernetes — Infrastructure",
+  "tags": ["clickstack-templates", "kubernetes", "infra", "tmpl:k8s-infrastructure"],
+  "filters": [
+    { "type": "QUERY_EXPRESSION", "name": "Namespace", "expression": "ResourceAttributes['k8s.namespace.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" },
+    { "type": "QUERY_EXPRESSION", "name": "Node", "expression": "ResourceAttributes['k8s.node.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}", "sourceMetricType": "gauge", "whereLanguage": "sql" }
+  ],
+  "tiles": [
+    {
+      "name": "Node CPU usage (cores)",
+      "x": 0, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "groupBy": "ResourceAttributes['k8s.node.name']",
+        "select": [
+          { "aggFn": "avg", "valueExpression": "Value", "alias": "cpu",
+            "metricName": "k8s.node.cpu.usage", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Node memory usage",
+      "x": 12, "y": 0, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "groupBy": "ResourceAttributes['k8s.node.name']",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "select": [
+          { "aggFn": "avg", "valueExpression": "Value", "alias": "memory",
+            "metricName": "k8s.node.memory.usage", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Deployment availability (ready / desired)",
+      "x": 0, "y": 4, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "asRatio": true,
+        "numberFormat": { "output": "percent" },
+        "groupBy": "ResourceAttributes['k8s.deployment.name']",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value", "alias": "available",
+            "metricName": "k8s.deployment.available", "metricType": "gauge" },
+          { "aggFn": "last_value", "valueExpression": "Value", "alias": "desired",
+            "metricName": "k8s.deployment.desired", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Pods by phase",
+      "x": 12, "y": 4, "w": 12, "h": 4,
+      "config": {
+        "displayType": "stacked_bar",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "groupBy": "ResourceAttributes['k8s.namespace.name']",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value", "alias": "pods",
+            "metricName": "k8s.pod.phase", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Container restarts (top pods)",
+      "x": 0, "y": 8, "w": 12, "h": 5,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "groupBy": "ResourceAttributes['k8s.pod.name']",
+        "orderBy": "restarts DESC",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "restarts",
+            "metricName": "k8s.container.restarts", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Pod memory usage (top pods)",
+      "x": 12, "y": 8, "w": 12, "h": 5,
+      "config": {
+        "displayType": "table",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "groupBy": "ResourceAttributes['k8s.pod.name']",
+        "orderBy": "memory DESC",
+        "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" },
+        "select": [
+          { "aggFn": "avg", "valueExpression": "Value", "alias": "memory",
+            "metricName": "k8s.pod.memory.usage", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Node filesystem usage %",
+      "x": 0, "y": 13, "w": 24, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "asRatio": true,
+        "numberFormat": { "output": "percent" },
+        "groupBy": "ResourceAttributes['k8s.node.name']",
+        "select": [
+          { "aggFn": "last_value", "valueExpression": "Value", "alias": "used",
+            "metricName": "k8s.node.filesystem.usage", "metricType": "gauge" },
+          { "aggFn": "last_value", "valueExpression": "Value", "alias": "capacity",
+            "metricName": "k8s.node.filesystem.capacity", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Pod CPU vs limit %",
+      "x": 0, "y": 17, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "percent" },
+        "groupBy": "ResourceAttributes['k8s.pod.name']",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "cpu vs limit",
+            "metricName": "k8s.pod.cpu_limit_utilization", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Pod memory vs limit %",
+      "x": 12, "y": 17, "w": 12, "h": 4,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": { "output": "percent" },
+        "groupBy": "ResourceAttributes['k8s.pod.name']",
+        "select": [
+          { "aggFn": "max", "valueExpression": "Value", "alias": "mem vs limit",
+            "metricName": "k8s.pod.memory_limit_utilization", "metricType": "gauge" }
+        ]
+      }
+    },
+    {
+      "name": "Nodes ready",
+      "x": 0, "y": 21, "w": 8, "h": 3,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          { "aggFn": "sum", "valueExpression": "Value", "alias": "ready",
+            "metricName": "k8s.node.condition_ready", "metricType": "gauge" }
+        ]
+      }
+    }
+  ]
+}
