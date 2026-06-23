@@ -21,7 +21,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Query performance — at a glance"
@@ -30,7 +30,7 @@
     {
       "name": "Failed queries (rate)",
       "x": 0,
-      "y": 3,
+      "y": 2,
       "w": 8,
       "h": 4,
       "config": {
@@ -57,7 +57,7 @@
     {
       "name": "Running queries (now)",
       "x": 8,
-      "y": 3,
+      "y": 2,
       "w": 8,
       "h": 4,
       "config": {
@@ -76,7 +76,7 @@
     {
       "name": "Memory tracking",
       "x": 16,
-      "y": 3,
+      "y": 2,
       "w": 8,
       "h": 4,
       "config": {
@@ -99,9 +99,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 6,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Query trends"
@@ -110,7 +110,7 @@
     {
       "name": "Query rate by kind",
       "x": 0,
-      "y": 10,
+      "y": 8,
       "w": 12,
       "h": 6,
       "config": {
@@ -124,7 +124,7 @@
     {
       "name": "Query duration p95 / p99 (ms)",
       "x": 12,
-      "y": 10,
+      "y": 8,
       "w": 12,
       "h": 6,
       "config": {
@@ -138,7 +138,7 @@
     {
       "name": "Peak memory per query p95 (bytes)",
       "x": 0,
-      "y": 16,
+      "y": 14,
       "w": 12,
       "h": 6,
       "config": {
@@ -152,7 +152,7 @@
     {
       "name": "Query exceptions",
       "x": 12,
-      "y": 16,
+      "y": 14,
       "w": 12,
       "h": 6,
       "config": {
@@ -166,9 +166,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 22,
+      "y": 20,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Slowest queries & errors"
@@ -177,7 +177,7 @@
     {
       "name": "Slowest queries (last 6h)",
       "x": 0,
-      "y": 25,
+      "y": 22,
       "w": 24,
       "h": 6,
       "config": {
@@ -191,7 +191,7 @@
     {
       "name": "Top ClickHouse error codes (last 24h)",
       "x": 0,
-      "y": 31,
+      "y": 28,
       "w": 24,
       "h": 6,
       "config": {

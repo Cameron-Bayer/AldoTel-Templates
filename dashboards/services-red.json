@@ -21,7 +21,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Rate & errors"
@@ -30,7 +30,7 @@
     {
       "name": "Request rate by service",
       "x": 0,
-      "y": 3,
+      "y": 2,
       "w": 12,
       "h": 6,
       "config": {
@@ -50,7 +50,7 @@
     {
       "name": "Error rate %",
       "x": 12,
-      "y": 3,
+      "y": 2,
       "w": 12,
       "h": 6,
       "config": {
@@ -80,9 +80,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 9,
+      "y": 8,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Latency & error breakdown"
@@ -91,7 +91,7 @@
     {
       "name": "Latency p50 / p95 / p99",
       "x": 0,
-      "y": 12,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -131,7 +131,7 @@
     {
       "name": "Errors by status message",
       "x": 12,
-      "y": 12,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -151,9 +151,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 18,
+      "y": 16,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Slow routes & distribution"
@@ -162,7 +162,7 @@
     {
       "name": "Slowest routes (p95)",
       "x": 0,
-      "y": 21,
+      "y": 18,
       "w": 24,
       "h": 6,
       "config": {
@@ -200,7 +200,7 @@
     {
       "name": "Latency anomaly — p95 vs 7-day baseline (z-score)",
       "x": 0,
-      "y": 27,
+      "y": 24,
       "w": 24,
       "h": 7,
       "config": {
@@ -214,7 +214,7 @@
     {
       "name": "Server latency distribution (heatmap)",
       "x": 0,
-      "y": 34,
+      "y": 31,
       "w": 24,
       "h": 7,
       "config": {

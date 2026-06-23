@@ -21,7 +21,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Keeper — at a glance"
@@ -30,7 +30,7 @@
     {
       "name": "Active sessions",
       "x": 0,
-      "y": 3,
+      "y": 2,
       "w": 6,
       "h": 4,
       "config": {
@@ -49,7 +49,7 @@
     {
       "name": "Watches",
       "x": 6,
-      "y": 3,
+      "y": 2,
       "w": 6,
       "h": 4,
       "config": {
@@ -68,7 +68,7 @@
     {
       "name": "Outstanding requests",
       "x": 12,
-      "y": 3,
+      "y": 2,
       "w": 6,
       "h": 4,
       "config": {
@@ -95,7 +95,7 @@
     {
       "name": "Alive connections",
       "x": 18,
-      "y": 3,
+      "y": 2,
       "w": 6,
       "h": 4,
       "config": {
@@ -114,9 +114,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 6,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Throughput & latency"
@@ -125,7 +125,7 @@
     {
       "name": "Keeper request rate by type",
       "x": 0,
-      "y": 10,
+      "y": 8,
       "w": 12,
       "h": 6,
       "config": {
@@ -166,7 +166,7 @@
     {
       "name": "Commits vs failed commits",
       "x": 12,
-      "y": 10,
+      "y": 8,
       "w": 12,
       "h": 6,
       "config": {
@@ -193,7 +193,7 @@
     {
       "name": "Packets received / sent",
       "x": 0,
-      "y": 16,
+      "y": 14,
       "w": 12,
       "h": 6,
       "config": {
@@ -220,7 +220,7 @@
     {
       "name": "In-flight requests & watches",
       "x": 12,
-      "y": 16,
+      "y": 14,
       "w": 12,
       "h": 6,
       "config": {
@@ -247,7 +247,7 @@
     {
       "name": "Keeper commit-wait & process time (µs)",
       "x": 0,
-      "y": 22,
+      "y": 20,
       "w": 12,
       "h": 6,
       "config": {
@@ -274,7 +274,7 @@
     {
       "name": "Keeper / ZooKeeper errors (last 24h)",
       "x": 12,
-      "y": 22,
+      "y": 20,
       "w": 12,
       "h": 5,
       "config": {
@@ -288,9 +288,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 28,
+      "y": 26,
       "w": 24,
-      "h": 3,
+      "h": 2,
       "config": {
         "displayType": "markdown",
         "markdown": "### Replication\nThe tables below populate only on **replicated / clustered** ClickHouse installs (`ReplicatedMergeTree`). On a single-node ClickStack they are expected to be empty — that is healthy, not an error. Non-empty `replication_queue` rows or a growing `absolute_delay` indicate a replica falling behind."
@@ -299,7 +299,7 @@
     {
       "name": "Replica status",
       "x": 0,
-      "y": 31,
+      "y": 28,
       "w": 24,
       "h": 6,
       "config": {
@@ -313,7 +313,7 @@
     {
       "name": "Replication queue (stuck tasks)",
       "x": 0,
-      "y": 37,
+      "y": 34,
       "w": 24,
       "h": 6,
       "config": {
