@@ -31,10 +31,12 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Nodes"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Nodes"
+        }
+      ]
     },
     {
       "name": "Node CPU usage (cores)",
@@ -155,10 +157,12 @@
       "y": 20,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Pods"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Pods"
+        }
+      ]
     },
     {
       "name": "Deployment availability (ready / desired)",
@@ -284,10 +288,12 @@
       "y": 40,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Namespaces"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Namespaces"
+        }
+      ]
     },
     {
       "name": "Namespace CPU usage (cores)",

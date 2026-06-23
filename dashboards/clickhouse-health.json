@@ -22,10 +22,12 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Cluster health — at a glance"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Cluster health — at a glance"
+        }
+      ]
     },
     {
       "name": "Running queries",
@@ -126,10 +128,12 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Query activity"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Query activity"
+        }
+      ]
     },
     {
       "name": "Query rate (vs previous week)",
@@ -225,10 +229,12 @@
       "y": 20,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Merges & mutations"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Merges & mutations"
+        }
+      ]
     },
     {
       "name": "Merges in progress",
@@ -276,10 +282,12 @@
       "y": 28,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### I/O & cache"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### I/O & cache"
+        }
+      ]
     },
     {
       "name": "Page-cache read bytes: cache vs source",

@@ -22,10 +22,12 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### SLO — at a glance"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### SLO — at a glance"
+        }
+      ]
     },
     {
       "name": "Availability (SLI)",
@@ -114,10 +116,12 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Availability & traffic"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Availability & traffic"
+        }
+      ]
     },
     {
       "name": "Availability over time (target 99.9%)",
@@ -175,10 +179,12 @@
       "y": 14,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Burn rate"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Burn rate"
+        }
+      ]
     },
     {
       "name": "Multi-window burn rate (SLO 99.9%)",

@@ -29,10 +29,12 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Service health — at a glance"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Service health — at a glance"
+        }
+      ]
     },
     {
       "name": "Span error rate (%)",
@@ -147,10 +149,12 @@
       "y": 6,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Platform — at a glance"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Platform — at a glance"
+        }
+      ]
     },
     {
       "name": "ClickHouse failed queries",
@@ -250,10 +254,12 @@
       "y": 12,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Top services"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Top services"
+        }
+      ]
     },
     {
       "name": "Services by error rate — click a row to open Traces",
@@ -329,10 +335,12 @@
       "y": 21,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Traffic & ingest"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Traffic & ingest"
+        }
+      ]
     },
     {
       "name": "Ingest throughput — spans accepted vs refused",

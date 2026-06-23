@@ -5,6 +5,13 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ## [Unreleased]
 
+### Fixed
+- **Dashboards could not be saved from the HyperDX UI** after importing the section headers.
+  Markdown tiles were authored as `config:{displayType:'markdown', markdown}`, which imports and
+  renders but stores an incomplete internal config (missing `source`/`select`/`where`) that the UI's
+  tile validation rejects on save. Re-authored all markdown header tiles as `series` tiles
+  (`series:[{type:'markdown', content}]`) so the API stores a complete, UI-savable config.
+
 ### Added
 - **Section headers across every dashboard** — each dashboard is now broken into labelled
   sections using full-width markdown header tiles (e.g. *At a glance*, *Throughput & latency*,

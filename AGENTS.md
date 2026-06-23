@@ -100,8 +100,15 @@ For `line/stacked_bar/table/number/pie` there are **two variants**:
 - **pie**: exactly 1 select + `groupBy`.
 - **search** (raw log/event viewer): `select` is a **comma-separated string**
   (e.g. `"Timestamp, SeverityText, ServiceName, Body"`) + `where` + `whereLanguage` (required).
-- **markdown**: `markdown` string on the tile config (the `content` field is only for the
-  charts/series API, not dashboard tiles).
+- **markdown** (section headers / notes): author as a **series tile**, not a `config` tile:
+  `{ "name": "", "x":0, "y":.., "w":24, "h":2, "series": [{ "type": "markdown", "content": "### Title" }] }`.
+  ⚠️ Do **NOT** use `config: { displayType:"markdown", markdown:"…" }`. That shape imports and renders,
+  but the external API stores an **incomplete** internal config (no `source`/`select`/`where`), so the
+  HyperDX **UI cannot save** the dashboard afterwards ("can't save"). The `series` path runs through the
+  API's `translateExternalChartToTileConfig`, which fills `source:'markdown'`, `select:''`, `where:''`,
+  `name`, producing a config the UI's `TileSchema` accepts. Leave `name:""` to hide the tile's corner
+  title (markdown renders left-aligned only — no HTML/CSS/centering). On GET the API converts it back to
+  `config:{displayType:'markdown', markdown}` (lossy round-trip — that's expected).
 
 ### 2.1 onClick drill-downs (table tiles only)
 `config.onClick` link-outs work **only on table tiles**. Two variants (`type`):

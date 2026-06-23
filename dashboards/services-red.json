@@ -22,10 +22,12 @@
       "y": 0,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Rate & errors"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Rate & errors"
+        }
+      ]
     },
     {
       "name": "Request rate by service",
@@ -83,10 +85,12 @@
       "y": 8,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Latency & error breakdown"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Latency & error breakdown"
+        }
+      ]
     },
     {
       "name": "Latency p50 / p95 / p99",
@@ -154,10 +158,12 @@
       "y": 16,
       "w": 24,
       "h": 2,
-      "config": {
-        "displayType": "markdown",
-        "markdown": "### Slow routes & distribution"
-      }
+      "series": [
+        {
+          "type": "markdown",
+          "content": "### Slow routes & distribution"
+        }
+      ]
     },
     {
       "name": "Slowest routes (p95)",
