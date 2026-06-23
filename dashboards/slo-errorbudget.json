@@ -17,20 +17,20 @@
   ],
   "tiles": [
     {
-      "name": "SLO — at a glance",
+      "name": "",
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## SLO — at a glance"
+        "markdown": "### SLO — at a glance"
       }
     },
     {
       "name": "Availability (SLI)",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 8,
       "h": 4,
       "config": {
@@ -68,7 +68,7 @@
     {
       "name": "Error rate (1 - SLI)",
       "x": 8,
-      "y": 2,
+      "y": 3,
       "w": 8,
       "h": 4,
       "config": {
@@ -92,7 +92,7 @@
     {
       "name": "Total server requests",
       "x": 16,
-      "y": 2,
+      "y": 3,
       "w": 8,
       "h": 4,
       "config": {
@@ -109,20 +109,20 @@
       }
     },
     {
-      "name": "Availability & traffic",
+      "name": "",
       "x": 0,
-      "y": 6,
+      "y": 7,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Availability & traffic"
+        "markdown": "### Availability & traffic"
       }
     },
     {
       "name": "Availability over time (target 99.9%)",
       "x": 0,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -152,7 +152,7 @@
     {
       "name": "Good vs bad requests by service",
       "x": 12,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -170,20 +170,20 @@
       }
     },
     {
-      "name": "Burn rate",
+      "name": "",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Burn rate"
+        "markdown": "### Burn rate"
       }
     },
     {
       "name": "Multi-window burn rate (SLO 99.9%)",
       "x": 0,
-      "y": 16,
+      "y": 19,
       "w": 12,
       "h": 6,
       "config": {
@@ -197,7 +197,7 @@
     {
       "name": "Error-budget burn rate over time (>1 = burning too fast)",
       "x": 12,
-      "y": 16,
+      "y": 19,
       "w": 12,
       "h": 7,
       "config": {
@@ -211,7 +211,7 @@
     {
       "name": "Errors by service",
       "x": 0,
-      "y": 23,
+      "y": 26,
       "w": 24,
       "h": 6,
       "config": {

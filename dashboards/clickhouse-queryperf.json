@@ -17,20 +17,20 @@
   ],
   "tiles": [
     {
-      "name": "Query performance — at a glance",
+      "name": "",
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Query performance — at a glance"
+        "markdown": "### Query performance — at a glance"
       }
     },
     {
       "name": "Failed queries (rate)",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 8,
       "h": 4,
       "config": {
@@ -57,7 +57,7 @@
     {
       "name": "Running queries (now)",
       "x": 8,
-      "y": 2,
+      "y": 3,
       "w": 8,
       "h": 4,
       "config": {
@@ -76,7 +76,7 @@
     {
       "name": "Memory tracking",
       "x": 16,
-      "y": 2,
+      "y": 3,
       "w": 8,
       "h": 4,
       "config": {
@@ -97,20 +97,20 @@
       }
     },
     {
-      "name": "Query trends",
+      "name": "",
       "x": 0,
-      "y": 6,
+      "y": 7,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Query trends"
+        "markdown": "### Query trends"
       }
     },
     {
       "name": "Query rate by kind",
       "x": 0,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -124,7 +124,7 @@
     {
       "name": "Query duration p95 / p99 (ms)",
       "x": 12,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -138,7 +138,7 @@
     {
       "name": "Peak memory per query p95 (bytes)",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -152,7 +152,7 @@
     {
       "name": "Query exceptions",
       "x": 12,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -164,20 +164,20 @@
       }
     },
     {
-      "name": "Slowest queries & errors",
+      "name": "",
       "x": 0,
-      "y": 20,
+      "y": 22,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Slowest queries & errors"
+        "markdown": "### Slowest queries & errors"
       }
     },
     {
       "name": "Slowest queries (last 6h)",
       "x": 0,
-      "y": 22,
+      "y": 25,
       "w": 24,
       "h": 6,
       "config": {
@@ -191,7 +191,7 @@
     {
       "name": "Top ClickHouse error codes (last 24h)",
       "x": 0,
-      "y": 28,
+      "y": 31,
       "w": 24,
       "h": 6,
       "config": {

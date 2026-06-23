@@ -11,6 +11,9 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   *Nodes / Pods / Namespaces*). Tiles were regrouped and reflowed under their section so related
   charts sit together and the boards read top-to-bottom instead of as one dense grid. KPI
   "at a glance" number rows are pulled to the top of each board where they weren't already.
+  Header tiles use an `h3` heading, a cleared tile title (no redundant corner label), and are
+  3 rows tall so the section text isn't clipped. (Note: HyperDX renders markdown tiles with a
+  plain react-markdown — no raw HTML/CSS — so headers stay left-aligned; centering isn't supported.)
 - **Kubernetes dashboard — namespace views & richer tables** (parity pass vs HyperDX's built-in
   `/kubernetes` page, using only metrics present in a standard kubeletstats + k8s_cluster setup):
   - **Namespace CPU (cores)** and **Namespace memory** time charts (sum of pod metrics per namespace).

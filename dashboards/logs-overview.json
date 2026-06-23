@@ -23,20 +23,20 @@
   ],
   "tiles": [
     {
-      "name": "Volume & error rate",
+      "name": "",
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Volume & error rate"
+        "markdown": "### Volume & error rate"
       }
     },
     {
       "name": "Log volume by severity",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 12,
       "h": 6,
       "config": {
@@ -54,7 +54,7 @@
     {
       "name": "Error / fatal rate by service",
       "x": 12,
-      "y": 2,
+      "y": 3,
       "w": 12,
       "h": 6,
       "config": {
@@ -72,20 +72,20 @@
       }
     },
     {
-      "name": "Top errors & patterns",
+      "name": "",
       "x": 0,
-      "y": 8,
+      "y": 9,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Top errors & patterns"
+        "markdown": "### Top errors & patterns"
       }
     },
     {
       "name": "Top error messages",
       "x": 0,
-      "y": 10,
+      "y": 12,
       "w": 24,
       "h": 6,
       "config": {
@@ -115,7 +115,7 @@
     {
       "name": "New log patterns in last 24h (vs prior 7d)",
       "x": 0,
-      "y": 16,
+      "y": 18,
       "w": 24,
       "h": 6,
       "config": {
@@ -127,20 +127,20 @@
       }
     },
     {
-      "name": "Live stream",
+      "name": "",
       "x": 0,
-      "y": 22,
+      "y": 24,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Live stream"
+        "markdown": "### Live stream"
       }
     },
     {
       "name": "Live error stream",
       "x": 0,
-      "y": 24,
+      "y": 27,
       "w": 24,
       "h": 7,
       "config": {

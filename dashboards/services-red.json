@@ -17,20 +17,20 @@
   ],
   "tiles": [
     {
-      "name": "Rate & errors",
+      "name": "",
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Rate & errors"
+        "markdown": "### Rate & errors"
       }
     },
     {
       "name": "Request rate by service",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 12,
       "h": 6,
       "config": {
@@ -50,7 +50,7 @@
     {
       "name": "Error rate %",
       "x": 12,
-      "y": 2,
+      "y": 3,
       "w": 12,
       "h": 6,
       "config": {
@@ -78,20 +78,20 @@
       }
     },
     {
-      "name": "Latency & error breakdown",
+      "name": "",
       "x": 0,
-      "y": 8,
+      "y": 9,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Latency & error breakdown"
+        "markdown": "### Latency & error breakdown"
       }
     },
     {
       "name": "Latency p50 / p95 / p99",
       "x": 0,
-      "y": 10,
+      "y": 12,
       "w": 12,
       "h": 6,
       "config": {
@@ -131,7 +131,7 @@
     {
       "name": "Errors by status message",
       "x": 12,
-      "y": 10,
+      "y": 12,
       "w": 12,
       "h": 6,
       "config": {
@@ -149,20 +149,20 @@
       }
     },
     {
-      "name": "Slow routes & distribution",
+      "name": "",
       "x": 0,
-      "y": 16,
+      "y": 18,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Slow routes & distribution"
+        "markdown": "### Slow routes & distribution"
       }
     },
     {
       "name": "Slowest routes (p95)",
       "x": 0,
-      "y": 18,
+      "y": 21,
       "w": 24,
       "h": 6,
       "config": {
@@ -200,7 +200,7 @@
     {
       "name": "Latency anomaly — p95 vs 7-day baseline (z-score)",
       "x": 0,
-      "y": 24,
+      "y": 27,
       "w": 24,
       "h": 7,
       "config": {
@@ -214,7 +214,7 @@
     {
       "name": "Server latency distribution (heatmap)",
       "x": 0,
-      "y": 31,
+      "y": 34,
       "w": 24,
       "h": 7,
       "config": {

@@ -17,20 +17,20 @@
   ],
   "tiles": [
     {
-      "name": "Storage — at a glance",
+      "name": "",
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Storage — at a glance"
+        "markdown": "### Storage — at a glance"
       }
     },
     {
       "name": "Disk used (active parts)",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -48,7 +48,7 @@
     {
       "name": "Compression ratio (uncompressed / compressed)",
       "x": 6,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -62,7 +62,7 @@
     {
       "name": "Active parts (total)",
       "x": 12,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -76,7 +76,7 @@
     {
       "name": "Rows stored (active)",
       "x": 18,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -88,20 +88,20 @@
       }
     },
     {
-      "name": "Throughput & merges",
+      "name": "",
       "x": 0,
-      "y": 6,
+      "y": 7,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Throughput & merges"
+        "markdown": "### Throughput & merges"
       }
     },
     {
       "name": "Part events / 5 min (inserts, merges, mutations)",
       "x": 0,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -115,7 +115,7 @@
     {
       "name": "Merge duration p95 / max (ms)",
       "x": 12,
-      "y": 8,
+      "y": 10,
       "w": 12,
       "h": 6,
       "config": {
@@ -132,7 +132,7 @@
     {
       "name": "Bytes written — inserted vs merged / 5 min",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -150,7 +150,7 @@
     {
       "name": "Rows processed — inserted vs merged / 5 min",
       "x": 12,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -162,20 +162,20 @@
       }
     },
     {
-      "name": "Tables & parts",
+      "name": "",
       "x": 0,
-      "y": 20,
+      "y": 22,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Tables & parts"
+        "markdown": "### Tables & parts"
       }
     },
     {
       "name": "Largest tables by disk",
       "x": 0,
-      "y": 22,
+      "y": 25,
       "w": 24,
       "h": 6,
       "config": {
@@ -189,7 +189,7 @@
     {
       "name": "Active parts per table (too-many-parts watch)",
       "x": 0,
-      "y": 28,
+      "y": 31,
       "w": 24,
       "h": 6,
       "config": {
@@ -203,7 +203,7 @@
     {
       "name": "Recent merges (last 6h)",
       "x": 0,
-      "y": 34,
+      "y": 37,
       "w": 24,
       "h": 6,
       "config": {

@@ -24,20 +24,20 @@
   ],
   "tiles": [
     {
-      "name": "Service health — at a glance",
+      "name": "",
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Service health — at a glance"
+        "markdown": "### Service health — at a glance"
       }
     },
     {
       "name": "Span error rate (%)",
       "x": 0,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -72,7 +72,7 @@
     {
       "name": "Trace volume (spans)",
       "x": 6,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -88,7 +88,7 @@
     {
       "name": "Span latency p95",
       "x": 12,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -109,7 +109,7 @@
     {
       "name": "Log error rate (%)",
       "x": 18,
-      "y": 2,
+      "y": 3,
       "w": 6,
       "h": 4,
       "config": {
@@ -142,20 +142,20 @@
       }
     },
     {
-      "name": "Platform — at a glance",
+      "name": "",
       "x": 0,
-      "y": 6,
+      "y": 7,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Platform — at a glance"
+        "markdown": "### Platform — at a glance"
       }
     },
     {
       "name": "ClickHouse failed queries",
       "x": 0,
-      "y": 8,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -182,7 +182,7 @@
     {
       "name": "ClickHouse running queries",
       "x": 6,
-      "y": 8,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -201,7 +201,7 @@
     {
       "name": "K8s nodes ready",
       "x": 12,
-      "y": 8,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -220,7 +220,7 @@
     {
       "name": "Collector refused spans",
       "x": 18,
-      "y": 8,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -245,20 +245,20 @@
       }
     },
     {
-      "name": "Top services",
+      "name": "",
       "x": 0,
-      "y": 12,
+      "y": 14,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Top services"
+        "markdown": "### Top services"
       }
     },
     {
       "name": "Services by error rate — click a row to open Traces",
       "x": 0,
-      "y": 14,
+      "y": 17,
       "w": 12,
       "h": 7,
       "config": {
@@ -292,7 +292,7 @@
     {
       "name": "Services by log errors — click a row to open Logs",
       "x": 12,
-      "y": 14,
+      "y": 17,
       "w": 12,
       "h": 7,
       "config": {
@@ -324,20 +324,20 @@
       }
     },
     {
-      "name": "Traffic & ingest",
+      "name": "",
       "x": 0,
-      "y": 21,
+      "y": 24,
       "w": 24,
-      "h": 2,
+      "h": 3,
       "config": {
         "displayType": "markdown",
-        "markdown": "## Traffic & ingest"
+        "markdown": "### Traffic & ingest"
       }
     },
     {
       "name": "Ingest throughput — spans accepted vs refused",
       "x": 0,
-      "y": 23,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
@@ -364,7 +364,7 @@
     {
       "name": "Request rate & errors (traces)",
       "x": 12,
-      "y": 23,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
