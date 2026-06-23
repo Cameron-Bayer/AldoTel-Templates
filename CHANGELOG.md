@@ -13,10 +13,12 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   - **Nodes table** — ready / CPU / memory / uptime per node (complements the existing node charts).
   - **Pods — status & resources** table consolidates the old restarts + pod-memory tables and adds
     status (`k8s.pod.phase`), CPU-vs-limit %, memory-vs-limit %, and age (`k8s.pod.uptime`).
-  - Per-column `numberFormat` used so cores / bytes / percent render correctly in one table.
-  - Note: multi-metric builder tables can't be SQL-sorted by one metric's column (HyperDX appends
-    `orderBy` to every per-metric subquery), so these tables have no `orderBy` — sort by clicking a
-    column header in the UI.
+  - **Nodes / Pods / Namespaces tables** are authored as **Raw SQL** so values are human-readable:
+    status text (`Running`/`Ready`/`Active` instead of enum codes `2`/`1`), memory via
+    `formatReadableSize` (`3.11 GiB`), uptime/age via `formatReadableTimeDelta` (`23 hours…`),
+    limits as `15.5%`, and proper column headers. Sorted server-side (ORDER BY works in raw SQL).
+  - Note: Raw SQL tables use a fixed 1-hour latest-value window and are not affected by the
+    dashboard Namespace/Node filter variables.
 
 ### Changed
 - **Roomier graphs** — chart tiles (`line`, `stacked_bar`, `heatmap`, `pie`) get an extra

@@ -40,19 +40,10 @@
       "x": 0, "y": 6, "w": 14, "h": 6,
       "config": {
         "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "groupBy": "ResourceAttributes['k8s.node.name']",
-        "select": [
-          { "aggFn": "avg", "valueExpression": "Value", "alias": "ready",
-            "metricName": "k8s.node.condition_ready", "metricType": "gauge" },
-          { "aggFn": "avg", "valueExpression": "Value", "alias": "cpu",
-            "metricName": "k8s.node.cpu.usage", "metricType": "gauge" },
-          { "aggFn": "avg", "valueExpression": "Value", "alias": "memory",
-            "metricName": "k8s.node.memory.usage", "metricType": "gauge",
-            "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" } },
-          { "aggFn": "max", "valueExpression": "Value", "alias": "uptime_s",
-            "metricName": "k8s.node.uptime", "metricType": "sum" }
-        ]
+        "sqlTemplate": "WITH g AS (\n  SELECT ResourceAttributes['k8s.node.name'] AS node,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.condition_ready') AS ready,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.cpu.usage') AS cpu,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') AS mem\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR\n    AND MetricName IN ('k8s.node.condition_ready', 'k8s.node.cpu.usage', 'k8s.node.memory.usage')\n  GROUP BY node\n),\ns AS (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS uptime\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.uptime'\n  GROUP BY node\n)\nSELECT g.node AS Node,\n  if(g.ready = 1, 'Ready', 'Not Ready') AS Status,\n  round(g.cpu, 2) AS \"CPU (cores)\",\n  formatReadableSize(g.mem) AS Memory,\n  formatReadableTimeDelta(toUInt64(s.uptime)) AS Uptime\nFROM g LEFT JOIN s USING (node)\nORDER BY g.cpu DESC"
       }
     },
     {
@@ -102,25 +93,10 @@
       "x": 0, "y": 18, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "groupBy": "ResourceAttributes['k8s.pod.name']",
-        "select": [
-          { "aggFn": "last_value", "valueExpression": "Value", "alias": "status",
-            "metricName": "k8s.pod.phase", "metricType": "gauge" },
-          { "aggFn": "max", "valueExpression": "Value", "alias": "cpu_limit",
-            "metricName": "k8s.pod.cpu_limit_utilization", "metricType": "gauge",
-            "numberFormat": { "output": "percent", "mantissa": 3 } },
-          { "aggFn": "max", "valueExpression": "Value", "alias": "mem_limit",
-            "metricName": "k8s.pod.memory_limit_utilization", "metricType": "gauge",
-            "numberFormat": { "output": "percent", "mantissa": 3 } },
-          { "aggFn": "avg", "valueExpression": "Value", "alias": "memory",
-            "metricName": "k8s.pod.memory.usage", "metricType": "gauge",
-            "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" } },
-          { "aggFn": "max", "valueExpression": "Value", "alias": "age_s",
-            "metricName": "k8s.pod.uptime", "metricType": "sum" },
-          { "aggFn": "max", "valueExpression": "Value", "alias": "restarts",
-            "metricName": "k8s.container.restarts", "metricType": "gauge" }
-        ]
+        "sqlTemplate": "WITH g AS (\n  SELECT ResourceAttributes['k8s.pod.name'] AS pod,\n    any(ResourceAttributes['k8s.namespace.name']) AS ns,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.pod.phase') AS phase,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.pod.cpu_limit_utilization') AS cpu_lim,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.pod.memory_limit_utilization') AS mem_lim,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.pod.memory.usage') AS mem,\n    maxIf(Value, MetricName = 'k8s.container.restarts') AS restarts\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR\n    AND MetricName IN ('k8s.pod.phase', 'k8s.pod.cpu_limit_utilization', 'k8s.pod.memory_limit_utilization', 'k8s.pod.memory.usage', 'k8s.container.restarts')\n  GROUP BY pod\n),\ns AS (\n  SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS uptime\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.uptime'\n  GROUP BY pod\n)\nSELECT g.ns AS Namespace,\n  g.pod AS Pod,\n  multiIf(g.phase = 1, 'Pending', g.phase = 2, 'Running', g.phase = 3, 'Succeeded', g.phase = 4, 'Failed', 'Unknown') AS Status,\n  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 1)), '%')) AS \"CPU/limit\",\n  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 1)), '%')) AS \"Mem/limit\",\n  formatReadableSize(g.mem) AS Memory,\n  formatReadableTimeDelta(toUInt64(s.uptime)) AS Age,\n  toUInt64(g.restarts) AS Restarts\nFROM g LEFT JOIN s USING (pod)\nORDER BY g.restarts DESC, g.cpu_lim DESC\nLIMIT 100"
       }
     },
     {
@@ -200,17 +176,10 @@
       "x": 0, "y": 42, "w": 24, "h": 6,
       "config": {
         "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "groupBy": "ResourceAttributes['k8s.namespace.name']",
-        "select": [
-          { "aggFn": "last_value", "valueExpression": "Value", "alias": "phase",
-            "metricName": "k8s.namespace.phase", "metricType": "gauge" },
-          { "aggFn": "sum", "valueExpression": "Value", "alias": "cpu",
-            "metricName": "k8s.pod.cpu.usage", "metricType": "gauge" },
-          { "aggFn": "sum", "valueExpression": "Value", "alias": "memory",
-            "metricName": "k8s.pod.memory.usage", "metricType": "gauge",
-            "numberFormat": { "output": "byte", "numericUnit": "bytes_iec" } }
-        ]
+        "sqlTemplate": "WITH pods AS (\n  SELECT ResourceAttributes['k8s.namespace.name'] AS ns,\n    ResourceAttributes['k8s.pod.name'] AS pod,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.pod.cpu.usage') AS cpu,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.pod.memory.usage') AS mem\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR\n    AND MetricName IN ('k8s.pod.cpu.usage', 'k8s.pod.memory.usage')\n  GROUP BY ns, pod\n),\nagg AS ( SELECT ns, sum(cpu) AS cpu, sum(mem) AS mem FROM pods GROUP BY ns ),\nph AS (\n  SELECT ResourceAttributes['k8s.namespace.name'] AS ns, argMax(Value, TimeUnix) AS phase\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.namespace.phase'\n  GROUP BY ns\n)\nSELECT agg.ns AS Namespace,\n  multiIf(ph.phase = 1, 'Active', ph.phase = 2, 'Terminating', 'Unknown') AS Phase,\n  round(agg.cpu, 2) AS \"CPU (cores)\",\n  formatReadableSize(agg.mem) AS Memory\nFROM agg LEFT JOIN ph USING (ns)\nORDER BY agg.cpu DESC"
       }
     }
   ]
