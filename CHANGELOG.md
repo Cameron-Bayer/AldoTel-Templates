@@ -6,6 +6,25 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Fixed
+- **Full filter audit across all 10 dashboards** — dashboard filters in HyperDX are **global**
+  (applied to every tile by column expression, regardless of the filter's declared `sourceId`),
+  so a filter on a column that some tiles' data lacks silently blanks those tiles. Findings & fixes:
+  - **All four ClickHouse dashboards (Cluster Health, Query Performance, Storage, Keeper) had a
+    broken `Instance` filter.** It filtered on `ResourceAttributes['host.name']`, but ClickHouse/Keeper
+    metrics carry **no `host.name`** (verified: 0 of 106k rows) — only `service.instance.id`, which on
+    the metrics source is a noisy 66-value all-pods dropdown. With a single ClickHouse instance in a
+    standard ClickStack deploy the filter added no value and only blanked tiles, so it was **removed**.
+  - **Executive Overview — Service & Namespace filters blanked the infra tiles.** The ClickHouse,
+    collector, and node metric tiles have no app `ServiceName` and no `k8s.namespace.name`, so picking
+    a service or namespace blanked them. Those five tiles (ClickHouse failed/running queries, K8s nodes
+    ready, collector refused spans, ingest throughput) are now **Raw SQL without `$__filters`** — they
+    stay as constant platform context while the Service/Namespace filters cleanly drill the app
+    traces/logs tiles.
+  - **Services RED & SLO/Error-Budget — analytics tiles now honor the Service filter.** The latency
+    z-score anomaly tile and the multi-window / over-time burn-rate tiles were Raw SQL without
+    `$__filters`, so selecting a service left them unfiltered. They now include `$__filters`.
+  - Verified working filters left unchanged: **Collector** (`service.instance.id`, populated on all
+    collector metrics), **Logs** and **Kubernetes** (fixed previously).
 - **Dashboard filters blanked tiles unexpectedly.** Two distinct causes were fixed:
   - **Kubernetes — Namespace filter blanked the node tiles.** Node metrics (`k8s.node.*`) carry no
     `k8s.namespace.name`, so a dashboard-global `namespace IN (...)` filter matched 0 rows and the

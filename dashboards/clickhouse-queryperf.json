@@ -5,16 +5,7 @@
     "clickhouse",
     "tmpl:clickhouse-queryperf"
   ],
-  "filters": [
-    {
-      "type": "QUERY_EXPRESSION",
-      "name": "Instance",
-      "expression": "ResourceAttributes['host.name']",
-      "sourceId": "{{METRICS_SOURCE_ID}}",
-      "sourceMetricType": "sum",
-      "whereLanguage": "sql"
-    }
-  ],
+  "filters": [],
   "tiles": [
     {
       "name": "",

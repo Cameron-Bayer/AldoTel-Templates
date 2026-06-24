@@ -191,7 +191,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window,\n       round(error_ratio, 5) AS error_ratio,\n       round(error_ratio / budget, 2) AS burn_rate\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY\n)\nORDER BY ord"
+        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window,\n       round(error_ratio, 5) AS error_ratio,\n       round(error_ratio / budget, 2) AS burn_rate\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR AND $__filters\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR AND $__filters\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR AND $__filters\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY AND $__filters\n)\nORDER BY ord"
       }
     },
     {
@@ -205,7 +205,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL 10 MINUTE) AS t,\n       (countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)) / 0.001 AS burn_rate\nFROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\nWHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 1 DAY\nGROUP BY t\nORDER BY t"
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL 10 MINUTE) AS t,\n       (countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)) / 0.001 AS burn_rate\nFROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\nWHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 1 DAY AND $__filters\nGROUP BY t\nORDER BY t"
       }
     },
     {

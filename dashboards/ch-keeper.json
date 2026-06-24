@@ -5,16 +5,7 @@
     "clickhouse",
     "tmpl:ch-keeper"
   ],
-  "filters": [
-    {
-      "type": "QUERY_EXPRESSION",
-      "name": "Instance",
-      "expression": "ResourceAttributes['host.name']",
-      "sourceId": "{{METRICS_SOURCE_ID}}",
-      "sourceMetricType": "gauge",
-      "whereLanguage": "sql"
-    }
-  ],
+  "filters": [],
   "tiles": [
     {
       "name": "",

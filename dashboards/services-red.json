@@ -208,7 +208,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "WITH points AS (\n  SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n         quantile(0.95)(Duration)/1e6 AS p95_ms\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 7 DAY\n  GROUP BY t\n)\nSELECT t,\n       p95_ms,\n       (p95_ms - avg(p95_ms) OVER ()) / nullIf(stddevPop(p95_ms) OVER (), 0) AS z_score\nFROM points\nORDER BY t"
+        "sqlTemplate": "WITH points AS (\n  SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n         quantile(0.95)(Duration)/1e6 AS p95_ms\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 7 DAY AND $__filters\n  GROUP BY t\n)\nSELECT t,\n       p95_ms,\n       (p95_ms - avg(p95_ms) OVER ()) / nullIf(stddevPop(p95_ms) OVER (), 0) AS z_score\nFROM points\nORDER BY t"
       }
     },
     {

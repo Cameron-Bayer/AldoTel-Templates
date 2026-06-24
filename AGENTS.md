@@ -69,6 +69,18 @@ cross-scope contamination: a global filter on a column some tiles lack (e.g. `k8
 is absent from node metrics; `k8s.node.name` is absent from deployment metrics) will blank those
 tiles — make them immune or drop the filter.
 
+**Metric ResourceAttributes vary by metric family — verify before adding a metrics filter.** On the
+shared metrics source, different exporters populate different attributes. Verified facts (this
+deployment): ClickHouse/Keeper metrics (`ClickHouse*`) carry **`service.instance.id`** (= the CH
+instance, e.g. `clickstack-clickhouse-clickhouse-headless:9363`) and `ServiceName='otelcol'` but
+**no `host.name` and no `k8s.namespace.name`**; collector metrics (`otelcol*`, `*process*`) carry
+`service.instance.id`; node metrics (`k8s.node.*`) carry `k8s.node.name` but **no `ServiceName`/
+`k8s.namespace.name`**; pod/deployment metrics carry `k8s.namespace.name`. Traces and logs carry
+both `ServiceName` and `k8s.namespace.name`. A `service.instance.id` filter on the metrics source is
+a noisy ~66-value all-pods dropdown — avoid it for single-instance ClickHouse. Probe before
+filtering: `SELECT countIf(ResourceAttributes['k']!=''), count() FROM otel_metrics_gauge WHERE
+MetricName LIKE '<family>%' AND TimeUnix > now()-INTERVAL 1 HOUR`.
+
 ### Builder example (line, metrics source)
 ```jsonc
 {
