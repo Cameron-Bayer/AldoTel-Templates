@@ -138,6 +138,25 @@ data is actually flowing. Each dashboard is rated:
 
 It prints a `--only` command listing exactly the dashboards that are safe to import.
 
+## Alerts pack
+
+Optional bundle of importable **alert** definitions in [`alerts/`](alerts/README.md) — one per
+high-level signal (services error rate, SLO fast burn, collector drops, ClickHouse too-many-parts,
+replication lag). Each binds to a dashboard tile and notifies a channel (Microsoft Teams by default)
+when a threshold is breached. Portable and idempotent like the dashboards.
+
+```powershell
+# import dashboards first, then:
+./import-alerts.ps1 -DryRun                     # preview
+./import-alerts.ps1                             # upsert (reuses a webhook named "AldoTel Alerts (Teams)")
+# first-time channel setup (creates the Teams webhook):
+$env:HDX_EMAIL="you@corp.com"; $env:HDX_PASS="***"; $env:HDX_APP_URL="http://localhost:3000"
+./import-alerts.ps1 -WebhookUrl "https://<tenant>.webhook.office.com/webhookb2/xxxx"
+```
+
+Thresholds are opinionated defaults, tunable per install. See [`alerts/README.md`](alerts/README.md)
+for the full signal table, channel setup, and tuning notes.
+
 ## Support matrix
 
 What each dashboard needs from your OpenTelemetry collector. **Required** checks must have data or

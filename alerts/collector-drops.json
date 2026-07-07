@@ -1,0 +1,15 @@
+{
+  "slug": "collector-drops",
+  "signal": "Collector dropping telemetry",
+  "dashboard": "collector-health",
+  "tile": "Refused spans (should be 0)",
+  "alert": {
+    "name": "AldoTel · Collector refusing spans",
+    "source": "tile",
+    "thresholdType": "above",
+    "threshold": 0,
+    "interval": "5m",
+    "message": "The OpenTelemetry Collector is refusing spans (receiver-side back-pressure or exporter failure). Telemetry is being dropped — check the Collector Health dashboard (queue size, exporter errors).",
+    "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
+  }
+}

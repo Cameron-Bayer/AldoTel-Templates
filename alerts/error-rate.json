@@ -1,0 +1,15 @@
+{
+  "slug": "error-rate",
+  "signal": "Error rate",
+  "dashboard": "services-red",
+  "tile": "Error rate %",
+  "alert": {
+    "name": "AldoTel · Services error rate > 2%",
+    "source": "tile",
+    "thresholdType": "above",
+    "threshold": 0.02,
+    "interval": "5m",
+    "message": "Server-span error ratio (errors / total) has exceeded 2% over the last 5 minutes. Investigate the failing services on the Services — RED dashboard.",
+    "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
+  }
+}

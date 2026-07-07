@@ -1,0 +1,15 @@
+{
+  "slug": "replication-lag",
+  "signal": "Replication lag",
+  "dashboard": "clickhouse-health",
+  "tile": "Max replication lag (s)",
+  "alert": {
+    "name": "AldoTel · ClickHouse replication lag > 60s",
+    "source": "tile",
+    "thresholdType": "above",
+    "threshold": 60,
+    "interval": "5m",
+    "message": "Max ReplicatedMergeTree replication lag has exceeded 60 seconds — a replica is falling behind and may serve stale reads. Check the ClickHouse — Cluster Health dashboard (readonly replicas, replication queue).",
+    "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
+  }
+}

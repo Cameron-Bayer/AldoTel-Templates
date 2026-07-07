@@ -1,0 +1,15 @@
+{
+  "slug": "slo-fast-burn",
+  "signal": "SLO fast burn",
+  "dashboard": "slo-errorbudget",
+  "tile": "Error rate (1 - SLI)",
+  "alert": {
+    "name": "AldoTel · SLO fast burn (14.4x)",
+    "source": "tile",
+    "thresholdType": "above",
+    "threshold": 0.0144,
+    "interval": "5m",
+    "message": "Error rate has exceeded 1.44% over the last 5 minutes - that is a 14.4x burn of a 99.9% SLO (0.1% budget), which exhausts the monthly error budget in ~2 days. Fast-burn, page-worthy. See the SLO / Error-Budget dashboard (burn-rate over time + multi-window table).",
+    "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
+  }
+}

@@ -171,8 +171,10 @@ tokens" (PowerShell `-match` is case-insensitive → switched to case-sensitive 
   consumer lag.
 - **16. Advanced data science** — disk-full forecasting, request-growth projection, deploy/change
   correlation overlays, seasonality-aware anomaly.
-- **17. Bundled alerts pack** — ship `/api/v2/alerts` definitions alongside dashboards (replication
-  lag, error-budget burn, collector drops).
+- **17. Bundled alerts pack** ✅ **SHIPPED** — importable `/api/v2/alerts` definitions alongside the
+  dashboards (`alerts/` + `import-alerts.ps1`/`.sh`): services error rate, SLO fast burn, collector
+  drops, ClickHouse too-many-parts, replication lag. Bound to dashboard tiles, idempotent upsert,
+  Teams (`generic` webhook) default channel. Verified live (HyperDX 2.27.0). See `alerts/README.md`.
 
 ---
 
@@ -183,7 +185,7 @@ tokens" (PowerShell `-match` is case-insensitive → switched to case-sensitive 
 | Filters/variables | namespace / service / cluster selectors | Phase 0, then standard | ✅ **10/10** — every dashboard has a `filters[]` (exec-overview backfilled with Service + Namespace). |
 | Drill-downs | `onClick` → traces / filtered search | Phase 1 onward | ✅ **All applicable tables** — every builder table over a Logs/Traces source has an `onClick` (exec ×2, services-red, slo, logs). Raw-SQL tables over ClickHouse `system.*` (ch-storage, ch-keeper, clickhouse-queryperf) have no HyperDX source to drill into → N/A by design. |
 | Units & formatting | bytes_iec / percent / ms / duration | Phase 1 | ✅ bytes/percent/duration applied; services-red latency now `output:"duration"` (auto-scales via traces source `durationPrecision:9`). |
-| Alerts | paired alert per critical tile | Phase 3 | ⏳ **Deferred to Phase 3 / v2.0** (#17) — not a v1 ship blocker. |
+| Alerts | paired alert per critical tile | Phase 3 | ✅ **Alerts pack shipped** (#17) — 5 high-level alerts bound to tiles (`alerts/`), idempotent import, Teams-default channel. |
 | Naming/tagging | versioned tags for upsert | Phase 0 | ✅ **10/10** — every dashboard carries `clickstack-templates` + a stable `tmpl:<slug>` tag; importer upserts idempotently. |
 
 > Verified live (HyperDX 2.27.0, minikube): all 10 dashboards PASS `preflight` with 0 missing

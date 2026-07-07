@@ -6,6 +6,15 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 ## [Unreleased]
 
 ### Added
+- **Alerts pack (`alerts/`)** — importable HyperDX alert definitions bound to dashboard tiles, one per
+  high-level signal: services error rate (> 2%), SLO fast burn (14.4× of a 99.9% SLO), collector
+  dropping telemetry (refused spans > 0), ClickHouse too-many-parts (> 5000 total active parts), and
+  replication lag (> 60s). New `import-alerts.ps1` / `import-alerts.sh` resolve per-install
+  dashboard/tile/webhook IDs at import time and upsert idempotently (matched by dashboard + tile).
+  Notification channel defaults to Microsoft Teams (a `generic` webhook pointed at a Teams Incoming
+  Webhook); the importer reuses a webhook by name or, with `-WebhookUrl` + `HDX_EMAIL`/`HDX_PASS`,
+  creates one. Thresholds are opinionated defaults, tunable per install. Verified live against
+  HyperDX 2.27.0 (all 5 alerts create/update, no duplicates). See `alerts/README.md`.
 - **Screenshots of all 10 dashboards** in the README (`docs/images/*.png`), captured against a live
   open-source ClickStack (HyperDX 2.27) with the OpenTelemetry demo flowing — a visual preview of
   what customers get after `import`.

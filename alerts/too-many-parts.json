@@ -1,0 +1,15 @@
+{
+  "slug": "too-many-parts",
+  "signal": "Too many active parts (merges falling behind)",
+  "dashboard": "ch-storage",
+  "tile": "Active parts (total)",
+  "alert": {
+    "name": "AldoTel · ClickHouse too many parts",
+    "source": "tile",
+    "thresholdType": "above",
+    "threshold": 5000,
+    "interval": "15m",
+    "message": "Total active MergeTree parts have crossed 5000 — a coarse canary that merges are falling behind inserts (risk of the 'too many parts' insert error). Check the Storage & MergeTree dashboard, especially 'Active parts per table'.",
+    "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
+  }
+}
