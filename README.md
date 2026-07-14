@@ -5,7 +5,7 @@ Download-and-go observability dashboards for teams running **Open Source ClickSt
 that read the *same* ClickHouse / OTel data — no extra collectors or schema changes:
 
 | Deliverable | Use it for | Start here |
-|-------------|-----------|------------|
+|--------------|-----------|------------|
 | 🔎 **[HyperDX](hyperdx/)** | Deep, interactive **investigation** — per-domain dashboards, drill-downs, log/trace search, data-science tiles | [`hyperdx/README.md`](hyperdx/README.md) |
 | 📊 **[Grafana](grafana/)** | At-a-glance **health**, executive views, and **alerting** (Microsoft Teams) | [`grafana/README.md`](grafana/README.md) |
 
