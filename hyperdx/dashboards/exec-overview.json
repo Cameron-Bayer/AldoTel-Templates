@@ -128,7 +128,7 @@
         "select": [
           {
             "aggFn": "avg",
-            "valueExpression": "if(SeverityText IN ('Error', 'Fatal'), 1, 0)",
+            "valueExpression": "if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)",
             "where": "",
             "whereLanguage": "sql"
           }
@@ -287,7 +287,7 @@
           {
             "alias": "errors",
             "aggFn": "sum",
-            "valueExpression": "if(SeverityText IN ('Error', 'Fatal'), 1, 0)",
+            "valueExpression": "if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)",
             "where": "",
             "whereLanguage": "sql"
           }

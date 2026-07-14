@@ -67,7 +67,7 @@
           {
             "aggFn": "count",
             "alias": "errors",
-            "where": "SeverityText:ERROR OR SeverityText:FATAL",
+            "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL",
             "whereLanguage": "lucene"
           }
         ]
@@ -108,7 +108,7 @@
           {
             "aggFn": "count",
             "alias": "count",
-            "where": "SeverityText:ERROR OR SeverityText:FATAL",
+            "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL",
             "whereLanguage": "lucene"
           }
         ]
@@ -125,7 +125,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE lower(SeverityText) IN ('error','fatal') AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName, pattern,\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING prior_7d = 0 AND last_24h > 0\nORDER BY last_24h DESC\nLIMIT 50"
+        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName, pattern,\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING prior_7d = 0 AND last_24h > 0\nORDER BY last_24h DESC\nLIMIT 50"
       }
     },
     {
@@ -149,7 +149,7 @@
         "displayType": "search",
         "sourceId": "{{LOGS_SOURCE_ID}}",
         "select": "Timestamp, SeverityText, ServiceName, Body",
-        "where": "SeverityText:ERROR OR SeverityText:FATAL",
+        "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL",
         "whereLanguage": "lucene"
       }
     }

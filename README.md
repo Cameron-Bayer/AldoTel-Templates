@@ -31,7 +31,8 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── requirements.json         Machine-readable support matrix (drives preflight)
 │   ├── import.ps1 / import.sh                Dashboard importer (upsert, idempotent)
 │   ├── import-alerts.ps1 / import-alerts.sh  Alerts importer
-│   └── preflight.ps1 / preflight.sh          Compatibility check before import
+│   ├── preflight.ps1 / preflight.sh          Compatibility check before import
+│   └── list-metrics.ps1 / list-metrics.sh    Diagnose a preflight MISS: renamed vs truly absent
 │
 ├── grafana/                    📊 Grafana deliverable
 │   ├── README.md                 Section guide: import + local preview harness

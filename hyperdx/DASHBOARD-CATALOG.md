@@ -17,7 +17,9 @@ import for *your* setup — so nothing lands empty and nothing confuses your tea
 1. **Run the pre-flight check first.** `./preflight.ps1` (Windows) or `./preflight.sh` (macOS/Linux)
    queries your live install and rates each dashboard **OK / DEGRADED / FAIL**, then prints an
    `--only` command listing the ones that are safe to import today. This catalog explains the
-   *why* behind those ratings.
+   *why* behind those ratings. If a metric comes back MISS, run `./list-metrics.ps1` /
+   `./list-metrics.sh` to check whether it's genuinely absent or just named differently by your
+   collector (it prints the closest real names).
 2. **Find your setup tier** in the table below to see what will work out-of-the-box.
 3. **Read the per-dashboard section** for the ones you care about — purpose, value, and gotchas.
 4. **Import** with `./import.ps1` (or `-Only <files>` to import a subset).
@@ -209,8 +211,9 @@ error patterns**, plus a live error stream.
 started happening in the last 24h that wasn't happening before?"* — a cheap, deploy-aware anomaly
 detector.
 
-**What you need.** Application/container **logs** (filelog or OTLP) — any log volume. Error tiles use
-`SeverityText:ERROR/FATAL`.
+**What you need.** Application/container **logs** (filelog or OTLP) — any log volume. Error tiles match
+`SeverityNumber >= 17` **or** `SeverityText` ERROR/FATAL, so they catch errors whether your pipeline
+sets the numeric severity, the text one, or both (any casing).
 
 **What you'll see.**
 - **Volume & error rate:** log volume by severity; error/fatal rate by service.

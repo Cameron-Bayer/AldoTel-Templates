@@ -44,7 +44,7 @@ These apply to every compatible tile on the dashboard.
 ### Log error rate (%) — number
 
 - **Source / table:** Logs → `default.otel_logs`
-- **Measure(s):** avg(`if(SeverityText IN ('Error', 'Fatal'), 1, 0)`)
+- **Measure(s):** avg(`if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)`)
 - **Columns used:** `SeverityText`
 
 ## Platform — at a glance
@@ -139,7 +139,7 @@ SELECT sum(d) AS "Refused spans" FROM (
 ### Services by log errors — click a row to open Logs — table
 
 - **Source / table:** Logs → `default.otel_logs`
-- **Measure(s):** count(*) as `logs`; sum(`if(SeverityText IN ('Error', 'Fatal'), 1, 0)`) as `errors`
+- **Measure(s):** count(*) as `logs`; sum(`if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)`) as `errors`
 - **Group by:** `ServiceName`
 - **Order by:** `errors DESC`
 - **Drill-down:** click a row → opens search

@@ -236,7 +236,7 @@
           "kind": "log",
           "required": false,
           "label": "error logs",
-          "where": "SeverityText:ERROR OR SeverityText:FATAL"
+          "where": "SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL"
         }
       ]
     },

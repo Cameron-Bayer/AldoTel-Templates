@@ -34,7 +34,7 @@ These apply to every compatible tile on the dashboard.
 ### Error / fatal rate by service — line
 
 - **Source / table:** Logs → `default.otel_logs`
-- **Measure(s):** count(*) as `errors`  — where `SeverityText:ERROR OR SeverityText:FATAL` (lucene)
+- **Measure(s):** count(*) as `errors`  — where `SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL` (lucene)
 - **Group by:** `ServiceName`
 - **Columns used:** `ServiceName`, `SeverityText`
 
@@ -43,7 +43,7 @@ These apply to every compatible tile on the dashboard.
 ### Top error messages — table
 
 - **Source / table:** Logs → `default.otel_logs`
-- **Measure(s):** count(*) as `count`  — where `SeverityText:ERROR OR SeverityText:FATAL` (lucene)
+- **Measure(s):** count(*) as `count`  — where `SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL` (lucene)
 - **Group by:** `Body`
 - **Order by:** `count DESC`
 - **Drill-down:** click a row → opens search
@@ -61,7 +61,7 @@ WITH normalized AS (
          replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,
          Timestamp
   FROM default.otel_logs
-  WHERE lower(SeverityText) IN ('error','fatal') AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
+  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
 )
 SELECT ServiceName, pattern,
        countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,
@@ -81,5 +81,5 @@ LIMIT 50
 
 - **Source / table:** Logs → `default.otel_logs`
 - **Columns shown:** `Timestamp, SeverityText, ServiceName, Body`
-- **Filter:** `SeverityText:ERROR OR SeverityText:FATAL` (lucene)
+- **Filter:** `SeverityNumber:>=17 OR SeverityText:ERROR OR SeverityText:FATAL` (lucene)
 - **Columns used:** `ServiceName`, `SeverityText`, `Body`, `Timestamp`

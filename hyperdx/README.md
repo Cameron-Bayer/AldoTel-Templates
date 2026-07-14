@@ -147,6 +147,45 @@ data is actually flowing. Each dashboard is rated:
 
 It prints a `--only` command listing exactly the dashboards that are safe to import.
 
+### Diagnose a MISS: renamed or truly absent?
+
+A preflight **MISS** only means "this *exact* metric name returned no data." Metric names vary by
+collector config, so a MISS is often a **rename** (e.g. `k8s.node.cpu.usage` vs `…utilization`, or a
+missing `_total` suffix) rather than genuinely missing data. `list-metrics.ps1` / `list-metrics.sh`
+settles it: it enumerates the metric names that **actually exist** in your ClickHouse and, for every
+expected-but-missing name, prints the closest real names it found.
+
+```powershell
+# HyperDX API (resolves your metric schema — same vars as preflight/import):
+$env:HDX_API_URL = "https://api.aldotel.local"; $env:HDX_API_KEY = "<Personal API Access Key>"
+# ClickHouse HTTP (the metrics live here, not behind the HDX API):
+$env:CH_URL = "http://localhost:8123"; $env:CH_USER = "app"; $env:CH_PASSWORD = "<clickhouse password>"
+./list-metrics.ps1                         # audit all expected metrics
+./list-metrics.ps1 -Table gauge -Top 5     # focus one table, more suggestions
+./list-metrics.ps1 -LookbackHours 0 -DumpTo actual-metrics.txt   # scan all history + save the full list
+```
+
+```bash
+export HDX_API_URL="https://api.aldotel.local"; export HDX_API_KEY="<key>"
+export CH_URL="http://localhost:8123"; export CH_USER="app"; export CH_PASSWORD="<pw>"
+./list-metrics.sh                          # requires: curl, jq, awk
+```
+
+**Reaching ClickHouse** (the script needs the ClickHouse HTTP port, `8123`):
+
+- **Helm / Kubernetes** (ingress at `aldotel.local`): port-forward the ClickHouse service, then point
+  `CH_URL` at it. Find the service and namespace first:
+  ```powershell
+  kubectl -n <namespace> get svc | Select-String clickhouse
+  kubectl -n <namespace> port-forward svc/<clickhouse-headless-svc> 8123:8123
+  ```
+- **docker-compose / all-in-one**: ClickHouse HTTP is usually already on `http://localhost:8123`.
+
+Each missing metric is classified: names with a close match are **likely RENAMED** (point the tile
+*and* `requirements.json` at the real name), while those with no similar name are **likely TRULY
+ABSENT** (that receiver/exporter isn't sending it). Add `-SkipCertificateCheck` if your HyperDX API
+uses a self-signed cert.
+
 ## Alerts pack
 
 Optional bundle of importable **alert** definitions in [`alerts/`](alerts/README.md) — one per
@@ -198,7 +237,7 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 | `clickhouse-health` | metric | ClickHouse metrics scraped into OTel — `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum), `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) | `*_InsertedRows`, `ClickHouseMetrics_{Merge,PartMutation,ReadonlyReplica}`, `ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay` |
 | `k8s-infrastructure` | metric | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts` | `k8s.node.filesystem.{usage,capacity}` |
 | `services-red` | trace | Application traces (OTLP) — server spans (`SpanKind:Server`) | error spans (`StatusCode:Error`) |
-| `logs-overview` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityText:ERROR/FATAL`) |
+| `logs-overview` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:ERROR/FATAL`) |
 | `collector-health` | metric | OTel Collector self-telemetry scraped into OTel (Prometheus receiver on the collector's `:8888`) — `otelcol_receiver_accepted_spans_total`, `otelcol_exporter_{sent_spans_total,queue_size,queue_capacity}` | processor in/out items, scraper points, collector CPU/mem |
 | `clickhouse-queryperf` | metric + SQL | `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) **and** Raw SQL on `system.query_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from `system.query_log`, and `query_log` must be enabled | `ClickHouseProfileEvents_FailedQuery`; error-code table reads `<metrics_db>.otel_metrics_sum` |
 | `slo-errorbudget` | trace + SQL | Application traces (OTLP) with server spans + `StatusCode` | error spans; burn-rate tiles need the traces table (`{{TRACES_SCHEMA}}.{{TRACES_TABLE}}`) |
@@ -212,7 +251,8 @@ ClickStack OTel schema (`otel_logs`, `otel_traces`, `otel_metrics_{gauge,sum,his
 
 > Metric names vary by collector config. The names above are the defaults verified against a live
 > OSS ClickStack; if `preflight` reports a required metric missing, your exporter likely emits it
-> under a different name — adjust `metricName` in the tile (and `requirements.json`).
+> under a different name — run [`list-metrics`](#diagnose-a-miss-renamed-or-truly-absent) to find the
+> real name, then adjust `metricName` in the tile (and `requirements.json`).
 
 ## Dashboard filters (variables)
 
