@@ -40,8 +40,9 @@ in HyperDX and the trace tiles will populate.
 
 > **No rows even though the demo pods are `Running`?** Your install banner warns that
 > *"OTLP receivers (4317/4318) may need pipeline binding via HyperDX UI."* That means the
-> collector is receiving OTLP but not routing it to ClickHouse yet. Bind the OTLP source in
-> the HyperDX UI (Team Settings → Sources / Connections), then re-check.
+> collector is receiving OTLP but not routing it to ClickHouse yet. See
+> [`TROUBLESHOOTING.md`](TROUBLESHOOTING.md) for a step-by-step decision tree (it starts with
+> the one ClickHouse query that tells you whether the problem is ingest-side or display-side).
 
 ## Tear down
 
