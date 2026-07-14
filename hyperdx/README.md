@@ -147,65 +147,6 @@ data is actually flowing. Each dashboard is rated:
 
 It prints a `--only` command listing exactly the dashboards that are safe to import.
 
-### Diagnose a MISS: renamed or truly absent?
-
-A preflight **MISS** only means "this *exact* metric name returned no data." Metric names vary by
-collector config, so a MISS is often a **rename** (e.g. `k8s.node.cpu.usage` vs `…utilization`, or a
-missing `_total` suffix) rather than genuinely missing data. `list-metrics.ps1` / `list-metrics.sh`
-settles it: it enumerates the metric names that **actually exist** in your ClickHouse and, for every
-expected-but-missing name, prints the closest real names it found.
-
-```powershell
-# HyperDX API (resolves your metric schema — same vars as preflight/import):
-$env:HDX_API_URL = "https://api.aldotel.local"; $env:HDX_API_KEY = "<Personal API Access Key>"
-# ClickHouse HTTP (the metrics live here, not behind the HDX API):
-$env:CH_URL = "http://localhost:8123"; $env:CH_USER = "app"; $env:CH_PASSWORD = "<clickhouse password>"
-./list-metrics.ps1                         # audit all expected metrics
-./list-metrics.ps1 -Table gauge -Top 5     # focus one table, more suggestions
-./list-metrics.ps1 -LookbackHours 0 -DumpTo actual-metrics.txt   # scan all history + save the full list
-```
-
-```bash
-export HDX_API_URL="https://api.aldotel.local"; export HDX_API_KEY="<key>"
-export CH_URL="http://localhost:8123"; export CH_USER="app"; export CH_PASSWORD="<pw>"
-./list-metrics.sh                          # requires: curl, jq, awk
-```
-
-**Reaching ClickHouse** (the script needs the ClickHouse HTTP port, `8123`):
-
-- **Helm / Kubernetes** (ingress at `aldotel.local`): port-forward the ClickHouse service, then point
-  `CH_URL` at it. Find the service and namespace first:
-  ```powershell
-  kubectl -n <namespace> get svc | Select-String clickhouse
-  kubectl -n <namespace> port-forward svc/<clickhouse-headless-svc> 8123:8123
-  ```
-- **docker-compose / all-in-one**: ClickHouse HTTP is usually already on `http://localhost:8123`.
-
-Each missing metric is classified: names with a close match are **likely RENAMED** (point the tile
-*and* `requirements.json` at the real name), while those with no similar name are **likely TRULY
-ABSENT** (that receiver/exporter isn't sending it). Add `-SkipCertificateCheck` if your HyperDX API
-uses a self-signed cert.
-
-### Inventory your environment (tailor the dashboards)
-
-Want the dashboards fitted to exactly what *your* machine emits? `inventory.ps1` dumps a complete
-list of everything flowing — every metric name (with point counts), all log severities and log/resource
-attribute keys, and all trace services, span kinds, status codes, top span names and attribute keys —
-into a single shareable text file.
-
-Unlike `list-metrics`, it needs **no port-forward**: by default it finds the ClickHouse pod and runs
-queries inside it via `kubectl exec` using the in-cluster `default` user (no password).
-
-```powershell
-cd hyperdx
-./inventory.ps1                              # auto-discovers the ClickHouse pod, writes inventory.txt
-./inventory.ps1 -LookbackHours 72            # widen the window for low-traffic environments
-$env:CH_URL = "http://localhost:8123"; ./inventory.ps1   # or use a port-forwarded ClickHouse over HTTP
-```
-
-Then share the generated `inventory.txt` to have the templates tailored to your signals.
-
-
 ## Alerts pack
 
 Optional bundle of importable **alert** definitions in [`alerts/`](alerts/README.md) — one per
@@ -271,8 +212,9 @@ ClickStack OTel schema (`otel_logs`, `otel_traces`, `otel_metrics_{gauge,sum,his
 
 > Metric names vary by collector config. The names above are the defaults verified against a live
 > OSS ClickStack; if `preflight` reports a required metric missing, your exporter likely emits it
-> under a different name — run [`list-metrics`](#diagnose-a-miss-renamed-or-truly-absent) to find the
-> real name, then adjust `metricName` in the tile (and `requirements.json`).
+> under a different name — check the metric names your collector actually produces (in ClickHouse:
+> `SELECT DISTINCT MetricName FROM otel_metrics_gauge`), then adjust `metricName` in the tile (and
+> `requirements.json`).
 
 ## Dashboard filters (variables)
 

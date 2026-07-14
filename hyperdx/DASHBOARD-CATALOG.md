@@ -17,9 +17,7 @@ import for *your* setup — so nothing lands empty and nothing confuses your tea
 1. **Run the pre-flight check first.** `./preflight.ps1` (Windows) or `./preflight.sh` (macOS/Linux)
    queries your live install and rates each dashboard **OK / DEGRADED / FAIL**, then prints an
    `--only` command listing the ones that are safe to import today. This catalog explains the
-   *why* behind those ratings. If a metric comes back MISS, run `./list-metrics.ps1` /
-   `./list-metrics.sh` to check whether it's genuinely absent or just named differently by your
-   collector (it prints the closest real names).
+   *why* behind those ratings.
 2. **Find your setup tier** in the table below to see what will work out-of-the-box.
 3. **Read the per-dashboard section** for the ones you care about — purpose, value, and gotchas.
 4. **Import** with `./import.ps1` (or `-Only <files>` to import a subset).

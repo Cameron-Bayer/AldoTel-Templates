@@ -28,11 +28,10 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── alerts/                   Importable alert definitions + README
 │   ├── docs/                     Auto-generated per-dashboard reference + images
 │   ├── gen-docs.js               Regenerates docs/ from the templates
-│   ├── requirements.json         Machine-readable support matrix (drives preflight)
 │   ├── import.ps1 / import.sh                Dashboard importer (upsert, idempotent)
 │   ├── import-alerts.ps1 / import-alerts.sh  Alerts importer
 │   ├── preflight.ps1 / preflight.sh          Compatibility check before import
-│   └── list-metrics.ps1 / list-metrics.sh    Diagnose a preflight MISS: renamed vs truly absent
+│   └── requirements.json         Machine-readable support matrix (drives preflight)
 │
 ├── grafana/                    📊 Grafana deliverable
 │   ├── README.md                 Section guide: import + local preview harness
@@ -44,10 +43,6 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 │   ├── gen-dashboards.js         Generates the dashboard JSON
 │   ├── validate.js               Validates panel SQL against live ClickHouse
 │   └── docker-compose.yml        Throwaway Grafana for authoring/preview
-│
-├── testdata/                   🧪 Test-data generator (OTel Demo → ClickStack)
-│   ├── README.md                 Deploy the demo app to populate trace/error dashboards
-│   └── otel-demo.values.yaml     Helm values pointing the demo at your in-cluster collector
 │
 ├── CHANGELOG.md · VERSION
 └── README.md                   ← you are here
