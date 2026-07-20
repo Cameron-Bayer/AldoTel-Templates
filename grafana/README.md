@@ -9,6 +9,10 @@ These complement the per-domain HyperDX dashboards in [`../hyperdx/dashboards/`]
 HyperDX for deep, interactive investigation; Grafana for at-a-glance health and for
 teams that already standardize on Grafana.
 
+> **"AldoTel" vs "ClickStack":** *AldoTel* is the author/brand of these templates; *ClickStack*
+> is the open-source platform they run on (HyperDX + ClickHouse + OpenTelemetry). You don't need
+> anything called "AldoTel" installed — any ClickStack deployment with Grafana works.
+
 > **Running ClickStack on Kubernetes?** Its bundled Grafana uses ephemeral storage, so
 > UI/API imports vanish on the next pod restart. Use the durable ConfigMap-provisioning
 > installer in [`kubernetes/`](kubernetes/README.md) — one command installs the data
@@ -81,7 +85,7 @@ Grafana API.
 
 | File | Dashboard | Reads from | Answers |
 |------|-----------|-----------|---------|
-| `dashboards/00-executive-summary.json` | **Executive Summary** | all three | One-pane health across services, Kubernetes, and logs — top signals only. |
+| `dashboards/executive-summary.json` | **Executive Summary** | all three | One-pane health across services, Kubernetes, and logs — top signals only. |
 | `dashboards/service-health-golden-signals.json` | **Service Health (Golden Signals)** | `otel_traces` | Are my services up, fast, and error-free? (Rate / Errors / Duration per service) |
 | `dashboards/kubernetes-cluster-overview.json` | **Kubernetes Cluster Overview** | `otel_metrics_gauge` | Are nodes/pods healthy? CPU, memory, restarts, deployment availability. |
 | `dashboards/logs-errors-overview.json` | **Logs & Errors Overview** | `otel_logs` | How much are we logging, what's erroring, and what do the latest errors say? |
@@ -101,6 +105,39 @@ you want Grafana to *page you*, not just visualize.
 
 ---
 
+## Architecture — how it fits together
+
+**Collect once, use everywhere.** Your applications and Kubernetes cluster emit standard
+OpenTelemetry data; ClickStack stores it in ClickHouse; Grafana and HyperDX both read from
+that same store. Grafana is a **read-only consumer** of data ClickStack already stores — no
+new agents, no schema changes, nothing changes in the collection pipeline.
+
+```mermaid
+flowchart LR
+    subgraph Sources["Your workloads"]
+        A[Applications<br/>OpenTelemetry SDK]
+        K[Kubernetes cluster<br/>infra metrics]
+    end
+    A -->|traces, logs| C[OpenTelemetry<br/>Collector]
+    K -->|metrics, logs| C
+    C -->|writes| CH[(ClickHouse<br/>otel_traces / otel_logs /<br/>otel_metrics_gauge)]
+    CH --> HDX[HyperDX<br/>deep investigation]
+    CH --> GRAF[Grafana<br/>dashboards + alerts]
+    GRAF -->|fires| NOTIFY[On-call channel<br/>via webhook]
+```
+
+Grafana and HyperDX are two lenses on that one data set:
+
+| Layer | Tool | What it answers |
+|-------|------|-----------------|
+| **At-a-glance health + paging** | **Grafana** *(this folder)* | "Is everything healthy right now?" and "Tell me the moment it isn't." |
+| **Investigation** | **HyperDX** ([`../hyperdx/`](../hyperdx/README.md)) | "Something is wrong — show me the traces, logs, and spans so I can find the root cause." |
+
+Because everything relies only on ClickStack's **standard OpenTelemetry schema**, the same
+dashboards and alerts work on any customer's cluster unchanged — with no vendor lock-in.
+
+---
+
 ## Requirements
 
 1. **Grafana 10.4+** (tested on 11.2).
@@ -113,13 +150,17 @@ you want Grafana to *page you*, not just visualize.
 3. Your ClickHouse contains the standard ClickStack tables in the `default` database:
    `otel_traces`, `otel_logs`, `otel_metrics_gauge` (this is the default — nothing to change).
 
-> **Different database name?** These dashboards assume the `default` database. If your
-> ClickStack instance uses another database, do a find/replace of `default.otel_` →
-> `<your_db>.otel_` in the JSON before importing.
+> **Different database name?** These dashboards assume the `default` database, exposed as a
+> hidden **`database`** dashboard variable. If your ClickStack instance uses another database,
+> edit that one variable's value (Dashboard settings → Variables → `database`) instead of
+> find/replacing the JSON.
 
 ---
 
-## Install (import into your Grafana)
+## Dashboard-only import (no alerts)
+
+> This is the dashboards half of the [Customer quick-start](#customer-quick-start-dashboards--alerts)
+> above — use it if you only want the boards and not the alert rules.
 
 1. In Grafana, go to **Dashboards → New → Import**.
 2. Upload one of the JSON files from `dashboards/` (or paste its contents).
@@ -128,7 +169,8 @@ you want Grafana to *page you*, not just visualize.
 4. Repeat for the other three dashboards.
 
 No panel is hard-wired to a specific data source — they all reference a dashboard
-**datasource variable** (`${ds}`), so the same file works in any environment.
+**datasource variable** (`${clickhouseDatasource}`) and a hidden **`database`** variable, so the
+same file works in any environment.
 
 ### Optional: provision them (GitOps)
 
@@ -143,6 +185,28 @@ providers:
     options:
       path: /var/lib/grafana/dashboards/clickstack
 ```
+
+---
+
+## Screenshots
+
+Captured against a live ClickStack cluster — this is what lands after you import. Click any
+image for full size.
+
+**Executive Summary** — the one-pane health wall:
+
+[![Executive Summary](screenshots/exec-summary.png)](screenshots/exec-summary.png)
+
+<table>
+<tr>
+<td width="50%"><b>Service Health — Golden Signals</b><br><a href="screenshots/service-health.png"><img src="screenshots/service-health.png" alt="Service Health — Golden Signals"></a></td>
+<td width="50%"><b>Kubernetes Cluster Overview</b><br><a href="screenshots/kubernetes-overview.png"><img src="screenshots/kubernetes-overview.png" alt="Kubernetes Cluster Overview"></a></td>
+</tr>
+<tr>
+<td width="50%"><b>Logs & Errors Overview</b><br><a href="screenshots/logs-overview.png"><img src="screenshots/logs-overview.png" alt="Logs & Errors Overview"></a></td>
+<td width="50%"><b>Alert rules (provisioned, live)</b><br><a href="screenshots/alert-rules.png"><img src="screenshots/alert-rules.png" alt="Grafana alert rules"></a></td>
+</tr>
+</table>
 
 ---
 
@@ -184,6 +248,21 @@ providers:
 - **Tables:** top services by error logs, most recent errors (with message body).
 - *"Error+" means `SeverityText` of `error` or `fatal`. Includes both Kubernetes
   container logs and application OTLP logs, exactly as ClickStack ingests them.*
+
+---
+
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| **ClickStack** | The telemetry stack (HyperDX + OpenTelemetry + ClickHouse) that collects and stores your observability data. |
+| **ClickHouse** | The high-performance database where all telemetry is stored. |
+| **OpenTelemetry (OTel)** | The vendor-neutral standard for collecting traces, logs, and metrics. |
+| **Golden Signals / RED** | Rate, Errors, Duration — the standard way to measure service health. |
+| **p95 / p99 latency** | The response time under which 95% / 99% of requests complete; better than an average for spotting slow outliers. |
+| **Span / trace** | A single unit of work (span) and the end-to-end path of a request (trace). |
+| **Contact point** | Where Grafana sends a notification (a webhook, email, Slack, etc.). |
+| **Provisioning** | Configuring Grafana from files on disk rather than clicking through the UI. |
 
 ---
 

@@ -17,7 +17,7 @@ so the data source, dashboards, and alerts all come back automatically on every 
 | Component | ConfigMap patched | Notes |
 |-----------|-------------------|-------|
 | `clickstack-ch` ClickHouse data source | `clickstack-grafana-datasources` | From [`datasource-clickstack-ch.yaml`](datasource-clickstack-ch.yaml). The alert rules reference this fixed UID. |
-| 4 dashboards (`../dashboards/*.json`) | `clickstack-grafana-dashboards` | Each dashboard's `ds` variable is pinned to `clickstack-ch` so panels resolve with no prompt. |
+| 4 dashboards (`../dashboards/*.json`) | `clickstack-grafana-dashboards` | Each dashboard's datasource variable (`clickhouseDatasource`) is pinned to `clickstack-ch` so panels resolve with no prompt. |
 | 6 alert rules + contact point + policy (`../alerting/*.yaml`) | `clickstack-grafana-alerting` | Also ensures the Grafana Deployment mounts it at `/etc/grafana/provisioning/alerting`. |
 
 ## Prerequisites

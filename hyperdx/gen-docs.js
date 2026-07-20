@@ -140,6 +140,8 @@ function renderDashboard(file, dash) {
   const out = [`# ${dash.name}`, ''];
   out.push('> Auto-generated reference (do not edit by hand — run `node gen-docs.js`).', '',
     'This page lists the ClickHouse tables and columns behind every visual on the dashboard.', '');
+  out.push('[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · ' +
+    '[Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)', '');
   out.push(`- **Template:** ${code('dashboards/' + file)}${tmpl ? ` · tag ${code(tmpl)}` : ''}`);
   if (req.receivers && req.receivers.length) out.push(`- **Data required:** ${req.receivers.join('; ')}`);
   out.push('');
@@ -182,6 +184,8 @@ function renderDashboard(file, dash) {
 
 const files = fs.readdirSync(srcDir).filter((f) => f.endsWith('.json')).sort();
 const index = ['# Dashboard reference', '',
+  '[← HyperDX install guide](../README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · ' +
+  '[Deep dive](../DASHBOARD-DEEP-DIVE.md)', '',
   'Detailed table/column breakdown for each dashboard visual.', '', '| Dashboard | Reference |', '|---|---|'];
 for (const file of files) {
   const dash = JSON.parse(fs.readFileSync(path.join(srcDir, file), 'utf8'));

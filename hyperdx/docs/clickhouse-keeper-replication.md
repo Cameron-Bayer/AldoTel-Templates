@@ -4,12 +4,14 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
-- **Template:** `dashboards/ch-keeper.json` · tag `tmpl:ch-keeper`
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
+- **Template:** `dashboards/clickhouse-keeper-replication.json` · tag `tmpl:ch-keeper`
 - **Data required:** ClickHouse metrics scraped into OTel (Keeper gauges/ProfileEvents); Replication tables read system.replicas / system.replication_queue via Raw SQL — these are empty on single-node installs and populate only on replicated/clustered ClickHouse
 
 ## Preview
 
-![AldoTel · ClickHouse — Keeper & Replication](images/ch-keeper.png)
+![AldoTel · ClickHouse — Keeper & Replication](images/clickhouse-keeper-replication.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

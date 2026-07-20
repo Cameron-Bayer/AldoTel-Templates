@@ -4,6 +4,8 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
 - **Template:** `dashboards/logs-overview.json` · tag `tmpl:logs-overview`
 - **Data required:** Application/container logs (filelog or OTLP)
 

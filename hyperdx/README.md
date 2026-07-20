@@ -4,6 +4,11 @@ Download-and-go HyperDX dashboards for customers running **Open Source ClickStac
 (HyperDX + ClickHouse + OpenTelemetry). Each domain is a separate dashboard so customers
 enable only what they run.
 
+> **"AldoTel" vs "ClickStack":** *AldoTel* is the author/brand of these templates (you'll see it
+> in each dashboard's title, e.g. `AldoTel · Services — RED`); *ClickStack* is the open-source
+> platform they run on (HyperDX + ClickHouse + OpenTelemetry). You don't need anything called
+> "AldoTel" installed — any ClickStack / HyperDX deployment works.
+
 > 📖 **New here? Start with the [Dashboard Catalog & Field Guide](DASHBOARD-CATALOG.md)** — a
 > plain-language, per-dashboard breakdown of what each one is for, why you'd use it, exactly what
 > telemetry it needs, and how to read it. It also groups the dashboards into **setup tiers** so you
@@ -16,15 +21,15 @@ enable only what they run.
 | File | What it shows | Source kind |
 |------|---------------|-------------|
 | `dashboards/clickhouse-health.json` | Query/insert rate, failed queries, memory, merges/mutations, replication lag, readonly replicas | metric |
-| `dashboards/k8s-infrastructure.json` | Node CPU/mem, deployment availability, pod phase, restarts, top pod memory, node filesystem usage | metric |
+| `dashboards/kubernetes-infrastructure.json` | Node CPU/mem, deployment availability, pod phase, restarts, top pod memory, node filesystem usage | metric |
 | `dashboards/services-red.json` | RED method: request rate, error rate %, p50/p95/p99 latency, slowest routes, latency anomaly (z-score), latency heatmap | trace |
 | `dashboards/logs-overview.json` | Log volume by severity, error rate, top errors, **new** error patterns, live error stream | log |
 | `dashboards/collector-health.json` | OTel Collector pipeline: accepted/refused/failed spans, exporter queue & sent, processor in/out (drops), scraper errors, collector CPU/mem | metric |
 | `dashboards/clickhouse-queryperf.json` | Query rate by kind, p95/p99 duration, memory/query, exceptions, slowest queries, top error codes (`system.query_log` + metrics) | metric |
 | `dashboards/slo-errorbudget.json` | Per-service availability SLI, error budget, multi-window burn-rate (1h/6h/24h/3d), burn-rate trend | trace |
-| `dashboards/ch-storage.json` | MergeTree storage: disk & compression KPIs, part-events / merge-duration / bytes & rows over time, largest tables, too-many-parts watch, recent merges (`system.parts` / `system.part_log`) | SQL |
-| `dashboards/ch-keeper.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | metric + SQL |
-| `dashboards/exec-overview.json` | One landing page: cross-domain KPI tiles (span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
+| `dashboards/clickhouse-storage-mergetree.json` | MergeTree storage: disk & compression KPIs, part-events / merge-duration / bytes & rows over time, largest tables, too-many-parts watch, recent merges (`system.parts` / `system.part_log`) | SQL |
+| `dashboards/clickhouse-keeper-replication.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | metric + SQL |
+| `dashboards/executive-overview.json` | One landing page: cross-domain KPI tiles (span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
 
 ## Screenshots
 
@@ -33,7 +38,7 @@ demo app flowing — this is what lands after you run `import`. Click any image 
 
 **Executive Overview** — the cross-domain landing page:
 
-[![Executive Overview](docs/images/exec-overview.png)](docs/images/exec-overview.png)
+[![Executive Overview](docs/images/executive-overview.png)](docs/images/executive-overview.png)
 
 <table>
 <tr>
@@ -42,7 +47,7 @@ demo app flowing — this is what lands after you run `import`. Click any image 
 </tr>
 <tr>
 <td width="50%"><b>Logs — Overview</b><br><a href="docs/images/logs-overview.png"><img src="docs/images/logs-overview.png" alt="Logs — Overview"></a></td>
-<td width="50%"><b>Kubernetes — Infrastructure</b><br><a href="docs/images/k8s-infrastructure.png"><img src="docs/images/k8s-infrastructure.png" alt="Kubernetes — Infrastructure"></a></td>
+<td width="50%"><b>Kubernetes — Infrastructure</b><br><a href="docs/images/kubernetes-infrastructure.png"><img src="docs/images/kubernetes-infrastructure.png" alt="Kubernetes — Infrastructure"></a></td>
 </tr>
 <tr>
 <td width="50%"><b>OTel Collector — Pipeline Health</b><br><a href="docs/images/collector-health.png"><img src="docs/images/collector-health.png" alt="OTel Collector — Pipeline Health"></a></td>
@@ -50,13 +55,48 @@ demo app flowing — this is what lands after you run `import`. Click any image 
 </tr>
 <tr>
 <td width="50%"><b>ClickHouse — Query Performance & Errors</b><br><a href="docs/images/clickhouse-queryperf.png"><img src="docs/images/clickhouse-queryperf.png" alt="ClickHouse — Query Performance & Errors"></a></td>
-<td width="50%"><b>ClickHouse — Storage & MergeTree</b><br><a href="docs/images/ch-storage.png"><img src="docs/images/ch-storage.png" alt="ClickHouse — Storage & MergeTree"></a></td>
+<td width="50%"><b>ClickHouse — Storage & MergeTree</b><br><a href="docs/images/clickhouse-storage-mergetree.png"><img src="docs/images/clickhouse-storage-mergetree.png" alt="ClickHouse — Storage & MergeTree"></a></td>
 </tr>
 <tr>
-<td width="50%"><b>ClickHouse — Keeper & Replication</b><br><a href="docs/images/ch-keeper.png"><img src="docs/images/ch-keeper.png" alt="ClickHouse — Keeper & Replication"></a></td>
+<td width="50%"><b>ClickHouse — Keeper & Replication</b><br><a href="docs/images/clickhouse-keeper-replication.png"><img src="docs/images/clickhouse-keeper-replication.png" alt="ClickHouse — Keeper & Replication"></a></td>
 <td width="50%"></td>
 </tr>
 </table>
+
+## Architecture — how it fits together
+
+**Collect once, use everywhere.** Your applications, Kubernetes cluster, the OpenTelemetry
+Collector, and ClickHouse all emit telemetry that lands in ClickHouse. HyperDX reads it back
+for search, dashboards, and alerting — a **read-only consumer** of data ClickStack already
+stores, so there's no extra collection cost or risk.
+
+```mermaid
+flowchart LR
+    subgraph Domains["Four telemetry domains"]
+        A["Applications<br/>OTLP traces + logs"]
+        K["Kubernetes cluster<br/>kubeletstats + k8s_cluster"]
+        COL["OTel Collector<br/>self-telemetry :8888"]
+        CHm["ClickHouse server<br/>system tables + scraped metrics"]
+    end
+    A --> C["OpenTelemetry<br/>Collector"]
+    K --> C
+    COL --> C
+    C -->|writes| CH[("ClickHouse<br/>otel_logs / otel_traces /<br/>otel_metrics")]
+    CHm -.->|reads system tables| CH
+    CH --> HDX["HyperDX<br/>Search - Dashboards - Alerts"]
+    HDX -->|fires| NOTIFY["On-call channel<br/>via webhook"]
+```
+
+HyperDX and Grafana are two lenses on that one data set:
+
+| Layer | Tool | What it answers |
+|-------|------|-----------------|
+| **Investigation** | **HyperDX** *(this folder)* | "Something is wrong — show me the traces, logs, and spans so I can find the root cause." |
+| **At-a-glance health + paging** | **Grafana** ([`../grafana/`](../grafana/README.md)) | "Is everything healthy right now?" and "Tell me the moment it isn't." |
+
+Because every tile relies only on ClickStack's **standard OpenTelemetry schema**, the same
+dashboards work on any customer's cluster unchanged — symptom-to-root-cause in one click, with
+no vendor lock-in.
 
 ## Why these "just work": the schema contract
 
@@ -75,7 +115,7 @@ The importer resolves those at install time, so the JSON stays portable.
    a **Logs** (kind `log`), **Traces** (kind `trace`), and **Metrics** (kind `metric`) source.
 2. Telemetry flowing in via the standard OTel collector:
    - ClickHouse metrics (Prometheus/system metrics) for `clickhouse-health`
-   - `kubeletstats` + `k8s_cluster` receivers for `k8s-infrastructure`
+   - `kubeletstats` + `k8s_cluster` receivers for `kubernetes-infrastructure`
    - app traces + logs for `services-red` / `logs-overview`
 3. A **Personal API Access Key**: HyperDX → **Team Settings → API Keys**.
 
@@ -196,15 +236,15 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 | Dashboard | Source kind | Required receivers / signals | Optional (degrades) |
 |-----------|-------------|------------------------------|---------------------|
 | `clickhouse-health` | metric | ClickHouse metrics scraped into OTel — `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` (sum), `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) | `*_InsertedRows`, `ClickHouseMetrics_{Merge,PartMutation,ReadonlyReplica}`, `ClickHouseAsyncMetrics_ReplicasMaxAbsoluteDelay` |
-| `k8s-infrastructure` | metric | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts` | `k8s.node.filesystem.{usage,capacity}` |
+| `kubernetes-infrastructure` | metric | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.{cpu,memory}.usage`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,memory.usage}`, `k8s.container.restarts` | `k8s.node.filesystem.{usage,capacity}` |
 | `services-red` | trace | Application traces (OTLP) — server spans (`SpanKind:Server`) | error spans (`StatusCode:Error`) |
 | `logs-overview` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:ERROR/FATAL`) |
 | `collector-health` | metric | OTel Collector self-telemetry scraped into OTel (Prometheus receiver on the collector's `:8888`) — `otelcol_receiver_accepted_spans_total`, `otelcol_exporter_{sent_spans_total,queue_size,queue_capacity}` | processor in/out items, scraper points, collector CPU/mem |
 | `clickhouse-queryperf` | metric + SQL | `ClickHouseMetrics_{Query,MemoryTracking}` (gauge) **and** Raw SQL on `system.query_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from `system.query_log`, and `query_log` must be enabled | `ClickHouseProfileEvents_FailedQuery`; error-code table reads `<metrics_db>.otel_metrics_sum` |
 | `slo-errorbudget` | trace + SQL | Application traces (OTLP) with server spans + `StatusCode` | error spans; burn-rate tiles need the traces table (`{{TRACES_SCHEMA}}.{{TRACES_TABLE}}`) |
-| `ch-storage` | SQL only | Raw SQL on `system.parts` + `system.part_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from them (`part_log` is on by default). No metric receivers required. | — (all tiles are Raw SQL) |
-| `ch-keeper` | metric + SQL | None hard-required (degrades). Keeper tiles use `ClickHouseMetrics_ZooKeeper*`/`Keeper*` + `ClickHouseProfileEvents_Keeper*` if scraped | Keeper metrics; **replication tables** (`system.replicas` / `system.replication_queue`) are empty on single-node and populate only on replicated/clustered installs |
-| `exec-overview` | trace + log + metric | None hard-required — cross-cutting roll-up; every tile degrades when its signal is absent | traces (error %, p95, drill-down), logs (error %, drill-down), CH metrics, collector metrics |
+| `clickhouse-storage-mergetree` | SQL only | Raw SQL on `system.parts` + `system.part_log` — the HyperDX ClickHouse user (`app` here) must be able to `SELECT` from them (`part_log` is on by default). No metric receivers required. | — (all tiles are Raw SQL) |
+| `clickhouse-keeper-replication` | metric + SQL | None hard-required (degrades). Keeper tiles use `ClickHouseMetrics_ZooKeeper*`/`Keeper*` + `ClickHouseProfileEvents_Keeper*` if scraped | Keeper metrics; **replication tables** (`system.replicas` / `system.replication_queue`) are empty on single-node and populate only on replicated/clustered installs |
+| `executive-overview` | trace + log + metric | None hard-required — cross-cutting roll-up; every tile degrades when its signal is absent | traces (error %, p95, drill-down), logs (error %, drill-down), CH metrics, collector metrics |
 
 **Baseline requirements (all dashboards):** HyperDX **≥ 2.27** (v2 dashboard API), the three
 default sources created in HyperDX (`log` / `trace` / `metric`), and data landed in the standard
@@ -222,13 +262,12 @@ Every dashboard ships a top-of-page **filter bar** (`filters[]`) so one template
 multi-tenant cluster without editing tiles. Pick a value and all tiles bound to that source
 re-scope. What each exposes:
 
-- **Service** — `services-red`, `slo-errorbudget`, `logs-overview`, `exec-overview`.
-- **Namespace / Node** — `k8s-infrastructure`, `exec-overview` (Namespace).
-- **Instance / Collector** — the ClickHouse dashboards (`host.name`) and `collector-health`
-  (`service.instance.id`).
+- **Service** — `services-red`, `slo-errorbudget`, `logs-overview`, `executive-overview`.
+- **Namespace** — `kubernetes-infrastructure`, `executive-overview`.
+- **Collector** — `collector-health` (`service.instance.id`).
 - **Severity** — `logs-overview`.
 
-> Filters bind to one source. On the cross-source `exec-overview`, the **Service** filter scopes the
+> Filters bind to one source. On the cross-source `executive-overview`, the **Service** filter scopes the
 > trace tiles and **Namespace** scopes the metric tiles; tiles from other sources are unaffected.
 
 ## Customizing
@@ -258,14 +297,14 @@ Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond sta
   `system.query_log` (requires the HyperDX ClickHouse user to have `SELECT` on it).
 - **`slo-errorbudget` → multi-window burn-rate:** error-budget consumption over 1h/6h/24h/3d
   windows against a 99.9% SLO, plus a burn-rate trend line (`>1` = burning budget too fast).
-- **`ch-storage` → `system.parts` / `system.part_log`:** live disk & compression KPIs, part-event /
+- **`clickhouse-storage-mergetree` → `system.parts` / `system.part_log`:** live disk & compression KPIs, part-event /
   merge-duration / bytes & rows time series, largest-tables and **too-many-parts** watch tables, and
   a recent-merges audit — read straight from ClickHouse's own storage system tables (no metrics
   pipeline needed).
 - **All builder tables over Logs/Traces → click-through drill-downs:** table tiles use tile
   `onClick` (table-only) to link a clicked row straight into the **Traces** or **Logs** search,
   pre-filtered from the row — turning every table into a triage launcher:
-  - `exec-overview`: services → Traces / Logs (`ServiceName = '{{ServiceName}}'`).
+  - `executive-overview`: services → Traces / Logs (`ServiceName = '{{ServiceName}}'`).
   - `services-red`: slowest routes → Traces (`SpanAttributes['http.route'] = '{{...}}'`).
   - `slo-errorbudget`: errors-by-service → Traces (`ServiceName = '{{ServiceName}}' AND StatusCode = 'Error'`).
   - `logs-overview`: top error messages → Logs (`Body = '{{Body}}'`).
@@ -275,10 +314,29 @@ disk-fill forecasting (linear fit on disk growth), `compareToPreviousPeriod: tru
 week-over-week baselining (already enabled on the ClickHouse query-rate tile), and SLO
 error-budget burn-rate tiles.
 
+## Glossary
+
+| Term | Meaning |
+|------|---------|
+| **ClickStack** | The telemetry stack (HyperDX + OpenTelemetry + ClickHouse) that collects and stores your observability data. |
+| **HyperDX** | The observability UI for searching telemetry and building dashboards/alerts on ClickHouse. |
+| **ClickHouse** | The high-performance database where all telemetry is stored. |
+| **OpenTelemetry (OTel)** | The vendor-neutral standard for collecting traces, logs, and metrics. |
+| **OTel Collector** | The agent that receives telemetry and writes it to ClickHouse; also emits its own health metrics. |
+| **RED method** | Rate, Errors, Duration — the standard way to measure service health. |
+| **SLO / error budget / burn rate** | A reliability target, how much failure you can still absorb, and how fast you're consuming it. |
+| **p95 / p99** | The value under which 95% / 99% of measurements fall — better than an average for spotting outliers. |
+| **Span / trace** | A single unit of work (span) and the end-to-end path of a request (trace). |
+| **MergeTree / parts** | ClickHouse's storage engine and its on-disk data fragments; too many parts is a common failure mode. |
+| **Keeper** | ClickHouse's consensus/coordination service that keeps replicas in sync. |
+| **Webhook** | A URL HyperDX posts to when an alert fires (your on-call channel's endpoint). |
+
 ## Notes
 
 - Built against the HyperDX **v2** dashboard API
   (`packages/api/openapi.json` in the hyperdx repo).
+- **Credentials** — the API key and any webhook URL are environment secrets; keep them out of
+  version control.
 - **HTTP-oriented tiles degrade on non-HTTP services.** `services-red`'s route tiles read
   `SpanAttributes['http.route']` and `StatusMessage`; pure gRPC/messaging services that don't set
   those will show empty/`(none)` rows there while the rate/error/latency tiles still work.

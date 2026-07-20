@@ -35,10 +35,10 @@ Each dashboard reads from one (or, for the Executive Overview, all) of them:
 | Domain | What produces the data | Dashboards |
 |--------|------------------------|------------|
 | **Your applications** | Your services emit OTLP **traces** and **logs** | `services-red`, `slo-errorbudget`, `logs-overview` |
-| **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` receivers | `k8s-infrastructure` |
+| **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` receivers | `kubernetes-infrastructure` |
 | **The OTel Collector itself** | Collector self-telemetry (`:8888`) scraped back in | `collector-health` |
-| **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `clickhouse-health`, `clickhouse-queryperf`, `ch-storage`, `ch-keeper` |
-| **Everything (roll-up)** | All of the above; degrades gracefully | `exec-overview` |
+| **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `clickhouse-health`, `clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication` |
+| **Everything (roll-up)** | All of the above; degrades gracefully | `executive-overview` |
 
 ---
 
@@ -52,7 +52,7 @@ Reads ClickHouse's own `system.*` tables directly over your existing HyperDX Cli
 No metrics pipeline, no collector receivers, no app instrumentation. If HyperDX is running, these
 work.
 
-- **`ch-storage`** — disk, compression, merges, parts. *(No required metrics at all.)*
+- **`clickhouse-storage-mergetree`** — disk, compression, merges, parts. *(No required metrics at all.)*
 
 > Requirement: the HyperDX ClickHouse connection user can `SELECT` from `system.parts` /
 > `system.part_log` (on by default).
@@ -64,13 +64,13 @@ metrics. Then these light up.
 - **`clickhouse-health`** — cluster-wide query/insert/merge/replication health.
 - **`clickhouse-queryperf`** — *most* tiles are Raw SQL on `system.query_log` (Tier-1-style), but the
   three summary number tiles need `ClickHouseMetrics_{Query,MemoryTracking}`.
-- **`ch-keeper`** — Keeper/ZooKeeper coordination metrics (and replication tables, which only fill on
+- **`clickhouse-keeper-replication`** — Keeper/ZooKeeper coordination metrics (and replication tables, which only fill on
   a **replicated/clustered** ClickHouse — empty on single-node by design).
 
 ### 🟠 Tier 3 — Needs specific collector receivers
 Your OTel Collector must be deployed with the right receivers (and, for Kubernetes, RBAC).
 
-- **`k8s-infrastructure`** — needs `kubeletstats` **and** `k8s_cluster` receivers (`k8s.*` metrics).
+- **`kubernetes-infrastructure`** — needs `kubeletstats` **and** `k8s_cluster` receivers (`k8s.*` metrics).
 - **`collector-health`** — needs the collector's **own** `:8888` self-telemetry scraped back into OTel.
 
 ### 🔵 Tier 4 — Needs your applications instrumented
@@ -82,7 +82,7 @@ but a bare cluster with un-instrumented apps won't populate these.
 - **`logs-overview`** — needs application/container **logs** (filelog or OTLP).
 
 ### ⭐ Always works (degrades gracefully)
-- **`exec-overview`** — a cross-domain landing page. Every tile shows what it can and quietly hides
+- **`executive-overview`** — a cross-domain landing page. Every tile shows what it can and quietly hides
   what isn't flowing yet, so it's safe to import first and watch fill in as you add pipelines.
 
 > **The easy path:** if you deploy the **standard ClickStack distribution** (its Helm chart / the
@@ -117,7 +117,7 @@ see**, and **how to read it**.
 
 ---
 
-### ⭐ Executive Overview — `exec-overview.json`
+### ⭐ Executive Overview — `executive-overview.json`
 *Source: trace + log + metric · Tier: always works (degrades gracefully)*
 
 **What it's for.** A single landing page that rolls up the health of everything — apps, ClickHouse,
@@ -225,7 +225,7 @@ error to open the full logs, pre-filtered.
 
 ---
 
-### 🟠 Kubernetes — Infrastructure — `k8s-infrastructure.json`
+### 🟠 Kubernetes — Infrastructure — `kubernetes-infrastructure.json`
 *Source: metric · Tier 3 (needs kubeletstats + k8s_cluster receivers)*
 
 **What it's for.** The health of the **cluster underneath your apps**: nodes, pods, deployments, and
@@ -305,7 +305,7 @@ Required: `ClickHouseProfileEvents_{Query,FailedQuery,SelectQuery,InsertQuery}` 
 
 **How to read it.** Watch failed queries and replication lag for anomalies; the week-over-week query
 rate line tells you whether load is unusual. Rising readonly replicas or replication lag on a
-clustered install is an early sign of coordination trouble (see `ch-keeper`).
+clustered install is an early sign of coordination trouble (see `clickhouse-keeper-replication`).
 
 ---
 
@@ -336,7 +336,7 @@ limit predicts OOM'd queries.
 
 ---
 
-### 🟢 ClickHouse — Storage & MergeTree — `ch-storage.json`
+### 🟢 ClickHouse — Storage & MergeTree — `clickhouse-storage-mergetree.json`
 *Source: SQL only · Tier 1 (works on any ClickHouse, zero setup)*
 
 **What it's for.** The **storage layer**: disk usage, compression ratio, part counts, and the
@@ -364,7 +364,7 @@ frequency or investigate. The bundled **too-many-parts alert** watches this.
 
 ---
 
-### 🟡 ClickHouse — Keeper & Replication — `ch-keeper.json`
+### 🟡 ClickHouse — Keeper & Replication — `clickhouse-keeper-replication.json`
 *Source: metric + SQL · Tier 2 (Keeper metrics) / replication needs a cluster*
 
 **What it's for.** The **coordination layer** of a replicated ClickHouse: Keeper/ZooKeeper sessions,
@@ -398,11 +398,11 @@ Pick by role — but remember the **Executive Overview** is a safe first import 
 
 | If you're a… | Start with |
 |--------------|-----------|
-| **Data scientist / analyst** (AldoTel core use case) | `exec-overview`, `services-red`, `logs-overview` — the app-signal dashboards you'll build analysis on |
-| **Platform / Kubernetes admin** | `k8s-infrastructure`, `collector-health`, `exec-overview` |
+| **Data scientist / analyst** (AldoTel core use case) | `executive-overview`, `services-red`, `logs-overview` — the app-signal dashboards you'll build analysis on |
+| **Platform / Kubernetes admin** | `kubernetes-infrastructure`, `collector-health`, `executive-overview` |
 | **SRE / reliability owner** | `slo-errorbudget`, `services-red`, `collector-health` |
-| **ClickHouse operator / DBA** | `ch-storage` (zero-setup), `clickhouse-health`, `clickhouse-queryperf`, `ch-keeper` |
-| **Just kicking the tires (any cluster)** | `ch-storage` + `exec-overview` — the two that show *something* with the least setup |
+| **ClickHouse operator / DBA** | `clickhouse-storage-mergetree` (zero-setup), `clickhouse-health`, `clickhouse-queryperf`, `clickhouse-keeper-replication` |
+| **Just kicking the tires (any cluster)** | `clickhouse-storage-mergetree` + `executive-overview` — the two that show *something* with the least setup |
 
 ---
 
@@ -415,7 +415,7 @@ Empty tiles almost always mean **the data isn't flowing yet**, not that the dash
 3. **Check the time range** — the dashboard defaults to a recent window; widen it if your data is sparse.
 4. **Check metric names** — if `preflight` says a required metric is missing but you *are* scraping it,
    your exporter may use a different name. Adjust `metricName` in the tile and `requirements.json`.
-5. **`ch-keeper` replication empty?** — expected on single-node ClickHouse (see that section).
+5. **`clickhouse-keeper-replication` replication empty?** — expected on single-node ClickHouse (see that section).
 6. **Collector dropping data?** — check `collector-health`: refused/failed spans or a full exporter
    queue means telemetry is lost before it lands, which starves every other dashboard.
 

@@ -4,12 +4,14 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
-- **Template:** `dashboards/ch-storage.json` · tag `tmpl:ch-storage`
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
+- **Template:** `dashboards/clickhouse-storage-mergetree.json` · tag `tmpl:ch-storage`
 - **Data required:** All tiles read system.parts / system.part_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.parts and system.part_log (part_log must be enabled, which it is by default)
 
 ## Preview
 
-![AldoTel · ClickHouse — Storage & MergeTree](images/ch-storage.png)
+![AldoTel · ClickHouse — Storage & MergeTree](images/clickhouse-storage-mergetree.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

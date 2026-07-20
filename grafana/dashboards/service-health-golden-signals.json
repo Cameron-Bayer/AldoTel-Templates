@@ -24,7 +24,7 @@
         "includeAll": false,
         "label": "ClickHouse datasource",
         "multi": false,
-        "name": "ds",
+        "name": "clickhouseDatasource",
         "options": [],
         "query": "grafana-clickhouse-datasource",
         "refresh": 1,
@@ -33,17 +33,37 @@
         "type": "datasource"
       },
       {
+        "name": "database",
+        "label": "ClickHouse database",
+        "type": "constant",
+        "query": "default",
+        "current": {
+          "value": "default",
+          "text": "default",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "default",
+            "text": "default",
+            "selected": false
+          }
+        ],
+        "hide": 2,
+        "skipUrlSync": false
+      },
+      {
         "name": "service",
         "label": "Service",
         "type": "query",
         "datasource": {
           "type": "grafana-clickhouse-datasource",
-          "uid": "${ds}"
+          "uid": "${clickhouseDatasource}"
         },
-        "definition": "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName != '' ORDER BY ServiceName",
+        "definition": "SELECT DISTINCT ServiceName FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName != '' ORDER BY ServiceName",
         "query": {
           "refId": "service-var",
-          "rawSql": "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName != '' ORDER BY ServiceName",
+          "rawSql": "SELECT DISTINCT ServiceName FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName != '' ORDER BY ServiceName",
           "meta": {
             "builderOptions": {
               "database": "default"
@@ -81,7 +101,7 @@
       "title": "Requests / sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -94,10 +114,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -150,7 +170,7 @@
       "title": "Error rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -163,10 +183,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -227,7 +247,7 @@
       "title": "Latency p95",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -240,10 +260,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT quantile(0.95)(Duration) / 1e6 AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT quantile(0.95)(Duration) / 1e6 AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -296,7 +316,7 @@
       "title": "Latency p99",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -309,10 +329,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT quantile(0.99)(Duration) / 1e6 AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT quantile(0.99)(Duration) / 1e6 AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -365,7 +385,7 @@
       "title": "Request volume by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -378,10 +398,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName, count() AS requests\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time, ServiceName\nORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName, count() AS requests\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time, ServiceName\nORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -439,7 +459,7 @@
       "title": "Latency percentiles (ms)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -452,10 +472,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time,\n       quantile(0.50)(Duration) / 1e6 AS p50,\n       quantile(0.95)(Duration) / 1e6 AS p95,\n       quantile(0.99)(Duration) / 1e6 AS p99\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time,\n       quantile(0.50)(Duration) / 1e6 AS p50,\n       quantile(0.95)(Duration) / 1e6 AS p95,\n       quantile(0.99)(Duration) / 1e6 AS p99\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -513,7 +533,7 @@
       "title": "Overall error rate (%)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -526,10 +546,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -587,7 +607,7 @@
       "title": "Errors per interval by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -600,10 +620,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName, countIf(StatusCode = 'Error') AS errors\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time, ServiceName\nHAVING errors > 0\nORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName, countIf(StatusCode = 'Error') AS errors\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time, ServiceName\nHAVING errors > 0\nORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -661,7 +681,7 @@
       "title": "Service breakdown (RED)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 10,
@@ -674,10 +694,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS \"p50 ms\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS \"p99 ms\"\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS \"p50 ms\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS \"p99 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
           "queryType": "table",
           "format": 1,
           "meta": {

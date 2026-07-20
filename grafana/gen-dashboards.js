@@ -3,9 +3,11 @@
  * Generates the shippable ClickStack Grafana dashboards into grafana/dashboards/.
  *
  * Design goals (so a customer can "download -> import -> it just works"):
- *  - Every panel targets a dashboard datasource VARIABLE (${ds}) of type
- *    grafana-clickhouse-datasource. On import Grafana asks the user to pick their
+ *  - Every panel targets a dashboard datasource VARIABLE (${clickhouseDatasource}) of
+ *    type grafana-clickhouse-datasource. On import Grafana asks the user to pick their
  *    ClickHouse connection; nothing is hard-coded to our dev environment.
+ *  - The schema is a ${database} constant variable (defaults to `default`), so a customer
+ *    on a non-default ClickHouse database changes one value instead of find/replacing JSON.
  *  - Queries use only the ClickStack/OpenTelemetry default schema (otel_traces,
  *    otel_logs, otel_metrics_gauge) and stable ClickHouse-plugin macros
  *    ($__timeFilter, $__timeInterval, $__fromTime, $__toTime).
@@ -16,9 +18,10 @@ const fs = require('fs');
 const path = require('path');
 
 const OUT = path.join(__dirname, 'dashboards');
-const DB = 'default'; // ClickStack default database
+const DB = '${database}';   // schema is referenced in SQL via a dashboard variable (portable)
+const DB_META = 'default';  // ClickStack default database (builder metadata; raw-SQL mode ignores it)
 const CH = 'grafana-clickhouse-datasource';
-const DS = { type: CH, uid: '${ds}' };
+const DS = { type: CH, uid: '${clickhouseDatasource}' };
 
 let uidSeq = 0;
 const puid = () => `p${++uidSeq}`;
@@ -33,7 +36,7 @@ function target(rawSql, { format = 0, refId = 'A' } = {}) {
     rawSql,
     queryType: format === 0 ? 'timeseries' : 'table',
     format,
-    meta: { builderOptions: { database: DB, mode: 'trend' } },
+    meta: { builderOptions: { database: DB_META, mode: 'trend' } },
   };
 }
 
@@ -119,13 +122,29 @@ function dsVar() {
     includeAll: false,
     label: 'ClickHouse datasource',
     multi: false,
-    name: 'ds',
+    name: 'clickhouseDatasource',
     options: [],
     query: CH,
     refresh: 1,
     regex: '',
     skipUrlSync: false,
     type: 'datasource',
+  };
+}
+
+// Hidden constant so panels reference ${database} instead of hard-coding `default`.
+// Customers on a non-default ClickHouse database change the value here (one place) —
+// no repo-wide find/replace needed.
+function databaseVar() {
+  return {
+    name: 'database',
+    label: 'ClickHouse database',
+    type: 'constant',
+    query: DB_META,
+    current: { value: DB_META, text: DB_META, selected: false },
+    options: [{ value: DB_META, text: DB_META, selected: false }],
+    hide: 2,
+    skipUrlSync: false,
   };
 }
 
@@ -142,7 +161,7 @@ function dashboard(uid, title, description, panels, extraVars = []) {
     time: { from: 'now-1h', to: 'now' },
     timepicker: {},
     refresh: '30s',
-    templating: { list: [dsVar(), ...extraVars] },
+    templating: { list: [dsVar(), databaseVar(), ...extraVars] },
     annotations: { list: [] },
     panels,
   };
@@ -155,7 +174,7 @@ function write(name, dash) {
 }
 
 // A query-driven, multi-value template variable (drop-down filter). Uses the
-// dashboard's ${ds} datasource so it stays portable. "Include All" + no custom
+// dashboard's ${clickhouseDatasource} datasource so it stays portable. "Include All" + no custom
 // all-value means selecting All expands to every listed value via :sqlstring.
 function queryVar(name, label, sql) {
   return {
@@ -164,7 +183,7 @@ function queryVar(name, label, sql) {
     type: 'query',
     datasource: DS,
     definition: sql,
-    query: { refId: `${name}-var`, rawSql: sql, meta: { builderOptions: { database: DB } } },
+    query: { refId: `${name}-var`, rawSql: sql, meta: { builderOptions: { database: DB_META } } },
     refresh: 2, // re-run on time-range change (also on load)
     includeAll: true,
     multi: true,
@@ -439,7 +458,7 @@ function execSummary() {
 
 // ---- main -----------------------------------------------------------------
 if (!fs.existsSync(OUT)) fs.mkdirSync(OUT, { recursive: true });
-write('00-executive-summary.json', execSummary());
+write('executive-summary.json', execSummary());
 write('service-health-golden-signals.json', serviceHealth());
 write('kubernetes-cluster-overview.json', k8sOverview());
 write('logs-errors-overview.json', logsOverview());

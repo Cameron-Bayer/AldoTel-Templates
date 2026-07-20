@@ -4,6 +4,8 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
 - **Template:** `dashboards/clickhouse-health.json` · tag `tmpl:clickhouse-health`
 - **Data required:** ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)
 

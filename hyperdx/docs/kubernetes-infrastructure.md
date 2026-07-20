@@ -4,12 +4,14 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
-- **Template:** `dashboards/k8s-infrastructure.json` · tag `tmpl:k8s-infrastructure`
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
+- **Template:** `dashboards/kubernetes-infrastructure.json` · tag `tmpl:k8s-infrastructure`
 - **Data required:** kubeletstats receiver; k8s_cluster receiver
 
 ## Preview
 
-![AldoTel · Kubernetes — Infrastructure](images/k8s-infrastructure.png)
+![AldoTel · Kubernetes — Infrastructure](images/kubernetes-infrastructure.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

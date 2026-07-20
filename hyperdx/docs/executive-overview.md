@@ -4,12 +4,14 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
-- **Template:** `dashboards/exec-overview.json` · tag `tmpl:exec-overview`
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
+- **Template:** `dashboards/executive-overview.json` · tag `tmpl:exec-overview`
 - **Data required:** Application traces (OTLP), application/container logs, ClickHouse metrics and K8s metrics — this is a cross-cutting roll-up; tiles degrade gracefully when a given signal is absent
 
 ## Preview
 
-![AldoTel · Executive Overview](images/exec-overview.png)
+![AldoTel · Executive Overview](images/executive-overview.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 

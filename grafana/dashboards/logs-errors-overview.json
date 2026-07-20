@@ -24,7 +24,7 @@
         "includeAll": false,
         "label": "ClickHouse datasource",
         "multi": false,
-        "name": "ds",
+        "name": "clickhouseDatasource",
         "options": [],
         "query": "grafana-clickhouse-datasource",
         "refresh": 1,
@@ -33,17 +33,37 @@
         "type": "datasource"
       },
       {
+        "name": "database",
+        "label": "ClickHouse database",
+        "type": "constant",
+        "query": "default",
+        "current": {
+          "value": "default",
+          "text": "default",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "default",
+            "text": "default",
+            "selected": false
+          }
+        ],
+        "hide": 2,
+        "skipUrlSync": false
+      },
+      {
         "name": "service",
         "label": "Service",
         "type": "query",
         "datasource": {
           "type": "grafana-clickhouse-datasource",
-          "uid": "${ds}"
+          "uid": "${clickhouseDatasource}"
         },
-        "definition": "SELECT DISTINCT ServiceName FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName != '' ORDER BY ServiceName",
+        "definition": "SELECT DISTINCT ServiceName FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName != '' ORDER BY ServiceName",
         "query": {
           "refId": "service-var",
-          "rawSql": "SELECT DISTINCT ServiceName FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName != '' ORDER BY ServiceName",
+          "rawSql": "SELECT DISTINCT ServiceName FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName != '' ORDER BY ServiceName",
           "meta": {
             "builderOptions": {
               "database": "default"
@@ -81,7 +101,7 @@
       "title": "Logs / sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -94,10 +114,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -150,7 +170,7 @@
       "title": "Error+ logs / sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -163,10 +183,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT countIf(lower(SeverityText) IN ('error', 'fatal')) / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT countIf(lower(SeverityText) IN ('error', 'fatal')) / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -227,7 +247,7 @@
       "title": "Error log %",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -240,10 +260,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(lower(SeverityText) IN ('error', 'fatal')) / count() AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT 100 * countIf(lower(SeverityText) IN ('error', 'fatal')) / count() AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -304,7 +324,7 @@
       "title": "Fatal logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -317,10 +337,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -377,7 +397,7 @@
       "title": "Log volume by severity",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -390,10 +410,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, SeverityText AS severity, count() AS logs\nFROM default.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND SeverityText != ''\nGROUP BY time, severity ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, SeverityText AS severity, count() AS logs\nFROM ${database}.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND SeverityText != ''\nGROUP BY time, severity ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -451,7 +471,7 @@
       "title": "Error+ logs by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -464,10 +484,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName AS service, count() AS errors\nFROM default.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY time, service HAVING errors > 0 ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName AS service, count() AS errors\nFROM ${database}.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY time, service HAVING errors > 0 ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -525,7 +545,7 @@
       "title": "Top services by error+ logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 9,
@@ -538,10 +558,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Error logs\",\n       round(100 * count() / (SELECT count() FROM default.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')), 1) AS \"% of errors\"\nFROM default.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY 1 ORDER BY 2 DESC LIMIT 15",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Error logs\",\n       round(100 * count() / (SELECT count() FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')), 1) AS \"% of errors\"\nFROM ${database}.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY 1 ORDER BY 2 DESC LIMIT 15",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -595,7 +615,7 @@
       "title": "Recent errors",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 9,
@@ -608,10 +628,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT Timestamp AS \"Time\",\n       ServiceName AS \"Service\",\n       SeverityText AS \"Severity\",\n       substring(Body, 1, 200) AS \"Message\"\nFROM default.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')\nORDER BY Timestamp DESC LIMIT 100",
+          "rawSql": "SELECT Timestamp AS \"Time\",\n       ServiceName AS \"Service\",\n       SeverityText AS \"Severity\",\n       substring(Body, 1, 200) AS \"Message\"\nFROM ${database}.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND lower(SeverityText) IN ('error', 'fatal')\nORDER BY Timestamp DESC LIMIT 100",
           "queryType": "table",
           "format": 1,
           "meta": {

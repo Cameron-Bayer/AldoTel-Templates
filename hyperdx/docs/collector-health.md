@@ -4,6 +4,8 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
 - **Template:** `dashboards/collector-health.json` · tag `tmpl:collector-health`
 - **Data required:** OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)
 

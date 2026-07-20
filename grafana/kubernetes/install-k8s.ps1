@@ -14,8 +14,8 @@
       1. Adds the `clickstack-ch` ClickHouse data source (datasource-clickstack-ch.yaml)
          to the datasources provisioning ConfigMap. The alert rules reference this UID.
       2. Adds every dashboard in ../dashboards/ to the dashboards provisioning
-         ConfigMap, pinning each dashboard's `ds` variable to `clickstack-ch` so the
-         panels resolve without prompting.
+         ConfigMap, pinning each dashboard's datasource variable (clickhouseDatasource) to
+         `clickstack-ch` so panels resolve without prompting.
       3. Loads ../alerting/*.yaml into an alerting ConfigMap and makes sure the Grafana
          Deployment mounts it at /etc/grafana/provisioning/alerting.
       4. Restarts Grafana so provisioning re-runs, then prints verification hints.

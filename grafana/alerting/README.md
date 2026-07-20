@@ -7,8 +7,11 @@ Where the HyperDX dashboards are for *investigation*, these alerts are for
 on-call channel (any webhook — Slack, a Teams Workflow, PagerDuty, etc.) when
 something breaks.
 
-This pack mirrors the signal set of the HyperDX alerts pack (`../../hyperdx/alerts`) so
-the two stay consistent.
+This pack **complements** the HyperDX alerts pack (`../../hyperdx/alerts`): both watch the
+same ClickHouse data, but the two packs cover different signals (this Grafana pack: error
+rate, p95 latency, trace-ingestion stall, pods-not-running, error-log rate, fatal logs;
+the HyperDX pack: collector drops, error rate, replication lag, SLO fast-burn, too-many-parts).
+Run either or both.
 
 ---
 

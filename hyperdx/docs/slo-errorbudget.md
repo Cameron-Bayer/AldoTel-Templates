@@ -4,6 +4,8 @@
 
 This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
+[← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
+
 - **Template:** `dashboards/slo-errorbudget.json` · tag `tmpl:slo-errorbudget`
 - **Data required:** Application traces (OTLP) with server spans and StatusCode
 

@@ -24,13 +24,33 @@
         "includeAll": false,
         "label": "ClickHouse datasource",
         "multi": false,
-        "name": "ds",
+        "name": "clickhouseDatasource",
         "options": [],
         "query": "grafana-clickhouse-datasource",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
         "type": "datasource"
+      },
+      {
+        "name": "database",
+        "label": "ClickHouse database",
+        "type": "constant",
+        "query": "default",
+        "current": {
+          "value": "default",
+          "text": "default",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "default",
+            "text": "default",
+            "selected": false
+          }
+        ],
+        "hide": 2,
+        "skipUrlSync": false
       }
     ]
   },
@@ -57,7 +77,7 @@
       "title": "Requests / sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -70,10 +90,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
+          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -126,7 +146,7 @@
       "title": "Error rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -139,10 +159,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
+          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -203,7 +223,7 @@
       "title": "Latency p95",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -216,10 +236,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT quantile(0.95)(Duration) / 1e6 AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
+          "rawSql": "SELECT quantile(0.95)(Duration) / 1e6 AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -272,7 +292,7 @@
       "title": "Active services",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -285,10 +305,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count(DISTINCT ServiceName) AS value FROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
+          "rawSql": "SELECT count(DISTINCT ServiceName) AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -341,7 +361,7 @@
       "title": "Request volume",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 6,
@@ -354,10 +374,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, count() AS requests\nFROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY time ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, count() AS requests\nFROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY time ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -411,7 +431,7 @@
       "title": "Overall error rate (%)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 6,
@@ -424,10 +444,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM default.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY time ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY time ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -494,7 +514,7 @@
       "title": "Nodes Ready",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -507,10 +527,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n HAVING v = 1)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n HAVING v = 1)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -563,7 +583,7 @@
       "title": "Pods Running",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -576,10 +596,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n  GROUP BY u HAVING v = 2)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n  GROUP BY u HAVING v = 2)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -632,7 +652,7 @@
       "title": "Pods Not Running",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -645,10 +665,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n  GROUP BY u HAVING v != 2)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n  GROUP BY u HAVING v != 2)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -705,7 +725,7 @@
       "title": "Container Restarts",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -718,10 +738,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT sum(v) AS value FROM (\n  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/', ResourceAttributes['k8s.container.name']) AS c, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix)\n  GROUP BY c)",
+          "rawSql": "SELECT sum(v) AS value FROM (\n  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/', ResourceAttributes['k8s.container.name']) AS c, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix)\n  GROUP BY c)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -795,7 +815,7 @@
       "title": "Logs / sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -808,10 +828,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT count() / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -864,7 +884,7 @@
       "title": "Error+ logs / sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -877,10 +897,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT countIf(lower(SeverityText) IN ('error', 'fatal')) / dateDiff('second', $__fromTime, $__toTime) AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT countIf(lower(SeverityText) IN ('error', 'fatal')) / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -941,7 +961,7 @@
       "title": "Error log %",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -954,10 +974,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(lower(SeverityText) IN ('error', 'fatal')) / count() AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT 100 * countIf(lower(SeverityText) IN ('error', 'fatal')) / count() AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1018,7 +1038,7 @@
       "title": "Fatal logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 5,
@@ -1031,10 +1051,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM default.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1091,7 +1111,7 @@
       "title": "Log volume by severity",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 6,
@@ -1104,10 +1124,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, SeverityText AS severity, count() AS logs\nFROM default.otel_logs WHERE $__timeFilter(Timestamp) AND SeverityText != ''\nGROUP BY time, severity ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, SeverityText AS severity, count() AS logs\nFROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND SeverityText != ''\nGROUP BY time, severity ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -1165,7 +1185,7 @@
       "title": "Error+ logs by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 6,
@@ -1178,10 +1198,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName AS service, count() AS errors\nFROM default.otel_logs WHERE $__timeFilter(Timestamp) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY time, service HAVING errors > 0 ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName AS service, count() AS errors\nFROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY time, service HAVING errors > 0 ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -1252,7 +1272,7 @@
       "title": "Services by error rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 9,
@@ -1265,10 +1285,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\"\nFROM default.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY ServiceName\nORDER BY \"Error %\" DESC, \"Req/s\" DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY ServiceName\nORDER BY \"Error %\" DESC, \"Req/s\" DESC",
           "queryType": "table",
           "format": 1,
           "meta": {

@@ -24,7 +24,7 @@
         "includeAll": false,
         "label": "ClickHouse datasource",
         "multi": false,
-        "name": "ds",
+        "name": "clickhouseDatasource",
         "options": [],
         "query": "grafana-clickhouse-datasource",
         "refresh": 1,
@@ -33,17 +33,37 @@
         "type": "datasource"
       },
       {
+        "name": "database",
+        "label": "ClickHouse database",
+        "type": "constant",
+        "query": "default",
+        "current": {
+          "value": "default",
+          "text": "default",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "default",
+            "text": "default",
+            "selected": false
+          }
+        ],
+        "hide": 2,
+        "skipUrlSync": false
+      },
+      {
         "name": "namespace",
         "label": "Namespace",
         "type": "query",
         "datasource": {
           "type": "grafana-clickhouse-datasource",
-          "uid": "${ds}"
+          "uid": "${clickhouseDatasource}"
         },
-        "definition": "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) ORDER BY 1",
+        "definition": "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) ORDER BY 1",
         "query": {
           "refId": "namespace-var",
-          "rawSql": "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) ORDER BY 1",
+          "rawSql": "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) ORDER BY 1",
           "meta": {
             "builderOptions": {
               "database": "default"
@@ -81,7 +101,7 @@
       "title": "Nodes Ready",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -94,10 +114,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n HAVING v = 1)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n HAVING v = 1)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -150,7 +170,7 @@
       "title": "Pods Running",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -163,10 +183,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  GROUP BY u HAVING v = 2)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  GROUP BY u HAVING v = 2)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -219,7 +239,7 @@
       "title": "Pods Not Running",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -232,10 +252,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  GROUP BY u HAVING v != 2)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  GROUP BY u HAVING v != 2)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -292,7 +312,7 @@
       "title": "Container Restarts",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 4,
@@ -305,10 +325,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT sum(v) AS value FROM (\n  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/', ResourceAttributes['k8s.container.name']) AS c, argMax(Value, TimeUnix) AS v\n  FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  GROUP BY c)",
+          "rawSql": "SELECT sum(v) AS value FROM (\n  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/', ResourceAttributes['k8s.container.name']) AS c, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\n  GROUP BY c)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -369,7 +389,7 @@
       "title": "Node CPU usage (cores)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -382,10 +402,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cpu_cores\nFROM default.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.cpu.usage' AND $__timeFilter(TimeUnix)\nGROUP BY time, node ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cpu_cores\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.cpu.usage' AND $__timeFilter(TimeUnix)\nGROUP BY time, node ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -443,7 +463,7 @@
       "title": "Node memory usage",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -456,10 +476,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS mem_bytes\nFROM default.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.memory.usage' AND $__timeFilter(TimeUnix)\nGROUP BY time, node ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS mem_bytes\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.memory.usage' AND $__timeFilter(TimeUnix)\nGROUP BY time, node ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -517,7 +537,7 @@
       "title": "Pod CPU usage (cores)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -530,10 +550,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.pod.name'] AS pod, avg(Value) AS cpu_cores\nFROM default.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.cpu.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY time, pod ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.pod.name'] AS pod, avg(Value) AS cpu_cores\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.cpu.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY time, pod ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -591,7 +611,7 @@
       "title": "Deployment availability (available replicas)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 8,
@@ -604,10 +624,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.deployment.name'] AS deployment, avg(Value) AS available\nFROM default.otel_metrics_gauge\nWHERE MetricName = 'k8s.deployment.available' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY time, deployment ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.deployment.name'] AS deployment, avg(Value) AS available\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.deployment.available' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY time, deployment ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -665,7 +685,7 @@
       "title": "Top pods by memory (working set)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 9,
@@ -678,10 +698,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\",\n       ResourceAttributes['k8s.pod.name'] AS \"Pod\",\n       argMax(Value, TimeUnix) AS \"Memory\"\nFROM default.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.memory.working_set' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY 1, 2\nORDER BY \"Memory\" DESC\nLIMIT 20",
+          "rawSql": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\",\n       ResourceAttributes['k8s.pod.name'] AS \"Pod\",\n       argMax(Value, TimeUnix) AS \"Memory\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.memory.working_set' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY 1, 2\nORDER BY \"Memory\" DESC\nLIMIT 20",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -735,7 +755,7 @@
       "title": "Container restarts (by pod)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
-        "uid": "${ds}"
+        "uid": "${clickhouseDatasource}"
       },
       "gridPos": {
         "h": 9,
@@ -748,10 +768,10 @@
           "refId": "A",
           "datasource": {
             "type": "grafana-clickhouse-datasource",
-            "uid": "${ds}"
+            "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\",\n       ResourceAttributes['k8s.pod.name'] AS \"Pod\",\n       ResourceAttributes['k8s.container.name'] AS \"Container\",\n       toUInt64(argMax(Value, TimeUnix)) AS \"Restarts\"\nFROM default.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY 1, 2, 3\nHAVING \"Restarts\" > 0\nORDER BY \"Restarts\" DESC\nLIMIT 20",
+          "rawSql": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\",\n       ResourceAttributes['k8s.pod.name'] AS \"Pod\",\n       ResourceAttributes['k8s.container.name'] AS \"Container\",\n       toUInt64(argMax(Value, TimeUnix)) AS \"Restarts\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix) AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})\nGROUP BY 1, 2, 3\nHAVING \"Restarts\" > 0\nORDER BY \"Restarts\" DESC\nLIMIT 20",
           "queryType": "table",
           "format": 1,
           "meta": {

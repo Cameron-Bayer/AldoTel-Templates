@@ -90,7 +90,7 @@
       ]
     },
     {
-      "file": "k8s-infrastructure.json",
+      "file": "kubernetes-infrastructure.json",
       "tmpl": "tmpl:k8s-infrastructure",
       "name": "Kubernetes — Infrastructure",
       "receivers": [
@@ -362,7 +362,7 @@
       ]
     },
     {
-      "file": "ch-storage.json",
+      "file": "clickhouse-storage-mergetree.json",
       "tmpl": "tmpl:ch-storage",
       "name": "ClickHouse — Storage & MergeTree",
       "receivers": [
@@ -371,7 +371,7 @@
       "checks": []
     },
     {
-      "file": "ch-keeper.json",
+      "file": "clickhouse-keeper-replication.json",
       "tmpl": "tmpl:ch-keeper",
       "name": "ClickHouse — Keeper & Replication",
       "receivers": [
@@ -412,7 +412,7 @@
       ]
     },
     {
-      "file": "exec-overview.json",
+      "file": "executive-overview.json",
       "tmpl": "tmpl:exec-overview",
       "name": "Executive Overview",
       "receivers": [
