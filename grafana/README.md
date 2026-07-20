@@ -9,6 +9,11 @@ These complement the per-domain HyperDX dashboards in [`../hyperdx/dashboards/`]
 HyperDX for deep, interactive investigation; Grafana for at-a-glance health and for
 teams that already standardize on Grafana.
 
+> **Running ClickStack on Kubernetes?** Its bundled Grafana uses ephemeral storage, so
+> UI/API imports vanish on the next pod restart. Use the durable ConfigMap-provisioning
+> installer in [`kubernetes/`](kubernetes/README.md) — one command installs the data
+> source, all four dashboards, and the alerts so they survive restarts.
+
 ---
 
 ## Customer quick-start (dashboards + alerts)
