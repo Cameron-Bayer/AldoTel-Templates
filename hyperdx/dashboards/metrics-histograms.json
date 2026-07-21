@@ -22,7 +22,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 6,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Request latency percentiles (OTLP histograms)\nPercentiles are interpolated from explicit-bucket histogram metrics (`otel_metrics_histogram`) over the selected window: per-series bucket deltas are summed, then linearly interpolated. Values are in **milliseconds** (`http.*.duration` / `rpc.*.duration` semconv). Avg = Σ / count."
@@ -31,7 +31,7 @@
     {
       "name": "HTTP server latency by service",
       "x": 0,
-      "y": 3,
+      "y": 6,
       "w": 24,
       "h": 7,
       "config": {
@@ -45,7 +45,7 @@
     {
       "name": "HTTP client latency by service",
       "x": 0,
-      "y": 10,
+      "y": 13,
       "w": 12,
       "h": 7,
       "config": {
@@ -59,7 +59,7 @@
     {
       "name": "RPC server latency by service",
       "x": 12,
-      "y": 10,
+      "y": 13,
       "w": 12,
       "h": 7,
       "config": {
@@ -73,9 +73,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 17,
+      "y": 20,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Latency & throughput trend (HTTP server)\nPer-interval average latency and request rate, derived from consecutive-scrape deltas of the cumulative `http.server.duration` Sum/Count counters."
@@ -84,7 +84,7 @@
     {
       "name": "Avg HTTP server latency by service",
       "x": 0,
-      "y": 20,
+      "y": 25,
       "w": 12,
       "h": 6,
       "config": {
@@ -98,7 +98,7 @@
     {
       "name": "HTTP request rate by service",
       "x": 12,
-      "y": 20,
+      "y": 25,
       "w": 12,
       "h": 6,
       "config": {
@@ -112,9 +112,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 26,
+      "y": 31,
       "w": 24,
-      "h": 3,
+      "h": 6,
       "config": {
         "displayType": "markdown",
         "markdown": "#### ClickHouse Keeper latency (histograms)\nKeeper operation latency distributions from ClickHouse's own histogram metrics (`ClickHouseHistogramMetrics_keeper_*`). Values are in **milliseconds**. Cluster-wide (not affected by the Service filter)."
@@ -123,7 +123,7 @@
     {
       "name": "Keeper operation latency percentiles",
       "x": 0,
-      "y": 29,
+      "y": 37,
       "w": 24,
       "h": 7,
       "config": {

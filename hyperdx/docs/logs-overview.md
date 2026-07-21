@@ -40,9 +40,10 @@ These apply to every compatible tile on the dashboard.
 
 ## Top errors & patterns
 
-### Top error signatures (normalized) — table · Raw SQL
+### Top error signatures (normalized) — click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
+- **Drill-down:** click a row → opens search
 
 <details><summary>SQL query</summary>
 
@@ -63,9 +64,10 @@ LIMIT 50
 
 </details>
 
-### New log patterns in last 24h (vs prior 7d) — table · Raw SQL
+### New log patterns in last 24h (vs prior 7d) — click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
+- **Drill-down:** click a row → opens search
 
 <details><summary>SQL query</summary>
 
@@ -91,16 +93,17 @@ LIMIT 50
 
 ## Live stream
 
-### Live error stream — search
+### Live error stream — click a row for full log detail — search
 
 - **Source / table:** Logs → `default.otel_logs`
 - **Columns shown:** `Timestamp, SeverityText, ServiceName, ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body`
 - **Filter:** `SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal` (lucene)
 - **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `ResourceAttributes['k8s.pod.name']`, `ServiceName`, `SeverityText`, `Body`, `Timestamp`
 
-### Top error sources (namespace / pod) — table · Raw SQL
+### Top error sources (namespace / pod) — click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
+- **Drill-down:** click a row → opens search
 
 <details><summary>SQL query</summary>
 

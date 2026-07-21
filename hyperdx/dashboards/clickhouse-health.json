@@ -12,7 +12,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Operations — at a glance\nQuery/insert/cache counters are shown as **deltas over the selected time range**. Replication & Keeper detail lives in the **ClickHouse — Keeper & Replication** (advanced) dashboard."
@@ -21,7 +21,7 @@
     {
       "name": "Running queries",
       "x": 0,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -35,7 +35,7 @@
     {
       "name": "Failed queries (window)",
       "x": 6,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -57,7 +57,7 @@
     {
       "name": "Disk free %",
       "x": 12,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -89,7 +89,7 @@
     {
       "name": "Memory tracking",
       "x": 18,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -107,7 +107,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 9,
       "w": 24,
       "h": 3,
       "config": {
@@ -118,7 +118,7 @@
     {
       "name": "Query rate (per-window)",
       "x": 0,
-      "y": 10,
+      "y": 12,
       "w": 12,
       "h": 6,
       "config": {
@@ -132,7 +132,7 @@
     {
       "name": "Failed queries (per-window)",
       "x": 12,
-      "y": 10,
+      "y": 12,
       "w": 12,
       "h": 6,
       "config": {
@@ -146,7 +146,7 @@
     {
       "name": "Inserted rows (per-window)",
       "x": 0,
-      "y": 16,
+      "y": 18,
       "w": 12,
       "h": 6,
       "config": {
@@ -160,7 +160,7 @@
     {
       "name": "SELECT vs INSERT queries (per-window)",
       "x": 12,
-      "y": 16,
+      "y": 18,
       "w": 12,
       "h": 6,
       "config": {
@@ -174,7 +174,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 22,
+      "y": 24,
       "w": 24,
       "h": 3,
       "config": {
@@ -185,7 +185,7 @@
     {
       "name": "Active merges",
       "x": 0,
-      "y": 25,
+      "y": 27,
       "w": 6,
       "h": 4,
       "config": {
@@ -199,7 +199,7 @@
     {
       "name": "Pending mutations",
       "x": 6,
-      "y": 25,
+      "y": 27,
       "w": 6,
       "h": 4,
       "config": {
@@ -221,7 +221,7 @@
     {
       "name": "Merges in progress (gauge)",
       "x": 12,
-      "y": 25,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
@@ -252,7 +252,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 31,
+      "y": 33,
       "w": 24,
       "h": 3,
       "config": {
@@ -263,7 +263,7 @@
     {
       "name": "Page-cache read bytes: cache vs source (per-window)",
       "x": 0,
-      "y": 34,
+      "y": 36,
       "w": 12,
       "h": 6,
       "config": {
@@ -281,7 +281,7 @@
     {
       "name": "Async insert bytes (per-window)",
       "x": 12,
-      "y": 34,
+      "y": 36,
       "w": 12,
       "h": 6,
       "config": {

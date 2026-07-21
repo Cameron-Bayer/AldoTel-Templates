@@ -22,7 +22,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Pipeline — at a glance\nCounters below are shown as **deltas over the selected time range** (not raw cumulative totals). Refused / failed / send-failed should stay at **0**."
@@ -31,7 +31,7 @@
     {
       "name": "Refused spans (window)",
       "x": 0,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -53,7 +53,7 @@
     {
       "name": "Refused log records (window)",
       "x": 6,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -75,7 +75,7 @@
     {
       "name": "Refused metric points (window)",
       "x": 12,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -97,7 +97,7 @@
     {
       "name": "Exporter queue utilization %",
       "x": 18,
-      "y": 3,
+      "y": 5,
       "w": 6,
       "h": 4,
       "config": {
@@ -129,7 +129,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 9,
       "w": 24,
       "h": 3,
       "config": {
@@ -140,7 +140,7 @@
     {
       "name": "Spans: accepted vs refused vs failed (per-window rate)",
       "x": 0,
-      "y": 10,
+      "y": 12,
       "w": 12,
       "h": 6,
       "config": {
@@ -154,7 +154,7 @@
     {
       "name": "Exporter sent spans (per-window rate)",
       "x": 12,
-      "y": 10,
+      "y": 12,
       "w": 12,
       "h": 6,
       "config": {
@@ -168,7 +168,7 @@
     {
       "name": "Exporter queue size vs capacity",
       "x": 0,
-      "y": 16,
+      "y": 18,
       "w": 12,
       "h": 6,
       "config": {
@@ -199,7 +199,7 @@
     {
       "name": "Exporter queue utilization % (size / capacity)",
       "x": 12,
-      "y": 16,
+      "y": 18,
       "w": 12,
       "h": 6,
       "config": {
@@ -217,7 +217,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 22,
+      "y": 24,
       "w": 24,
       "h": 3,
       "config": {
@@ -228,7 +228,7 @@
     {
       "name": "Logs: accepted vs refused vs send-failed (per-window rate)",
       "x": 0,
-      "y": 25,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
@@ -242,7 +242,7 @@
     {
       "name": "Metric points: accepted vs refused (per-window rate)",
       "x": 12,
-      "y": 25,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
@@ -256,7 +256,7 @@
     {
       "name": "Scraper: scraped vs errored metric points (per-window rate)",
       "x": 0,
-      "y": 31,
+      "y": 33,
       "w": 12,
       "h": 6,
       "config": {
@@ -270,7 +270,7 @@
     {
       "name": "Exporter in-flight requests",
       "x": 12,
-      "y": 31,
+      "y": 33,
       "w": 12,
       "h": 6,
       "config": {
@@ -292,7 +292,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 37,
+      "y": 39,
       "w": 24,
       "h": 3,
       "config": {
@@ -303,7 +303,7 @@
     {
       "name": "Collector memory (RSS / heap)",
       "x": 0,
-      "y": 40,
+      "y": 42,
       "w": 12,
       "h": 6,
       "config": {
@@ -338,7 +338,7 @@
     {
       "name": "Collector CPU (cores, per-window rate)",
       "x": 12,
-      "y": 40,
+      "y": 42,
       "w": 12,
       "h": 6,
       "config": {

@@ -85,7 +85,7 @@
       }
     },
     {
-      "name": "Top error signatures (normalized)",
+      "name": "Top error signatures (normalized) — click a row to open Logs",
       "x": 0,
       "y": 12,
       "w": 24,
@@ -95,11 +95,20 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS \"Service\", pattern AS \"Signature\", count() AS \"Count\" FROM (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F-]{8,}', '<id>'), '[0-9]+', '<n>') AS pattern\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\n    AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND $__filters\n)\nGROUP BY ServiceName, pattern\nORDER BY count() DESC\nLIMIT 50"
+        "sqlTemplate": "SELECT ServiceName AS \"Service\", pattern AS \"Signature\", count() AS \"Count\" FROM (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F-]{8,}', '<id>'), '[0-9]+', '<n>') AS pattern\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\n    AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND $__filters\n)\nGROUP BY ServiceName, pattern\nORDER BY count() DESC\nLIMIT 50",
+        "onClick": {
+          "type": "search",
+          "target": {
+            "mode": "id",
+            "id": "{{LOGS_SOURCE_ID}}"
+          },
+          "whereTemplate": "ServiceName = '{{Service}}' AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))",
+          "whereLanguage": "sql"
+        }
       }
     },
     {
-      "name": "New log patterns in last 24h (vs prior 7d)",
+      "name": "New log patterns in last 24h (vs prior 7d) — click a row to open Logs",
       "x": 0,
       "y": 18,
       "w": 24,
@@ -109,7 +118,16 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName, pattern,\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING prior_7d = 0 AND last_24h > 0\nORDER BY last_24h DESC\nLIMIT 50"
+        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName, pattern,\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING prior_7d = 0 AND last_24h > 0\nORDER BY last_24h DESC\nLIMIT 50",
+        "onClick": {
+          "type": "search",
+          "target": {
+            "mode": "id",
+            "id": "{{LOGS_SOURCE_ID}}"
+          },
+          "whereTemplate": "ServiceName = '{{ServiceName}}' AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))",
+          "whereLanguage": "sql"
+        }
       }
     },
     {
@@ -124,7 +142,7 @@
       }
     },
     {
-      "name": "Live error stream",
+      "name": "Live error stream — click a row for full log detail",
       "x": 0,
       "y": 27,
       "w": 24,
@@ -138,7 +156,7 @@
       }
     },
     {
-      "name": "Top error sources (namespace / pod)",
+      "name": "Top error sources (namespace / pod) — click a row to open Logs",
       "x": 0,
       "y": 34,
       "w": 24,
@@ -148,7 +166,16 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\", ResourceAttributes['k8s.pod.name'] AS \"Pod\", ServiceName AS \"Service\", count() AS \"Errors\"\nFROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\nWHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\n  AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n  AND $__filters\nGROUP BY \"Namespace\", \"Pod\", ServiceName\nORDER BY count() DESC\nLIMIT 50"
+        "sqlTemplate": "SELECT ResourceAttributes['k8s.namespace.name'] AS \"Namespace\", ResourceAttributes['k8s.pod.name'] AS \"Pod\", ServiceName AS \"Service\", count() AS \"Errors\"\nFROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\nWHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\n  AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n  AND $__filters\nGROUP BY \"Namespace\", \"Pod\", ServiceName\nORDER BY count() DESC\nLIMIT 50",
+        "onClick": {
+          "type": "search",
+          "target": {
+            "mode": "id",
+            "id": "{{LOGS_SOURCE_ID}}"
+          },
+          "whereTemplate": "ResourceAttributes['k8s.namespace.name'] = '{{Namespace}}' AND ResourceAttributes['k8s.pod.name'] = '{{Pod}}' AND ServiceName = '{{Service}}' AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))",
+          "whereLanguage": "sql"
+        }
       }
     }
   ]

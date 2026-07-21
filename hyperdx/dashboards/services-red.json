@@ -218,7 +218,7 @@
       "x": 0,
       "y": 41,
       "w": 24,
-      "h": 3,
+      "h": 6,
       "config": {
         "displayType": "markdown",
         "markdown": "#### SLO & error budget\nAvailability = successful server requests / total server requests. Burn-rate windows (1h / 6h / 24h / 3d) are **fixed SLO windows** and intentionally ignore the time picker; a burn rate > 1 means the 99.9% budget is being spent too fast."
@@ -227,7 +227,7 @@
     {
       "name": "Availability (SLI)",
       "x": 0,
-      "y": 44,
+      "y": 47,
       "w": 12,
       "h": 4,
       "config": {
@@ -265,7 +265,7 @@
     {
       "name": "Error budget remaining (window, SLO 99.9%)",
       "x": 12,
-      "y": 44,
+      "y": 47,
       "w": 12,
       "h": 4,
       "config": {
@@ -297,7 +297,7 @@
     {
       "name": "Multi-window burn rate (SLO 99.9%)",
       "x": 0,
-      "y": 48,
+      "y": 51,
       "w": 12,
       "h": 6,
       "config": {
@@ -311,7 +311,7 @@
     {
       "name": "Availability over time (target 99.9%)",
       "x": 12,
-      "y": 48,
+      "y": 51,
       "w": 12,
       "h": 6,
       "config": {

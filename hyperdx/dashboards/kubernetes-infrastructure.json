@@ -399,7 +399,7 @@
       "x": 0,
       "y": 70,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Container utilization\nPer-container usage as a fraction of its configured CPU/memory **limit** and **request** (`k8s.container.*_utilization` from kubeletstats). Sustained values near 100% of limit risk throttling/OOM."
@@ -408,7 +408,7 @@
     {
       "name": "Container CPU vs limit %",
       "x": 0,
-      "y": 73,
+      "y": 75,
       "w": 12,
       "h": 6,
       "config": {
@@ -426,7 +426,7 @@
     {
       "name": "Container memory vs limit %",
       "x": 12,
-      "y": 73,
+      "y": 75,
       "w": 12,
       "h": 6,
       "config": {
@@ -444,7 +444,7 @@
     {
       "name": "Containers — utilization vs limit / request",
       "x": 0,
-      "y": 79,
+      "y": 81,
       "w": 24,
       "h": 7,
       "config": {
@@ -458,9 +458,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 86,
+      "y": 88,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Cluster events\nKubernetes events collected by the k8sobjects receiver (`events.k8s.io`), stored as logs. Cluster-wide (not scoped by the Namespace filter above)."
@@ -469,7 +469,7 @@
     {
       "name": "Warning events (in range)",
       "x": 0,
-      "y": 89,
+      "y": 93,
       "w": 8,
       "h": 6,
       "config": {
@@ -491,7 +491,7 @@
     {
       "name": "Top event reasons",
       "x": 8,
-      "y": 89,
+      "y": 93,
       "w": 16,
       "h": 6,
       "config": {
@@ -505,7 +505,7 @@
     {
       "name": "Recent events",
       "x": 0,
-      "y": 95,
+      "y": 99,
       "w": 24,
       "h": 8,
       "config": {
