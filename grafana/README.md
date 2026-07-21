@@ -61,7 +61,7 @@ restart Grafana once:
    volumes:
      - ./alerting:/etc/grafana/provisioning/alerting
    ```
-   Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (6 rules).
+   Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (10 rules).
    Later threshold tweaks just need a `POST /api/admin/provisioning/alerting/reload`
    (no full restart).
 
@@ -74,7 +74,7 @@ File-based provisioning needs write access to `/etc/grafana/provisioning/`, whic
 Cloud and some managed setups don't allow. In that case the **dashboards still import
 normally** (step 3); for the **alerts**, use the Terraform provider instead — see
 [`alerting/terraform/`](alerting/terraform/README.md) for a ready-to-apply example that
-creates the same 6 rules, the alert contact point, and the notification policy via the
+creates the same 10 rules, the alert contact point, and the notification policy via the
 Grafana API.
 
 ---
@@ -97,7 +97,8 @@ every panel to the workloads you care about. The Executive Summary is intentiona
 unfiltered — it's the always-on overview.
 
 **Alerts:** a companion set of Grafana unified-alerting rules (error rate, latency,
-ingestion stalled, pods not running, error/fatal logs) lives in
+SLO fast-burn, ingestion stalled, pods not running, container restarts, error/fatal
+logs, collector drops, ClickHouse failed queries) lives in
 [`alerting/`](alerting/README.md) — a generic webhook by default, tunable thresholds. Use these when
 you want Grafana to *page you*, not just visualize.
 
@@ -235,41 +236,54 @@ image for full size.
 ## Dashboard details
 
 ### Executive Summary (all three sources)
-- **Services:** requests/sec, error rate %, latency p95, active-service count; request-volume
+- **Services:** requests/sec, error rate %, latency p95, services-seen count; request-volume
   and overall error-rate trends.
-- **Kubernetes:** Nodes Ready, Pods Running, Pods Not Running, Container Restarts.
+- **Kubernetes:** Nodes Ready, Pods Running, Pods Not Running, container restarts (in range).
 - **Logs:** logs/sec, error+ logs/sec, error log %, fatal count; volume-by-severity and
   error-by-service trends.
 - **Needs attention:** every service ranked by error rate, color-coded.
+- **ClickStack platform:** the pipeline's own health — OTel collector refused/sec, export
+  failures, exporter queue used %, ingest accepted/sec; ClickHouse failed queries/sec,
+  running queries, memory tracked, disk free %; plus throughput and query/failure trends.
 - *A single at-a-glance page for status pages, war-rooms, or a leadership screen. No filters.*
 
 ### Service Health — Golden Signals (`otel_traces`)
 - **Filter:** `Service` (multi-select, default All).
-- **Stats:** requests/sec, error rate %, latency p95, latency p99 (whole selected range).
+- **Stats:** requests/sec, error rate %, latency p95, and a **Services < SLO (99.9%)** count
+  (all over the whole selected range).
 - **Timeseries:** request volume by service, latency percentiles (p50/p95/p99),
   overall error rate, errors per interval by service.
-- **Table:** per-service RED breakdown (Req/s, Errors, Error %, p50/p95/p99) with a
-  color-coded Error % column.
+- **Tables:** per-service RED breakdown (Req/s, Errors, Error %, p50/p95/p99) with a
+  color-coded Error % column; and a **Service SLO & error-budget burn** table
+  (availability %, budget left %, burn rate — burn rate ≥14.4 is page-worthy).
 - *Only inbound "server" spans are counted (`SpanKind = 'Server'`), so numbers reflect
   requests the service handled — not every internal/outbound span.*
 
 ### Kubernetes Cluster Overview (`otel_metrics_gauge`)
 - **Filter:** `Namespace` (multi-select, default All) — applies to pod/deployment/container
   panels; node-level panels always show the whole cluster.
-- **Stats:** Nodes Ready, Pods Running, Pods Not Running, total Container Restarts.
-- **Timeseries:** node CPU (cores), node memory (bytes), pod CPU by pod, deployment
-  available replicas.
-- **Tables:** top pods by working-set memory, container restarts by pod (color-coded).
+- **Stats:** Nodes Ready, Pods Running, Pods Not Running (excludes completed `Succeeded`
+  Job pods), container restarts **in the selected range**.
+- **Timeseries:** node CPU (cores), node memory (IEC bytes), top 10 pods by CPU,
+  deployment availability % (available/desired replicas).
+- **Tables:** top pods by working-set memory, container restarts in range by pod (color-coded).
 - *Requires the OpenTelemetry **k8s cluster receiver** + **kubelet stats receiver**
-  (ClickStack's infrastructure collectors ship these). Pod phase `2` = Running.*
+  (ClickStack's infrastructure collectors ship these). Pod phase `2` = Running, `3` = Succeeded.*
+- **Restart counts are windowed.** `k8s.container.restarts` is a cumulative lifetime
+  counter, so the restart stat/table/alert report the **delta over the selected time
+  range** (`max − min` per container), not the lifetime total — a container that
+  restarted long ago but is now stable shows `0`.
 
 ### Logs & Errors Overview (`otel_logs`)
 - **Filter:** `Service` (multi-select, default All).
 - **Stats:** logs/sec, error+fatal logs/sec, error log %, fatal log count.
-- **Timeseries:** log volume by severity, error+ logs by service.
+- **Timeseries:** log volume by normalized severity, error+ logs by service.
 - **Tables:** top services by error logs, most recent errors (with message body).
-- *"Error+" means `SeverityText` of `error` or `fatal`. Includes both Kubernetes
-  container logs and application OTLP logs, exactly as ClickStack ingests them.*
+- *"Error+" means `SeverityNumber >= 17` (error/fatal), falling back to lowercased
+  `SeverityText` — robust to pipelines that set only the number or only the text.
+  Severity charts group by a normalized bucket, so `info`/`information` and
+  `ERROR`/`error` each collapse to one series. Includes both Kubernetes container
+  logs and application OTLP logs, exactly as ClickStack ingests them.*
 
 ---
 

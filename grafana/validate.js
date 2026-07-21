@@ -6,9 +6,13 @@ const auth = 'Basic ' + Buffer.from('admin:admin').toString('base64');
 async function run(sql, queryType, format) {
   // Template variables aren't interpolated when we POST raw SQL directly, so
   // substitute the filter placeholders with equivalent subqueries for validation.
+  // The service list unions trace + log services so it is correct for BOTH the
+  // trace dashboards and the logs dashboard (whose services live in otel_logs).
   sql = sql
     .replace(/\$\{database\}/g, 'default')
-    .replace(/\$\{service:sqlstring\}/g, "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE Timestamp > now() - INTERVAL 3 HOUR")
+    .replace(/\$\{service:sqlstring\}/g,
+      "SELECT DISTINCT ServiceName FROM default.otel_traces WHERE Timestamp > now() - INTERVAL 3 HOUR " +
+      "UNION DISTINCT SELECT DISTINCT ServiceName FROM default.otel_logs WHERE Timestamp > now() - INTERVAL 3 HOUR")
     .replace(/\$\{namespace:sqlstring\}/g, "SELECT DISTINCT ResourceAttributes['k8s.namespace.name'] FROM default.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase'");
   const body = {
     from: 'now-3h', to: 'now',

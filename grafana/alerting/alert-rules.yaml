@@ -184,6 +184,57 @@ groups:
               conditions:
                 - evaluator: { type: lt, params: [1] }
 
+      # --- 3b. SLO fast burn (99.9% availability) --------------------------
+      # Burn rate = error rate / (1 - SLO). At 14.4x the 0.1% budget is spent
+      # in ~2 days; this is the classic multi-window fast-burn page.
+      - uid: clickstack-slo-fast-burn
+        title: SLO error budget fast burn
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+          stack: clickstack
+        annotations:
+          summary: '{{ $labels.service }} is burning its error budget fast'
+          description: >-
+            {{ $labels.service }} burn rate is {{ printf "%.1f" $values.B.Value }}x
+            the 99.9% SLO budget over the last 1h (pages above 14.4x). Investigate
+            in the Service Health dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT ServiceName AS service,
+                       (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001 AS value
+                FROM default.otel_traces
+                WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'
+                GROUP BY service
+                HAVING count() >= 20
+                ORDER BY value DESC
+          - refId: B
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 3600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [14.4] }
+
   # ==========================================================================
   # Kubernetes (infrastructure, from otel_metrics_gauge)
   # ==========================================================================
@@ -193,8 +244,8 @@ groups:
     interval: 1m
     rules:
       # --- 4. Pods not Running ---------------------------------------------
-      # k8s.pod.phase == 2 means Running. Any pod whose latest phase != 2
-      # (Pending/Failed/Unknown) is counted.
+      # k8s.pod.phase == 2 means Running, == 3 means Succeeded (completed Jobs).
+      # Any pod whose latest phase is neither (Pending/Failed/Unknown) is counted.
       - uid: clickstack-pods-not-running
         title: Pods not Running
         condition: C
@@ -207,8 +258,9 @@ groups:
         annotations:
           summary: '{{ printf "%.0f" $values.B.Value }} pod(s) not in Running phase'
           description: >-
-            One or more pods have been outside the Running phase for 5m. Check
-            the Kubernetes Cluster Overview dashboard.
+            One or more pods have been outside the Running phase for 5m
+            (completed 'Succeeded' Job pods are excluded). Check the Kubernetes
+            Cluster Overview dashboard.
         data:
           - refId: A
             relativeTimeRange: { from: 600, to: 0 }
@@ -229,7 +281,7 @@ groups:
                   WHERE MetricName = 'k8s.pod.phase'
                     AND $__timeFilter(TimeUnix)
                   GROUP BY uid
-                  HAVING phase != 2
+                  HAVING phase NOT IN (2, 3)
                 )
           - refId: B
             relativeTimeRange: { from: 600, to: 0 }
@@ -237,6 +289,59 @@ groups:
             model: { refId: B, type: reduce, reducer: last, expression: A }
           - refId: C
             relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+
+      # --- 4b. Container restarts in window --------------------------------
+      # Counts restarts that occurred INSIDE the eval window (per-container
+      # max-min of the cumulative restart counter), not the lifetime total.
+      - uid: clickstack-container-restarts
+        title: Container restarts detected
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: '{{ printf "%.0f" $values.B.Value }} container restart(s) in the last 15m'
+          description: >-
+            One or more containers restarted in the last 15m (possible crash
+            loop). Check the Kubernetes Cluster Overview dashboard.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT sum(d) AS value
+                FROM (
+                  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/',
+                                ResourceAttributes['k8s.container.name']) AS c,
+                         max(Value) - min(Value) AS d
+                  FROM default.otel_metrics_gauge
+                  WHERE MetricName = 'k8s.container.restarts'
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY c
+                )
+          - refId: B
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 900, to: 0 }
             datasourceUid: __expr__
             model:
               refId: C
@@ -281,7 +386,7 @@ groups:
               intervalMs: 1000
               maxDataPoints: 43200
               rawSql: |
-                SELECT countIf(lower(SeverityText) IN ('error', 'fatal'))
+                SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))
                        / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value
                 FROM default.otel_logs
                 WHERE $__timeFilter(Timestamp)
@@ -326,7 +431,7 @@ groups:
               intervalMs: 1000
               maxDataPoints: 43200
               rawSql: |
-                SELECT countIf(lower(SeverityText) = 'fatal') AS value
+                SELECT countIf(SeverityNumber >= 21 OR lower(SeverityText) = 'fatal') AS value
                 FROM default.otel_logs
                 WHERE $__timeFilter(Timestamp)
           - refId: B
@@ -342,3 +447,121 @@ groups:
               expression: B
               conditions:
                 - evaluator: { type: gt, params: [0] }
+
+  # ==========================================================================
+  # ClickStack platform (the pipeline itself: OTel collector + ClickHouse)
+  # Cumulative counters live in otel_metrics_sum and MUST be charted as
+  # per-service.instance.id windowed deltas (max-min), never sum(Value).
+  # ==========================================================================
+  - orgId: 1
+    name: ClickStack Platform
+    folder: ClickStack Alerts
+    interval: 1m
+    rules:
+      # --- 7. Collector dropping telemetry ---------------------------------
+      # Any refused spans/logs/metric points over the last 10m means the
+      # collector rejected data (backpressure, queue full, bad payloads).
+      - uid: clickstack-collector-dropping
+        title: Collector dropping telemetry
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: OTel collector refused {{ printf "%.0f" $values.B.Value }} item(s) in 10m
+          description: >-
+            The OpenTelemetry collector refused spans/logs/metric points over the
+            last 10m — telemetry is being dropped. Check collector queue/backpressure
+            and the Executive Summary "ClickStack platform" row.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT sum(d) AS value
+                FROM (
+                  SELECT ResourceAttributes['service.instance.id'] AS i,
+                         max(Value) - min(Value) AS d
+                  FROM default.otel_metrics_sum
+                  WHERE MetricName IN (
+                          'otelcol_receiver_refused_spans_total',
+                          'otelcol_receiver_refused_log_records_total',
+                          'otelcol_receiver_refused_metric_points_total')
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY i, MetricName
+                )
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+
+      # --- 8. ClickHouse failed queries elevated ---------------------------
+      # Failed queries per second (windowed delta of the cumulative counter).
+      - uid: clickstack-ch-failed-queries
+        title: ClickHouse failed queries elevated
+        condition: C
+        for: 10m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+        annotations:
+          summary: ClickHouse failing {{ printf "%.2f" $values.B.Value }} queries/sec
+          description: >-
+            ClickHouse is failing queries at {{ printf "%.2f" $values.B.Value }}/sec
+            over the last 10m (warns above 1/sec). Check ClickHouse load/errors and
+            the Executive Summary "ClickStack platform" row.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT sum(d) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value
+                FROM (
+                  SELECT ResourceAttributes['service.instance.id'] AS i,
+                         max(Value) - min(Value) AS d
+                  FROM default.otel_metrics_sum
+                  WHERE MetricName = 'ClickHouseProfileEvents_FailedQuery'
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY i
+                )
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [1] }

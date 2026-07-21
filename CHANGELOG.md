@@ -9,9 +9,12 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 - **Grafana deliverable (`grafana/`)** — four dashboards (Executive Summary, Service Health /
   golden signals, Kubernetes Cluster Overview, Logs & Errors Overview) over the same ClickHouse
-  data, plus a **provisioned alerting pack** (`grafana/alerting/`) of six unified-alerting rules
+  data, plus a **provisioned alerting pack** (`grafana/alerting/`) of ten unified-alerting rules
   (generic webhook by default) shipped as YAML **and** Terraform. Portable via a datasource variable,
   with a durable ConfigMap installer for ClickStack-on-Kubernetes (`grafana/kubernetes/`).
+  Includes a **ClickStack platform-health row** (OTel collector accepted/refused/queue and
+  ClickHouse queries/failures/memory/disk), a per-service **SLO & error-budget burn** table,
+  and matching alerts (SLO fast-burn, container restarts, collector drops, ClickHouse failed queries).
 - **Customer-facing docs** — each section README embeds an architecture diagram (Mermaid),
   live screenshots, and a glossary, so leadership and engineers share one document per product.
 - **Alerts pack (`hyperdx/alerts/`)** — importable HyperDX alerts bound to dashboard tiles, one per

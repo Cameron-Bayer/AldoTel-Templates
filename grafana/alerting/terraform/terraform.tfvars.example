@@ -13,6 +13,8 @@ clickhouse_database       = "default"
 alert_webhook_url = "https://REPLACE-WITH-YOUR-WEBHOOK-URL"
 
 # Optional: override the default thresholds.
-# error_rate_pct         = 5
-# p95_latency_ms         = 2000
-# error_log_rate_per_sec = 5
+# error_rate_pct            = 5
+# p95_latency_ms            = 2000
+# error_log_rate_per_sec    = 5
+# slo_burn_rate             = 14.4
+# ch_failed_queries_per_sec = 1

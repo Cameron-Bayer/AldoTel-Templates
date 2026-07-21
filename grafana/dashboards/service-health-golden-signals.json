@@ -186,7 +186,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -313,7 +313,7 @@
     {
       "id": null,
       "type": "stat",
-      "title": "Latency p99",
+      "title": "Services < SLO (99.9%)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -332,7 +332,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT quantile(0.99)(Duration) / 1e6 AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ServiceName, countIf(StatusCode = 'Error') / nullIf(count(), 0) AS er\n  FROM ${database}.otel_traces\n  WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\n  GROUP BY ServiceName\n  HAVING count() >= 20 AND er > 0.001)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -345,18 +345,22 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "ms",
-          "decimals": 1,
+          "unit": "short",
+          "decimals": 0,
           "color": {
-            "mode": "fixed",
+            "mode": "thresholds",
             "fixedColor": "text"
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
               }
             ]
           },
@@ -374,7 +378,7 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
       }
@@ -549,7 +553,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS error_pct\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY time\nORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -697,7 +701,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS \"p50 ms\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS \"p99 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error %\",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS \"p50 ms\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS \"p99 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -830,6 +834,174 @@
                       "value": 5
                     }
                   ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      }
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "SLO / error budget (99.9% availability target)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 30
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Service SLO & error-budget burn",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 31
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Requests\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * (1 - countIf(StatusCode = 'Error') / nullIf(count(), 0)), 3) AS \"Availability %\",\n       round(100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001), 1) AS \"Budget left %\",\n       round((countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001, 2) AS \"Burn rate\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nHAVING count() >= 20\nORDER BY \"Burn rate\" DESC",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Availability %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 3
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Budget left %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Burn rate"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background",
+                  "mode": "gradient"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 1
+                    },
+                    {
+                      "color": "red",
+                      "value": 14.4
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Budget left %"
+            },
+            "properties": [
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 0
+                    },
+                    {
+                      "color": "green",
+                      "value": 50
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
                 }
               }
             ]

@@ -211,6 +211,34 @@ const WINDOW_S = "dateDiff('second', $__fromTime, $__toTime)";
 const SVC = 'AND ServiceName IN (${service:sqlstring})';           // traces / logs
 const NS = "AND ResourceAttributes['k8s.namespace.name'] IN (${namespace:sqlstring})"; // metrics
 
+// --- shared metric/log helpers --------------------------------------------
+const WINDOW_S_SAFE = `greatest(${WINDOW_S}, 1)`;
+const MFU = '$__timeFilter(TimeUnix)';
+const MIU = '$__timeInterval(TimeUnix)';
+const INST = "ResourceAttributes['service.instance.id']";
+
+// Windowed, per-instance delta of a CUMULATIVE counter (otel_metrics_sum,
+// AggregationTemporality=2 / monotonic). Summing (max-min) per service.instance.id
+// makes counter resets and multiple collector/ClickHouse instances safe — never sum(Value).
+const sumDelta = (m) =>
+  `(SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${DB}.otel_metrics_sum ` +
+  `WHERE MetricName = '${m}' AND ${MFU} GROUP BY ${INST}))`;
+
+// Latest-per-instance sum of a GAUGE (otel_metrics_gauge) as a scalar subquery.
+const gaugeLatest = (m) =>
+  `(SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${DB}.otel_metrics_gauge ` +
+  `WHERE MetricName = '${m}' AND ${MFU} GROUP BY ${INST}))`;
+
+// Canonical error/fatal log predicates. SeverityNumber is the robust signal
+// (17=error, 21=fatal); the lowercase text is a fallback for pipelines that only set text.
+const LOG_ERR = "(SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))";
+const LOG_FATAL = "(SeverityNumber >= 21 OR lower(SeverityText) = 'fatal')";
+// Normalize mixed severity text (info vs information, upper vs lower) into canonical buckets.
+const SEV_NORM =
+  "multiIf(SeverityNumber >= 21, 'fatal', SeverityNumber >= 17, 'error', " +
+  "SeverityNumber >= 13, 'warn', SeverityNumber >= 9, 'info', SeverityNumber >= 5, 'debug', " +
+  "SeverityNumber >= 1, 'trace', SeverityText != '', lower(SeverityText), 'unspecified')";
+
 // ===========================================================================
 // 1. Service Health — Golden Signals (traces / RED)
 // ===========================================================================
@@ -221,15 +249,18 @@ function serviceHealth() {
     `SELECT count() / ${WINDOW_S} AS value FROM ${DB}.otel_traces WHERE ${W}`,
     { unit: 'reqps', decimals: 1 }));
   p.push(stat('Error rate', { h: 4, w: 6, x: 6, y: 0 },
-    `SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM ${DB}.otel_traces WHERE ${W}`,
+    `SELECT 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS value FROM ${DB}.otel_traces WHERE ${W}`,
     { unit: 'percent', decimals: 2, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } }));
   p.push(stat('Latency p95', { h: 4, w: 6, x: 12, y: 0 },
     `SELECT quantile(0.95)(Duration) / 1e6 AS value FROM ${DB}.otel_traces WHERE ${W}`,
     { unit: 'ms', decimals: 1 }));
-  p.push(stat('Latency p99', { h: 4, w: 6, x: 18, y: 0 },
-    `SELECT quantile(0.99)(Duration) / 1e6 AS value FROM ${DB}.otel_traces WHERE ${W}`,
-    { unit: 'ms', decimals: 1 }));
+  // Services burning error budget faster than the 99.9% SLO allows (error rate > 0.1%),
+  // counting only services with enough traffic to be statistically meaningful.
+  p.push(stat('Services < SLO (99.9%)', { h: 4, w: 6, x: 18, y: 0 },
+    `SELECT count() AS value FROM (\n  SELECT ServiceName, countIf(StatusCode = 'Error') / nullIf(count(), 0) AS er\n  FROM ${DB}.otel_traces\n  WHERE ${W}\n  GROUP BY ServiceName\n  HAVING count() >= 20 AND er > 0.001)`,
+    { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'red', value: 1 }] } }));
 
   p.push(timeseries('Request volume by service', { h: 8, w: 12, x: 0, y: 4 },
     `SELECT ${TI} AS time, ServiceName, count() AS requests\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY time, ServiceName\nORDER BY time`,
@@ -239,14 +270,14 @@ function serviceHealth() {
     { unit: 'ms' }));
 
   p.push(timeseries('Overall error rate (%)', { h: 8, w: 12, x: 0, y: 12 },
-    `SELECT ${TI} AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY time\nORDER BY time`,
+    `SELECT ${TI} AS time, 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS error_pct\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY time\nORDER BY time`,
     { unit: 'percent', fillOpacity: 20 }));
   p.push(timeseries('Errors per interval by service', { h: 8, w: 12, x: 12, y: 12 },
     `SELECT ${TI} AS time, ServiceName, countIf(StatusCode = 'Error') AS errors\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY time, ServiceName\nHAVING errors > 0\nORDER BY time`,
     { unit: 'short', stacking: 'normal', fillOpacity: 25 }));
 
   p.push(table('Service breakdown (RED)', { h: 10, w: 24, x: 0, y: 20 },
-    `SELECT ServiceName AS "Service",\n       round(count() / ${WINDOW_S}, 2) AS "Req/s",\n       countIf(StatusCode = 'Error') AS "Errors",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS "Error %",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS "p50 ms",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS "p95 ms",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS "p99 ms"\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY ServiceName\nORDER BY count() DESC`,
+    `SELECT ServiceName AS "Service",\n       round(count() / ${WINDOW_S}, 2) AS "Req/s",\n       countIf(StatusCode = 'Error') AS "Errors",\n       round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS "Error %",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS "p50 ms",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS "p95 ms",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS "p99 ms"\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY ServiceName\nORDER BY count() DESC`,
     [
       unitOverride('Req/s', 'reqps', 2),
       unitOverride('Error %', 'percent', 2),
@@ -257,6 +288,27 @@ function serviceHealth() {
         { id: 'custom.cellOptions', value: { type: 'color-background', mode: 'gradient' } },
         { id: 'thresholds', value: { mode: 'absolute', steps: [
           { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } },
+      ] },
+    ]));
+
+  // --- SLO / error budget (99.9% availability target) ---------------------
+  // Availability = 1 - error rate. Burn rate = how fast the 0.1% error budget is
+  // consumed in this window (>1 = over budget, >=14.4 = fast-burn / page-worthy).
+  p.push(row('SLO / error budget (99.9% availability target)', 30));
+  p.push(table('Service SLO & error-budget burn', { h: 9, w: 24, x: 0, y: 31 },
+    `SELECT ServiceName AS "Service",\n       count() AS "Requests",\n       countIf(StatusCode = 'Error') AS "Errors",\n       round(100 * (1 - countIf(StatusCode = 'Error') / nullIf(count(), 0)), 3) AS "Availability %",\n       round(100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001), 1) AS "Budget left %",\n       round((countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001, 2) AS "Burn rate"\nFROM ${DB}.otel_traces\nWHERE ${W}\nGROUP BY ServiceName\nHAVING count() >= 20\nORDER BY "Burn rate" DESC`,
+    [
+      unitOverride('Availability %', 'percent', 3),
+      unitOverride('Budget left %', 'percent', 1),
+      { matcher: { id: 'byName', options: 'Burn rate' }, properties: [
+        { id: 'custom.cellOptions', value: { type: 'color-background', mode: 'gradient' } },
+        { id: 'thresholds', value: { mode: 'absolute', steps: [
+          { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 14.4 }] } },
+      ] },
+      { matcher: { id: 'byName', options: 'Budget left %' }, properties: [
+        { id: 'thresholds', value: { mode: 'absolute', steps: [
+          { color: 'red', value: null }, { color: 'yellow', value: 0 }, { color: 'green', value: 50 }] } },
+        { id: 'custom.cellOptions', value: { type: 'color-text' } },
       ] },
     ]));
   const svcVar = queryVar('service', 'Service',
@@ -282,11 +334,13 @@ function k8sOverview() {
     `SELECT count() AS value FROM (\n  SELECT ${RA('k8s.pod.uid')} AS u, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF} ${NS}\n  GROUP BY u HAVING v = 2)`,
     { unit: 'short', decimals: 0 }));
   p.push(stat('Pods Not Running', { h: 4, w: 6, x: 12, y: 0 },
-    `SELECT count() AS value FROM (\n  SELECT ${RA('k8s.pod.uid')} AS u, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF} ${NS}\n  GROUP BY u HAVING v != 2)`,
+    `SELECT count() AS value FROM (\n  SELECT ${RA('k8s.pod.uid')} AS u, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF} ${NS}\n  GROUP BY u HAVING v NOT IN (2, 3))`,
     { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'red', value: 1 }] } }));
-  p.push(stat('Container Restarts', { h: 4, w: 6, x: 18, y: 0 },
-    `SELECT sum(v) AS value FROM (\n  SELECT concat(${RA('k8s.pod.uid')}, '/', ${RA('k8s.container.name')}) AS c, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND ${MF} ${NS}\n  GROUP BY c)`,
+  // Restarts that happened INSIDE the selected window (per-container max-min of the
+  // cumulative restart counter), not the lifetime total — see grafana/README.md.
+  p.push(stat('Container restarts (in range)', { h: 4, w: 6, x: 18, y: 0 },
+    `SELECT sum(d) AS value FROM (\n  SELECT concat(${RA('k8s.pod.uid')}, '/', ${RA('k8s.container.name')}) AS c, max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND ${MF} ${NS}\n  GROUP BY c)`,
     { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 10 }] } }));
 
@@ -295,20 +349,23 @@ function k8sOverview() {
     { unit: 'short' }));
   p.push(timeseries('Node memory usage', { h: 8, w: 12, x: 12, y: 4 },
     `SELECT ${MI} AS time, ${RA('k8s.node.name')} AS node, avg(Value) AS mem_bytes\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.memory.usage' AND ${MF}\nGROUP BY time, node ORDER BY time`,
-    { unit: 'bytes' }));
+    { unit: 'bytes_iec' }));
 
-  p.push(timeseries('Pod CPU usage (cores)', { h: 8, w: 12, x: 0, y: 12 },
-    `SELECT ${MI} AS time, ${RA('k8s.pod.name')} AS pod, avg(Value) AS cpu_cores\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.cpu.usage' AND ${MF} ${NS}\nGROUP BY time, pod ORDER BY time`,
+  // Top 10 pods by CPU only — pod-level series are high cardinality, so a full
+  // breakdown is unreadable at a glance. Series are keyed by namespace/pod.
+  p.push(timeseries('Top 10 pods by CPU (cores)', { h: 8, w: 12, x: 0, y: 12 },
+    `SELECT ${MI} AS time, concat(${RA('k8s.namespace.name')}, '/', ${RA('k8s.pod.name')}) AS pod, avg(Value) AS cpu_cores\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.cpu.usage' AND ${MF} ${NS}\n  AND concat(${RA('k8s.namespace.name')}, '/', ${RA('k8s.pod.name')}) IN (\n    SELECT concat(${RA('k8s.namespace.name')}, '/', ${RA('k8s.pod.name')}) AS pk\n    FROM ${DB}.otel_metrics_gauge\n    WHERE MetricName = 'k8s.pod.cpu.usage' AND ${MF} ${NS}\n    GROUP BY pk ORDER BY avg(Value) DESC LIMIT 10)\nGROUP BY time, pod ORDER BY time`,
     { unit: 'short', legend: true }));
-  p.push(timeseries('Deployment availability (available replicas)', { h: 8, w: 12, x: 12, y: 12 },
-    `SELECT ${MI} AS time, ${RA('k8s.deployment.name')} AS deployment, avg(Value) AS available\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.deployment.available' AND ${MF} ${NS}\nGROUP BY time, deployment ORDER BY time`,
-    { unit: 'short' }));
+  // Available / desired replicas as a percentage (100% = fully rolled out).
+  p.push(timeseries('Deployment availability (%)', { h: 8, w: 12, x: 12, y: 12 },
+    `SELECT time, deployment, 100 * available / greatest(desired, 1) AS "availability %"\nFROM (\n  SELECT ${MI} AS time,\n         concat(${RA('k8s.namespace.name')}, '/', ${RA('k8s.deployment.name')}) AS deployment,\n         avgIf(Value, MetricName = 'k8s.deployment.available') AS available,\n         avgIf(Value, MetricName = 'k8s.deployment.desired') AS desired\n  FROM ${DB}.otel_metrics_gauge\n  WHERE MetricName IN ('k8s.deployment.available', 'k8s.deployment.desired') AND ${MF} ${NS}\n  GROUP BY time, deployment)\nORDER BY time`,
+    { unit: 'percent' }));
 
   p.push(table('Top pods by memory (working set)', { h: 9, w: 12, x: 0, y: 20 },
     `SELECT ${RA('k8s.namespace.name')} AS "Namespace",\n       ${RA('k8s.pod.name')} AS "Pod",\n       argMax(Value, TimeUnix) AS "Memory"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.pod.memory.working_set' AND ${MF} ${NS}\nGROUP BY 1, 2\nORDER BY "Memory" DESC\nLIMIT 20`,
-    [unitOverride('Memory', 'bytes', 1)]));
-  p.push(table('Container restarts (by pod)', { h: 9, w: 12, x: 12, y: 20 },
-    `SELECT ${RA('k8s.namespace.name')} AS "Namespace",\n       ${RA('k8s.pod.name')} AS "Pod",\n       ${RA('k8s.container.name')} AS "Container",\n       toUInt64(argMax(Value, TimeUnix)) AS "Restarts"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.restarts' AND ${MF} ${NS}\nGROUP BY 1, 2, 3\nHAVING "Restarts" > 0\nORDER BY "Restarts" DESC\nLIMIT 20`,
+    [unitOverride('Memory', 'bytes_iec', 1)]));
+  p.push(table('Container restarts in range (by pod)', { h: 9, w: 12, x: 12, y: 20 },
+    `SELECT ${RA('k8s.namespace.name')} AS "Namespace",\n       ${RA('k8s.pod.name')} AS "Pod",\n       ${RA('k8s.container.name')} AS "Container",\n       toUInt64(max(Value) - min(Value)) AS "Restarts"\nFROM ${DB}.otel_metrics_gauge\nWHERE MetricName = 'k8s.container.restarts' AND ${MF} ${NS}\nGROUP BY 1, 2, 3\nHAVING "Restarts" > 0\nORDER BY "Restarts" DESC\nLIMIT 20`,
     [{ matcher: { id: 'byName', options: 'Restarts' }, properties: [
       { id: 'custom.cellOptions', value: { type: 'color-background', mode: 'gradient' } },
       { id: 'thresholds', value: { mode: 'absolute', steps: [
@@ -326,7 +383,7 @@ function k8sOverview() {
 // ===========================================================================
 function logsOverview() {
   const p = [];
-  const ERR = "lower(SeverityText) IN ('error', 'fatal')";
+  const ERR = LOG_ERR;
   const W = `${TF} ${SVC}`;
   p.push(stat('Logs / sec', { h: 4, w: 6, x: 0, y: 0 },
     `SELECT count() / ${WINDOW_S} AS value FROM ${DB}.otel_logs WHERE ${W}`,
@@ -336,26 +393,28 @@ function logsOverview() {
     { unit: 'short', decimals: 2, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } }));
   p.push(stat('Error log %', { h: 4, w: 6, x: 12, y: 0 },
-    `SELECT 100 * countIf(${ERR}) / count() AS value FROM ${DB}.otel_logs WHERE ${W}`,
+    `SELECT 100 * countIf(${ERR}) / nullIf(count(), 0) AS value FROM ${DB}.otel_logs WHERE ${W}`,
     { unit: 'percent', decimals: 2, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 2 }, { color: 'red', value: 10 }] } }));
   p.push(stat('Fatal logs', { h: 4, w: 6, x: 18, y: 0 },
-    `SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM ${DB}.otel_logs WHERE ${W}`,
+    `SELECT countIf(${LOG_FATAL}) AS value FROM ${DB}.otel_logs WHERE ${W}`,
     { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'red', value: 1 }] } }));
 
+  // Group by a NORMALIZED severity bucket (info vs information, ERROR vs error all
+  // collapse to one series) derived from SeverityNumber, not the raw text.
   p.push(timeseries('Log volume by severity', { h: 8, w: 12, x: 0, y: 4 },
-    `SELECT ${TI} AS time, SeverityText AS severity, count() AS logs\nFROM ${DB}.otel_logs\nWHERE ${W} AND SeverityText != ''\nGROUP BY time, severity ORDER BY time`,
+    `SELECT ${TI} AS time, ${SEV_NORM} AS severity, count() AS logs\nFROM ${DB}.otel_logs\nWHERE ${W}\nGROUP BY time, severity ORDER BY time`,
     { unit: 'short', stacking: 'normal', fillOpacity: 25 }));
   p.push(timeseries('Error+ logs by service', { h: 8, w: 12, x: 12, y: 4 },
     `SELECT ${TI} AS time, ServiceName AS service, count() AS errors\nFROM ${DB}.otel_logs\nWHERE ${W} AND ${ERR}\nGROUP BY time, service HAVING errors > 0 ORDER BY time`,
     { unit: 'short', stacking: 'normal', fillOpacity: 25 }));
 
   p.push(table('Top services by error+ logs', { h: 9, w: 8, x: 0, y: 12 },
-    `SELECT ServiceName AS "Service",\n       count() AS "Error logs",\n       round(100 * count() / (SELECT count() FROM ${DB}.otel_logs WHERE ${W} AND ${ERR}), 1) AS "% of errors"\nFROM ${DB}.otel_logs\nWHERE ${W} AND ${ERR}\nGROUP BY 1 ORDER BY 2 DESC LIMIT 15`,
+    `SELECT ServiceName AS "Service",\n       count() AS "Error logs",\n       round(100 * count() / nullIf((SELECT count() FROM ${DB}.otel_logs WHERE ${W} AND ${ERR}), 0), 1) AS "% of errors"\nFROM ${DB}.otel_logs\nWHERE ${W} AND ${ERR}\nGROUP BY 1 ORDER BY 2 DESC LIMIT 15`,
     [unitOverride('% of errors', 'percent', 1)]));
   p.push(table('Recent errors', { h: 9, w: 16, x: 8, y: 12 },
-    `SELECT Timestamp AS "Time",\n       ServiceName AS "Service",\n       SeverityText AS "Severity",\n       substring(Body, 1, 200) AS "Message"\nFROM ${DB}.otel_logs\nWHERE ${W} AND ${ERR}\nORDER BY Timestamp DESC LIMIT 100`,
+    `SELECT Timestamp AS "Time",\n       ServiceName AS "Service",\n       ${SEV_NORM} AS "Severity",\n       substring(Body, 1, 200) AS "Message"\nFROM ${DB}.otel_logs\nWHERE ${W} AND ${ERR}\nORDER BY Timestamp DESC LIMIT 100`,
     [{ matcher: { id: 'byName', options: 'Time' }, properties: [{ id: 'custom.width', value: 180 }] },
      { matcher: { id: 'byName', options: 'Severity' }, properties: [{ id: 'custom.width', value: 90 }] }]));
 
@@ -371,8 +430,9 @@ function logsOverview() {
 function execSummary() {
   const p = [];
   const MF = '$__timeFilter(TimeUnix)';
+  const MI = '$__timeInterval(TimeUnix)';
   const RA = (k) => `ResourceAttributes['${k}']`;
-  const ERR = "lower(SeverityText) IN ('error', 'fatal')";
+  const ERR = LOG_ERR;
 
   // --- Services -----------------------------------------------------------
   p.push(row('Services (traces)', 0));
@@ -380,20 +440,20 @@ function execSummary() {
     `SELECT count() / ${WINDOW_S} AS value FROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}`,
     { unit: 'reqps', decimals: 1 }));
   p.push(stat('Error rate', { h: 5, w: 6, x: 6, y: 1 },
-    `SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}`,
+    `SELECT 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS value FROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}`,
     { unit: 'percent', decimals: 2, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } }));
   p.push(stat('Latency p95', { h: 5, w: 6, x: 12, y: 1 },
     `SELECT quantile(0.95)(Duration) / 1e6 AS value FROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}`,
     { unit: 'ms', decimals: 1 }));
-  p.push(stat('Active services', { h: 5, w: 6, x: 18, y: 1 },
+  p.push(stat('Services seen', { h: 5, w: 6, x: 18, y: 1 },
     `SELECT count(DISTINCT ServiceName) AS value FROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}`,
     { unit: 'short', decimals: 0 }));
   p.push(timeseries('Request volume', { h: 6, w: 12, x: 0, y: 6 },
     `SELECT ${TI} AS time, count() AS requests\nFROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}\nGROUP BY time ORDER BY time`,
     { unit: 'short', fillOpacity: 20, legend: false, interval: '5m' }));
   p.push(timeseries('Overall error rate (%)', { h: 6, w: 12, x: 12, y: 6 },
-    `SELECT ${TI} AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}\nGROUP BY time ORDER BY time`,
+    `SELECT ${TI} AS time, 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS error_pct\nFROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER}\nGROUP BY time ORDER BY time`,
     { unit: 'percent', fillOpacity: 20, legend: false, interval: '5m' }));
 
   // --- Kubernetes ---------------------------------------------------------
@@ -405,11 +465,11 @@ function execSummary() {
     `SELECT count() AS value FROM (\n  SELECT ${RA('k8s.pod.uid')} AS u, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF}\n  GROUP BY u HAVING v = 2)`,
     { unit: 'short', decimals: 0 }));
   p.push(stat('Pods Not Running', { h: 5, w: 6, x: 12, y: 13 },
-    `SELECT count() AS value FROM (\n  SELECT ${RA('k8s.pod.uid')} AS u, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF}\n  GROUP BY u HAVING v != 2)`,
+    `SELECT count() AS value FROM (\n  SELECT ${RA('k8s.pod.uid')} AS u, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF}\n  GROUP BY u HAVING v NOT IN (2, 3))`,
     { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'red', value: 1 }] } }));
-  p.push(stat('Container Restarts', { h: 5, w: 6, x: 18, y: 13 },
-    `SELECT sum(v) AS value FROM (\n  SELECT concat(${RA('k8s.pod.uid')}, '/', ${RA('k8s.container.name')}) AS c, argMax(Value, TimeUnix) AS v\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND ${MF}\n  GROUP BY c)`,
+  p.push(stat('Container restarts (in range)', { h: 5, w: 6, x: 18, y: 13 },
+    `SELECT sum(d) AS value FROM (\n  SELECT concat(${RA('k8s.pod.uid')}, '/', ${RA('k8s.container.name')}) AS c, max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND ${MF}\n  GROUP BY c)`,
     { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 10 }] } }));
 
@@ -423,15 +483,15 @@ function execSummary() {
     { unit: 'short', decimals: 2, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } }));
   p.push(stat('Error log %', { h: 5, w: 6, x: 12, y: 19 },
-    `SELECT 100 * countIf(${ERR}) / count() AS value FROM ${DB}.otel_logs WHERE ${TF}`,
+    `SELECT 100 * countIf(${ERR}) / nullIf(count(), 0) AS value FROM ${DB}.otel_logs WHERE ${TF}`,
     { unit: 'percent', decimals: 2, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'yellow', value: 2 }, { color: 'red', value: 10 }] } }));
   p.push(stat('Fatal logs', { h: 5, w: 6, x: 18, y: 19 },
-    `SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM ${DB}.otel_logs WHERE ${TF}`,
+    `SELECT countIf(${LOG_FATAL}) AS value FROM ${DB}.otel_logs WHERE ${TF}`,
     { unit: 'short', decimals: 0, thresholds: { mode: 'absolute', steps: [
       { color: 'green', value: null }, { color: 'red', value: 1 }] } }));
   p.push(timeseries('Log volume by severity', { h: 6, w: 12, x: 0, y: 24 },
-    `SELECT ${TI} AS time, SeverityText AS severity, count() AS logs\nFROM ${DB}.otel_logs WHERE ${TF} AND SeverityText != ''\nGROUP BY time, severity ORDER BY time`,
+    `SELECT ${TI} AS time, ${SEV_NORM} AS severity, count() AS logs\nFROM ${DB}.otel_logs WHERE ${TF}\nGROUP BY time, severity ORDER BY time`,
     { unit: 'short', stacking: 'normal', fillOpacity: 25, interval: '5m' }));
   p.push(timeseries('Error+ logs by service', { h: 6, w: 12, x: 12, y: 24 },
     `SELECT ${TI} AS time, ServiceName AS service, count() AS errors\nFROM ${DB}.otel_logs WHERE ${TF} AND ${ERR}\nGROUP BY time, service HAVING errors > 0 ORDER BY time`,
@@ -440,7 +500,7 @@ function execSummary() {
   // --- Attention table ----------------------------------------------------
   p.push(row('Needs attention', 30));
   p.push(table('Services by error rate', { h: 9, w: 24, x: 0, y: 31 },
-    `SELECT ServiceName AS "Service",\n       round(count() / ${WINDOW_S}, 2) AS "Req/s",\n       countIf(StatusCode = 'Error') AS "Errors",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS "Error %",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS "p95 ms"\nFROM ${DB}.otel_traces\nWHERE ${TF} AND ${SERVER}\nGROUP BY ServiceName\nORDER BY "Error %" DESC, "Req/s" DESC`,
+    `SELECT ServiceName AS "Service",\n       round(count() / ${WINDOW_S}, 2) AS "Req/s",\n       countIf(StatusCode = 'Error') AS "Errors",\n       round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS "Error %",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS "p95 ms"\nFROM ${DB}.otel_traces\nWHERE ${TF} AND ${SERVER}\nGROUP BY ServiceName\nORDER BY "Error %" DESC, "Req/s" DESC`,
     [
       unitOverride('Req/s', 'reqps', 2),
       unitOverride('Error %', 'percent', 2),
@@ -451,6 +511,46 @@ function execSummary() {
           { color: 'green', value: null }, { color: 'yellow', value: 1 }, { color: 'red', value: 5 }] } },
       ] },
     ]));
+
+  // --- ClickStack platform (the pipeline itself: collector + ClickHouse) ---
+  // Cumulative counters (otel_metrics_sum) are charted as per-instance windowed
+  // deltas/rates via sumDelta(); gauges use latest-per-instance via gaugeLatest().
+  p.push(row('ClickStack platform (collector + ClickHouse)', 40));
+  p.push(stat('Collector refused / sec', { h: 5, w: 6, x: 0, y: 41 },
+    `SELECT (${sumDelta('otelcol_receiver_refused_spans_total')}\n      + ${sumDelta('otelcol_receiver_refused_log_records_total')}\n      + ${sumDelta('otelcol_receiver_refused_metric_points_total')}) / ${WINDOW_S_SAFE} AS value`,
+    { unit: 'short', decimals: 3, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'red', value: 0.001 }] } }));
+  p.push(stat('Export failures / sec', { h: 5, w: 6, x: 6, y: 41 },
+    `SELECT ${sumDelta('otelcol_exporter_send_failed_log_records_total')} / ${WINDOW_S_SAFE} AS value`,
+    { unit: 'short', decimals: 3, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'red', value: 0.001 }] } }));
+  p.push(stat('Exporter queue used %', { h: 5, w: 6, x: 12, y: 41 },
+    `SELECT 100 * ${gaugeLatest('otelcol_exporter_queue_size')} / greatest(${gaugeLatest('otelcol_exporter_queue_capacity')}, 1) AS value`,
+    { unit: 'percent', decimals: 1, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'yellow', value: 50 }, { color: 'red', value: 80 }] } }));
+  p.push(stat('Ingest accepted / sec', { h: 5, w: 6, x: 18, y: 41 },
+    `SELECT (${sumDelta('otelcol_receiver_accepted_spans_total')}\n      + ${sumDelta('otelcol_receiver_accepted_log_records_total')}\n      + ${sumDelta('otelcol_receiver_accepted_metric_points_total')}) / ${WINDOW_S_SAFE} AS value`,
+    { unit: 'short', decimals: 1 }));
+  p.push(stat('CH failed queries / sec', { h: 5, w: 6, x: 0, y: 46 },
+    `SELECT ${sumDelta('ClickHouseProfileEvents_FailedQuery')} / ${WINDOW_S_SAFE} AS value`,
+    { unit: 'short', decimals: 3, thresholds: { mode: 'absolute', steps: [
+      { color: 'green', value: null }, { color: 'yellow', value: 0.1 }, { color: 'red', value: 1 }] } }));
+  p.push(stat('CH running queries', { h: 5, w: 6, x: 6, y: 46 },
+    `SELECT ${gaugeLatest('ClickHouseMetrics_Query')} AS value`,
+    { unit: 'short', decimals: 0 }));
+  p.push(stat('CH memory tracked', { h: 5, w: 6, x: 12, y: 46 },
+    `SELECT ${gaugeLatest('ClickHouseMetrics_MemoryTracking')} AS value`,
+    { unit: 'bytes_iec', decimals: 1 }));
+  p.push(stat('CH disk free %', { h: 5, w: 6, x: 18, y: 46 },
+    `SELECT 100 * ${gaugeLatest('ClickHouseAsyncMetrics_DiskAvailable_default')} / greatest(${gaugeLatest('ClickHouseAsyncMetrics_DiskTotal_default')}, 1) AS value`,
+    { unit: 'percent', decimals: 1, thresholds: { mode: 'absolute', steps: [
+      { color: 'red', value: null }, { color: 'yellow', value: 15 }, { color: 'green', value: 25 }] } }));
+  p.push(timeseries('Collector throughput (accepted vs refused, per interval)', { h: 7, w: 12, x: 0, y: 51 },
+    `SELECT time,\n       sumIf(d, kind = 'accepted') AS accepted,\n       sumIf(d, kind = 'refused') AS refused\nFROM (\n  SELECT ${MI} AS time,\n         if(MetricName LIKE '%refused%', 'refused', 'accepted') AS kind,\n         ${INST} AS i, MetricName AS m,\n         max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_sum\n  WHERE MetricName IN (\n    'otelcol_receiver_accepted_spans_total', 'otelcol_receiver_accepted_log_records_total', 'otelcol_receiver_accepted_metric_points_total',\n    'otelcol_receiver_refused_spans_total', 'otelcol_receiver_refused_log_records_total', 'otelcol_receiver_refused_metric_points_total')\n    AND ${MF}\n  GROUP BY time, kind, i, m)\nGROUP BY time ORDER BY time`,
+    { unit: 'short', interval: '5m' }));
+  p.push(timeseries('ClickHouse queries vs failures (per interval)', { h: 7, w: 12, x: 12, y: 51 },
+    `SELECT time,\n       sumIf(d, m = 'ClickHouseProfileEvents_Query') AS queries,\n       sumIf(d, m = 'ClickHouseProfileEvents_FailedQuery') AS failed\nFROM (\n  SELECT ${MI} AS time, MetricName AS m, ${INST} AS i,\n         max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_sum\n  WHERE MetricName IN ('ClickHouseProfileEvents_Query', 'ClickHouseProfileEvents_FailedQuery') AND ${MF}\n  GROUP BY time, m, i)\nGROUP BY time ORDER BY time`,
+    { unit: 'short', interval: '5m' }));
 
   return dashboard('clickstack-exec-summary', 'ClickStack · Executive Summary',
     'One-pane health overview across services, Kubernetes, and logs — top signals from all three ClickStack Grafana dashboards.', p);

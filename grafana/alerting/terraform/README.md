@@ -7,7 +7,7 @@ Grafana HTTP API using the official
 [`grafana/grafana` Terraform provider](https://registry.terraform.io/providers/grafana/grafana/latest/docs):
 
 - a **folder** `ClickStack Alerts`,
-- the **6 alert rules** (3 groups: Services, Kubernetes, Logs),
+- the **10 alert rules** (4 groups: Services, Kubernetes, Logs, Platform),
 - the **ClickStack Alerts** contact point,
 - a **notification policy** routing `stack=clickstack` alerts to that contact point.
 
@@ -39,7 +39,7 @@ terraform apply
 ```
 
 After apply, open **Alerting → Alert rules** in Grafana — the *ClickStack Alerts*
-folder holds all 6 rules. Test delivery via **Contact points → ClickStack Alerts
+folder holds all 10 rules. Test delivery via **Contact points → ClickStack Alerts
 → Test**.
 
 ## Setting thresholds
@@ -51,9 +51,12 @@ Override any of these in `terraform.tfvars` (defaults shown):
 | `error_rate_pct` | `5` | Service error rate alert (% ) |
 | `p95_latency_ms` | `2000` | Service p95 latency alert (ms) |
 | `error_log_rate_per_sec` | `5` | Error/fatal log-rate alert (logs/s) |
+| `slo_burn_rate` | `14.4` | SLO error-budget fast-burn alert (× budget) |
+| `ch_failed_queries_per_sec` | `1` | ClickHouse failed-query alert (queries/s) |
 
 The two boolean-style thresholds — *Pods not Running* (`> 0`) and *Fatal logs
-present* (`> 0`), plus *Trace ingestion stalled* (`< 1`) — are structural and
+present* (`> 0`), plus *Container restarts detected* (`> 0`), *Collector dropping
+telemetry* (`> 0`), and *Trace ingestion stalled* (`< 1`) — are structural and
 live inline in `main.tf` if you ever need to change them.
 
 `for` durations and evaluation `interval` are set per rule / per group in

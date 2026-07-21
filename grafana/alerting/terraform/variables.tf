@@ -45,3 +45,15 @@ variable "error_log_rate_per_sec" {
   default     = 5
   description = "Error/fatal log rate alert fires above this many logs per second."
 }
+
+variable "slo_burn_rate" {
+  type        = number
+  default     = 14.4
+  description = "SLO fast-burn alert fires above this multiple of the 99.9% error budget (14.4x = classic 1h fast-burn page)."
+}
+
+variable "ch_failed_queries_per_sec" {
+  type        = number
+  default     = 1
+  description = "ClickHouse failed-query alert fires above this many failed queries per second."
+}

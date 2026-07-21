@@ -8,9 +8,10 @@ on-call channel (any webhook — Slack, a Teams Workflow, PagerDuty, etc.) when
 something breaks.
 
 This pack **complements** the HyperDX alerts pack (`../../hyperdx/alerts`): both watch the
-same ClickHouse data, but the two packs cover different signals (this Grafana pack: error
-rate, p95 latency, trace-ingestion stall, pods-not-running, error-log rate, fatal logs;
-the HyperDX pack: collector drops, error rate, replication lag, SLO fast-burn, too-many-parts).
+same ClickHouse data, but the two packs cover different signals. This Grafana pack: service
+error rate, p95 latency, SLO fast-burn, trace-ingestion stall, pods-not-running, container
+restarts, error-log rate, fatal logs, collector drops, and ClickHouse failed queries.
+The HyperDX pack: collector drops, error rate, replication lag, SLO fast-burn, too-many-parts.
 Run either or both.
 
 ---
@@ -19,24 +20,32 @@ Run either or both.
 
 | File | Purpose |
 |------|---------|
-| `alert-rules.yaml` | The 6 alert rules (queries + thresholds). |
+| `alert-rules.yaml` | The 10 alert rules (queries + thresholds). |
 | `contact-points.yaml` | The alert contact point — a generic webhook (add your URL). |
 | `notification-policy.yaml` | Routes ClickStack alerts to that contact point (optional). |
 
-### The 6 alerts
+### The 10 alerts
 
 | Alert | Source table | Fires when | Default threshold | `for` | Severity |
 |-------|--------------|-----------|-------------------|-------|----------|
 | Service error rate high | `otel_traces` | a service's server-span error rate is high | > 5 % | 5m | warning |
 | Service p95 latency high | `otel_traces` | a service's p95 latency is high | > 2000 ms | 10m | warning |
+| SLO error budget fast burn | `otel_traces` | a service burns its 99.9 % budget fast | > 14.4× (1h) | 5m | critical |
 | Trace ingestion stalled | `otel_traces` | no spans arrive (pipeline down) | < 1 span / 10m | 10m | critical |
-| Pods not Running | `otel_metrics_gauge` | pods stuck outside Running phase | > 0 pods | 5m | warning |
+| Pods not Running | `otel_metrics_gauge` | pods stuck outside Running (excludes `Succeeded`) | > 0 pods | 5m | warning |
+| Container restarts detected | `otel_metrics_gauge` | containers restart within the window | > 0 restarts / 15m | 5m | warning |
 | Error log rate high | `otel_logs` | error+fatal logs surge | > 5 / s | 10m | warning |
 | Fatal logs present | `otel_logs` | any fatal log line | > 0 | 5m | critical |
+| Collector dropping telemetry | `otel_metrics_sum` | the OTel collector refuses data | > 0 items / 10m | 5m | warning |
+| ClickHouse failed queries elevated | `otel_metrics_sum` | ClickHouse query failures rise | > 1 / s | 10m | warning |
 
-Each alert is multi-dimensional where it makes sense — the service error-rate
-and latency rules fire **per service**, so you get one alert instance per
-affected service with the service name in the notification.
+Each alert is multi-dimensional where it makes sense — the service error-rate,
+latency, and SLO fast-burn rules fire **per service**, so you get one alert
+instance per affected service with the service name in the notification.
+
+The error/fatal-log rules match on `SeverityNumber` (17 = error, 21 = fatal) with a
+lowercase-text fallback, and the platform rules chart cumulative counters as
+per-`service.instance.id` windowed deltas (never `sum(Value)`).
 
 ---
 
@@ -78,13 +87,13 @@ volumes:
 ```
 
 On restart you'll see **Alerting → Alert rules → "ClickStack Alerts"** folder
-with the 6 rules, and the **ClickStack Alerts** contact point under
+with the 10 rules, and the **ClickStack Alerts** contact point under
 *Contact points*.
 
 > **No filesystem access (Grafana Cloud)?** File provisioning needs write access
 > to `/etc/grafana/provisioning/`, which Grafana Cloud and some managed setups
 > don't allow. Use the Terraform equivalent in [`terraform/`](terraform/README.md)
-> instead — it creates the same 6 rules, contact point, and policy via the
+> instead — it creates the same 10 rules, contact point, and policy via the
 > Grafana API. Use one method or the other, not both.
 
 > **Heads-up on `notification-policy.yaml`:** Grafana provisioning replaces the

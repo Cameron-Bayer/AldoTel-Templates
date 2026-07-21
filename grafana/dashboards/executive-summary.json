@@ -162,7 +162,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / count() AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
+          "rawSql": "SELECT 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS value FROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -289,7 +289,7 @@
     {
       "id": null,
       "type": "stat",
-      "title": "Active services",
+      "title": "Services seen",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -447,7 +447,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / count() AS error_pct\nFROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY time ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, 100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS error_pct\nFROM ${database}.otel_traces WHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY time ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -668,7 +668,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n  GROUP BY u HAVING v != 2)",
+          "rawSql": "SELECT count() AS value FROM (\n  SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n  GROUP BY u HAVING v NOT IN (2, 3))",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -722,7 +722,7 @@
     {
       "id": null,
       "type": "stat",
-      "title": "Container Restarts",
+      "title": "Container restarts (in range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -741,7 +741,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT sum(v) AS value FROM (\n  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/', ResourceAttributes['k8s.container.name']) AS c, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix)\n  GROUP BY c)",
+          "rawSql": "SELECT sum(d) AS value FROM (\n  SELECT concat(ResourceAttributes['k8s.pod.uid'], '/', ResourceAttributes['k8s.container.name']) AS c, max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.container.restarts' AND $__timeFilter(TimeUnix)\n  GROUP BY c)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -900,7 +900,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT countIf(lower(SeverityText) IN ('error', 'fatal')) / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT countIf((SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))) / dateDiff('second', $__fromTime, $__toTime) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -977,7 +977,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT 100 * countIf(lower(SeverityText) IN ('error', 'fatal')) / count() AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT 100 * countIf((SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))) / nullIf(count(), 0) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1054,7 +1054,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT countIf(lower(SeverityText) = 'fatal') AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
+          "rawSql": "SELECT countIf((SeverityNumber >= 21 OR lower(SeverityText) = 'fatal')) AS value FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1127,7 +1127,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, SeverityText AS severity, count() AS logs\nFROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND SeverityText != ''\nGROUP BY time, severity ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, multiIf(SeverityNumber >= 21, 'fatal', SeverityNumber >= 17, 'error', SeverityNumber >= 13, 'warn', SeverityNumber >= 9, 'info', SeverityNumber >= 5, 'debug', SeverityNumber >= 1, 'trace', SeverityText != '', lower(SeverityText), 'unspecified') AS severity, count() AS logs\nFROM ${database}.otel_logs WHERE $__timeFilter(Timestamp)\nGROUP BY time, severity ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -1201,7 +1201,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName AS service, count() AS errors\nFROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND lower(SeverityText) IN ('error', 'fatal')\nGROUP BY time, service HAVING errors > 0 ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(Timestamp) AS time, ServiceName AS service, count() AS errors\nFROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\nGROUP BY time, service HAVING errors > 0 ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -1288,7 +1288,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / count(), 2) AS \"Error %\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY ServiceName\nORDER BY \"Error %\" DESC, \"Req/s\" DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error %\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY ServiceName\nORDER BY \"Error %\" DESC, \"Req/s\" DESC",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1402,6 +1402,751 @@
           "show": false
         }
       }
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "ClickStack platform (collector + ClickHouse)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 40
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Collector refused / sec",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 41
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT ((SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_receiver_refused_spans_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id']))\n      + (SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_receiver_refused_log_records_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id']))\n      + (SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_receiver_refused_metric_points_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id']))) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.001
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Export failures / sec",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 41
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT (SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_exporter_send_failed_log_records_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.001
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Exporter queue used %",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 41
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * (SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${database}.otel_metrics_gauge WHERE MetricName = 'otelcol_exporter_queue_size' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])) / greatest((SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${database}.otel_metrics_gauge WHERE MetricName = 'otelcol_exporter_queue_capacity' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])), 1) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Ingest accepted / sec",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 41
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT ((SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_receiver_accepted_spans_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id']))\n      + (SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_receiver_accepted_log_records_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id']))\n      + (SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'otelcol_receiver_accepted_metric_points_total' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id']))) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "CH failed queries / sec",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT (SELECT sum(d) FROM (SELECT max(Value) - min(Value) AS d FROM ${database}.otel_metrics_sum WHERE MetricName = 'ClickHouseProfileEvents_FailedQuery' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 3,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "CH running queries",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT (SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${database}.otel_metrics_gauge WHERE MetricName = 'ClickHouseMetrics_Query' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "CH memory tracked",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT (SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${database}.otel_metrics_gauge WHERE MetricName = 'ClickHouseMetrics_MemoryTracking' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes_iec",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "CH disk free %",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 46
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * (SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${database}.otel_metrics_gauge WHERE MetricName = 'ClickHouseAsyncMetrics_DiskAvailable_default' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])) / greatest((SELECT sum(v) FROM (SELECT argMax(Value, TimeUnix) AS v FROM ${database}.otel_metrics_gauge WHERE MetricName = 'ClickHouseAsyncMetrics_DiskTotal_default' AND $__timeFilter(TimeUnix) GROUP BY ResourceAttributes['service.instance.id'])), 1) AS value",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "green",
+                "value": 25
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      }
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Collector throughput (accepted vs refused, per interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 51
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time,\n       sumIf(d, kind = 'accepted') AS accepted,\n       sumIf(d, kind = 'refused') AS refused\nFROM (\n  SELECT $__timeInterval(TimeUnix) AS time,\n         if(MetricName LIKE '%refused%', 'refused', 'accepted') AS kind,\n         ResourceAttributes['service.instance.id'] AS i, MetricName AS m,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName IN (\n    'otelcol_receiver_accepted_spans_total', 'otelcol_receiver_accepted_log_records_total', 'otelcol_receiver_accepted_metric_points_total',\n    'otelcol_receiver_refused_spans_total', 'otelcol_receiver_refused_log_records_total', 'otelcol_receiver_refused_metric_points_total')\n    AND $__timeFilter(TimeUnix)\n  GROUP BY time, kind, i, m)\nGROUP BY time ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "5m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "ClickHouse queries vs failures (per interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 51
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time,\n       sumIf(d, m = 'ClickHouseProfileEvents_Query') AS queries,\n       sumIf(d, m = 'ClickHouseProfileEvents_FailedQuery') AS failed\nFROM (\n  SELECT $__timeInterval(TimeUnix) AS time, MetricName AS m, ResourceAttributes['service.instance.id'] AS i,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName IN ('ClickHouseProfileEvents_Query', 'ClickHouseProfileEvents_FailedQuery') AND $__timeFilter(TimeUnix)\n  GROUP BY time, m, i)\nGROUP BY time ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "interval": "5m"
     }
   ]
 }

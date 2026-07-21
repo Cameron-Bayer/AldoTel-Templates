@@ -87,7 +87,7 @@ Four high-level Grafana dashboards over the same ClickHouse data, plus a **provi
 alerting pack** (YAML **and** Terraform) that notifies your on-call channel via a webhook.
 
 - **Get started:** [`grafana/README.md`](grafana/README.md) — customer quick-start and import steps.
-- **Alerts:** [`grafana/alerting/README.md`](grafana/alerting/README.md) — six unified-alerting rules, channel setup, and tunable thresholds.
+- **Alerts:** [`grafana/alerting/README.md`](grafana/alerting/README.md) — ten unified-alerting rules, channel setup, and tunable thresholds.
 
 ---
 
