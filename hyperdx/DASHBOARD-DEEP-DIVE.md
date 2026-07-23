@@ -375,17 +375,16 @@ Both styles respect the dashboard filters described below.
 
 ### Platform — at a glance
 
-**ClickHouse failed queries**, **ClickHouse running queries**, **K8s nodes ready**, and **Collector refused spans**.
-- **Q: What is this for?** The equivalent view for the underlying infrastructure — the database, the cluster, and the pipeline. A non-zero refused-spans figure is a prompt to open the Collector Pipeline Health dashboard.
+**K8s nodes ready.**
+- **Q: What is this for?** A quick view of the underlying cluster — how many Kubernetes nodes are reporting ready. ClickHouse and collector-pipeline internals live in the **advanced** dashboards (opt-in), since those metrics are not collected by default.
 
 ### Top services
 
 **Services by error rate** and **Services by log errors** — each ranked worst-first, with rows that link directly to the underlying traces or logs.
 - **Q: What is this for?** Identifying which services are affected and moving in a single step from "there is a problem" to the specific traces or logs behind it.
 
-### Traffic & ingest
+### Request traffic
 
-**Ingest throughput — spans accepted vs refused** — the rate of telemetry accepted versus rejected by the pipeline. Accepted should dominate and refused should remain at zero.
 **Request rate & errors (server spans)** — overall application request volume with the error count overlaid.
 
 ---

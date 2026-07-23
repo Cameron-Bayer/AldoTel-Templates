@@ -86,7 +86,6 @@ locals {
     gt_latency    = jsonencode({ refId = "C", type = "threshold", expression = "B", conditions = [{ evaluator = { type = "gt", params = [var.p95_latency_ms] } }] })
     gt_log_rate   = jsonencode({ refId = "C", type = "threshold", expression = "B", conditions = [{ evaluator = { type = "gt", params = [var.error_log_rate_per_sec] } }] })
     gt_slo_burn   = jsonencode({ refId = "C", type = "threshold", expression = "B", conditions = [{ evaluator = { type = "gt", params = [var.slo_burn_rate] } }] })
-    gt_ch_failed  = jsonencode({ refId = "C", type = "threshold", expression = "B", conditions = [{ evaluator = { type = "gt", params = [var.ch_failed_queries_per_sec] } }] })
     gt_zero       = jsonencode({ refId = "C", type = "threshold", expression = "B", conditions = [{ evaluator = { type = "gt", params = [0] } }] })
     lt_one        = jsonencode({ refId = "C", type = "threshold", expression = "B", conditions = [{ evaluator = { type = "lt", params = [1] } }] })
   }
@@ -167,31 +166,6 @@ locals {
       SELECT countIf(SeverityNumber >= 21 OR lower(SeverityText) = 'fatal') AS value
       FROM ${var.clickhouse_database}.otel_logs
       WHERE $__timeFilter(Timestamp)
-    SQL
-    collector_dropping = <<-SQL
-      SELECT sum(d) AS value
-      FROM (
-        SELECT ResourceAttributes['service.instance.id'] AS i,
-               max(Value) - min(Value) AS d
-        FROM ${var.clickhouse_database}.otel_metrics_sum
-        WHERE MetricName IN (
-                'otelcol_receiver_refused_spans_total',
-                'otelcol_receiver_refused_log_records_total',
-                'otelcol_receiver_refused_metric_points_total')
-          AND $__timeFilter(TimeUnix)
-        GROUP BY i, MetricName
-      )
-    SQL
-    ch_failed_queries = <<-SQL
-      SELECT sum(d) / greatest(dateDiff('second', $__fromTime, $__toTime), 1) AS value
-      FROM (
-        SELECT ResourceAttributes['service.instance.id'] AS i,
-               max(Value) - min(Value) AS d
-        FROM ${var.clickhouse_database}.otel_metrics_sum
-        WHERE MetricName = 'ClickHouseProfileEvents_FailedQuery'
-          AND $__timeFilter(TimeUnix)
-        GROUP BY i
-      )
     SQL
   }
 }
@@ -452,96 +426,6 @@ resource "grafana_rule_group" "kubernetes" {
         to   = 0
       }
       model = local.threshold.gt_zero
-    }
-  }
-}
-
-# ============================================================================
-# Rule group: Platform (OTel collector + ClickHouse, from otel_metrics_sum)
-# ============================================================================
-resource "grafana_rule_group" "platform" {
-  name             = "ClickStack Platform"
-  folder_uid       = grafana_folder.clickstack_alerts.uid
-  interval_seconds = 60
-  org_id           = "0"
-
-  rule {
-    name           = "Collector dropping telemetry"
-    condition      = "C"
-    for            = "5m"
-    no_data_state  = "OK"
-    exec_err_state = "Error"
-    labels         = { severity = "warning", stack = "clickstack" }
-    annotations = {
-      summary     = "OTel collector refused {{ printf \"%.0f\" $values.B.Value }} item(s) in 10m"
-      description = "The OpenTelemetry collector refused spans/logs/metric points over the last 10m — telemetry is being dropped."
-    }
-    data {
-      ref_id         = "A"
-      datasource_uid = var.clickhouse_datasource_uid
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      model = local.query_model["collector_dropping"]
-    }
-    data {
-      ref_id         = "B"
-      datasource_uid = "__expr__"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      model = local.reduce_last
-    }
-    data {
-      ref_id         = "C"
-      datasource_uid = "__expr__"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      model = local.threshold.gt_zero
-    }
-  }
-
-  rule {
-    name           = "ClickHouse failed queries elevated"
-    condition      = "C"
-    for            = "10m"
-    no_data_state  = "OK"
-    exec_err_state = "Error"
-    labels         = { severity = "warning", stack = "clickstack" }
-    annotations = {
-      summary     = "ClickHouse failing {{ printf \"%.2f\" $values.B.Value }} queries/sec"
-      description = "ClickHouse is failing queries over the last 10m. Check ClickHouse load/errors and the Executive Summary platform row."
-    }
-    data {
-      ref_id         = "A"
-      datasource_uid = var.clickhouse_datasource_uid
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      model = local.query_model["ch_failed_queries"]
-    }
-    data {
-      ref_id         = "B"
-      datasource_uid = "__expr__"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      model = local.reduce_last
-    }
-    data {
-      ref_id         = "C"
-      datasource_uid = "__expr__"
-      relative_time_range {
-        from = 600
-        to   = 0
-      }
-      model = local.threshold.gt_ch_failed
     }
   }
 }

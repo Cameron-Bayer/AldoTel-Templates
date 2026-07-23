@@ -10,7 +10,7 @@ something breaks.
 This pack **complements** the HyperDX alerts pack (`../../hyperdx/alerts`): both watch the
 same ClickHouse data, but the two packs cover different signals. This Grafana pack: service
 error rate, p95 latency, SLO fast-burn, trace-ingestion stall, pods-not-running, container
-restarts, error-log rate, fatal logs, collector drops, and ClickHouse failed queries.
+restarts, error-log rate, and fatal logs.
 The HyperDX pack: collector drops, error rate, replication lag, SLO fast-burn, too-many-parts.
 Run either or both.
 
@@ -20,11 +20,11 @@ Run either or both.
 
 | File | Purpose |
 |------|---------|
-| `alert-rules.yaml` | The 10 alert rules (queries + thresholds). |
+| `alert-rules.yaml` | The 8 alert rules (queries + thresholds). |
 | `contact-points.yaml` | The alert contact point — a generic webhook (add your URL). |
 | `notification-policy.yaml` | Routes ClickStack alerts to that contact point (optional). |
 
-### The 10 alerts
+### The 8 alerts
 
 | Alert | Source table | Fires when | Default threshold | `for` | Severity |
 |-------|--------------|-----------|-------------------|-------|----------|
@@ -36,16 +36,14 @@ Run either or both.
 | Container restarts detected | `otel_metrics_gauge` | containers restart within the window | > 0 restarts / 15m | 5m | warning |
 | Error log rate high | `otel_logs` | error+fatal logs surge | > 5 / s | 10m | warning |
 | Fatal logs present | `otel_logs` | any fatal log line | > 0 | 5m | critical |
-| Collector dropping telemetry | `otel_metrics_sum` | the OTel collector refuses data | > 0 items / 10m | 5m | warning |
-| ClickHouse failed queries elevated | `otel_metrics_sum` | ClickHouse query failures rise | > 1 / s | 10m | warning |
 
 Each alert is multi-dimensional where it makes sense — the service error-rate,
 latency, and SLO fast-burn rules fire **per service**, so you get one alert
 instance per affected service with the service name in the notification.
 
 The error/fatal-log rules match on `SeverityNumber` (17 = error, 21 = fatal) with a
-lowercase-text fallback, and the platform rules chart cumulative counters as
-per-`service.instance.id` windowed deltas (never `sum(Value)`).
+lowercase-text fallback. The Kubernetes rules chart cumulative counters as
+per-series windowed deltas (never `sum(Value)`).
 
 ---
 
@@ -87,13 +85,13 @@ volumes:
 ```
 
 On restart you'll see **Alerting → Alert rules → "ClickStack Alerts"** folder
-with the 10 rules, and the **ClickStack Alerts** contact point under
+with the 8 rules, and the **ClickStack Alerts** contact point under
 *Contact points*.
 
 > **No filesystem access (Grafana Cloud)?** File provisioning needs write access
 > to `/etc/grafana/provisioning/`, which Grafana Cloud and some managed setups
 > don't allow. Use the Terraform equivalent in [`terraform/`](terraform/README.md)
-> instead — it creates the same 10 rules, contact point, and policy via the
+> instead — it creates the same 8 rules, contact point, and policy via the
 > Grafana API. Use one method or the other, not both.
 
 > **Heads-up on `notification-policy.yaml`:** Grafana provisioning replaces the

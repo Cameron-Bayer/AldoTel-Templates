@@ -30,10 +30,18 @@
     ./install-k8s.ps1 -Namespace obs -SkipAlerts
     Installs the data source + dashboards only, into namespace `obs`.
 
+.EXAMPLE
+    ./install-k8s.ps1 -Insecure -ChPort 9000
+    Installs against a plaintext (non-TLS) ClickStack. By default the data source
+    connects over the native-secure port (9440) with CA verification; -Insecure
+    strips TLS and defaults the port to 9000.
+
 .NOTES
     Requires: kubectl configured against the target cluster.
     The data source password comes from the CH_PASSWORD env var already injected into
     the ClickStack Grafana pod — you do not pass a password here.
+    On a TLS-hardened ClickStack the CA certificate is read from -CaCertPath
+    (default /etc/grafana/certs/ca.crt), a file already mounted into the Grafana pod.
 #>
 [CmdletBinding()]
 param(
@@ -43,7 +51,10 @@ param(
     [string]$DashboardsConfigMap = 'clickstack-grafana-dashboards',
     [string]$AlertingConfigMap = 'clickstack-grafana-alerting',
     [string]$ChServer = 'clickstack-clickhouse-clickhouse-headless',
-    [int]$ChPort = 9000,
+    [int]$ChPort = 9440,
+    [string]$CaCertPath = '/etc/grafana/certs/ca.crt',
+    [switch]$Insecure,
+    [switch]$Advanced,
     [switch]$SkipAlerts,
     [switch]$NoRestart
 )
@@ -76,6 +87,15 @@ Invoke-Kubectl @('get', 'deployment', $Deployment, '-n', $Namespace, '-o', 'name
 # --- 1. Data source -----------------------------------------------------------
 Write-Step "Provisioning data source '$DatasourceUid' into ConfigMap '$DatasourcesConfigMap'"
 $dsYaml = (Get-Content $dsFile -Raw)
+if ($Insecure) {
+    # Plaintext ClickStack: strip TLS and default the port to 9000 unless overridden.
+    if ($ChPort -eq 9440) { $ChPort = 9000 }
+    $dsYaml = $dsYaml -replace 'secure: true', 'secure: false'
+    $dsYaml = $dsYaml -replace 'tlsAuthWithCACert: true', 'tlsAuthWithCACert: false'
+    $dsYaml = $dsYaml -replace '(?m)^\s*tlsCACert: .*\r?\n', ''
+} else {
+    $dsYaml = $dsYaml -replace '\$__file\{[^}]*\}', ('$__file{' + $CaCertPath + '}')
+}
 $dsYaml = $dsYaml -replace 'server: .*', "server: $ChServer"
 $dsYaml = $dsYaml -replace 'port: \d+', "port: $ChPort"
 $dsPatch = @{ data = @{ "$DatasourceUid.yaml" = $dsYaml } } | ConvertTo-Json -Depth 6
@@ -87,7 +107,14 @@ Write-Host "    added key $DatasourceUid.yaml"
 # --- 2. Dashboards ------------------------------------------------------------
 Write-Step "Provisioning dashboards into ConfigMap '$DashboardsConfigMap'"
 $dashData = @{}
-foreach ($f in Get-ChildItem (Join-Path $dashboardsDir '*.json')) {
+# Default: only the always-populated top-level dashboards. -Advanced also provisions
+# dashboards/advanced/, which need optional data sources (OTLP histograms).
+$dashFiles = @(Get-ChildItem (Join-Path $dashboardsDir '*.json'))
+if ($Advanced) {
+    $advDir = Join-Path $dashboardsDir 'advanced'
+    if (Test-Path $advDir) { $dashFiles += @(Get-ChildItem (Join-Path $advDir '*.json')) }
+}
+foreach ($f in $dashFiles) {
     $model = Get-Content $f.FullName -Raw | ConvertFrom-Json
     if ($model.templating -and $model.templating.list) {
         foreach ($v in $model.templating.list) {

@@ -7,7 +7,7 @@ Grafana HTTP API using the official
 [`grafana/grafana` Terraform provider](https://registry.terraform.io/providers/grafana/grafana/latest/docs):
 
 - a **folder** `ClickStack Alerts`,
-- the **10 alert rules** (4 groups: Services, Kubernetes, Logs, Platform),
+- the **8 alert rules** (3 groups: Services, Kubernetes, Logs),
 - the **ClickStack Alerts** contact point,
 - a **notification policy** routing `stack=clickstack` alerts to that contact point.
 
@@ -39,7 +39,7 @@ terraform apply
 ```
 
 After apply, open **Alerting → Alert rules** in Grafana — the *ClickStack Alerts*
-folder holds all 10 rules. Test delivery via **Contact points → ClickStack Alerts
+folder holds all 8 rules. Test delivery via **Contact points → ClickStack Alerts
 → Test**.
 
 ## Setting thresholds

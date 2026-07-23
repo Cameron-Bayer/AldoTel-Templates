@@ -9,7 +9,8 @@
 # Usage:
 #   export HDX_API_URL="http://localhost:8000"
 #   export HDX_API_KEY="<Personal API Access Key from Team Settings -> API Keys>"
-#   ./import.sh                      # upsert all
+#   ./import.sh                      # upsert the default (top-level) tier
+#   ./import.sh --advanced           # also upsert advanced/ deep dives (need optional data)
 #   ./import.sh --dry-run            # preview, write nothing
 #   ./import.sh --only services-red.json,logs-overview.json
 #   ./import.sh --delete             # remove template-managed dashboards (by tmpl tag)
@@ -19,12 +20,13 @@
 
 set -euo pipefail
 
-DRY_RUN=0; DELETE=0; DUPLICATE=0; ONLY=""
+DRY_RUN=0; DELETE=0; DUPLICATE=0; ADVANCED=0; ONLY=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --dry-run)   DRY_RUN=1 ;;
     --delete)    DELETE=1 ;;
     --duplicate) DUPLICATE=1 ;;
+    --advanced)  ADVANCED=1 ;;
     --only)      ONLY="$2"; shift ;;
     --only=*)    ONLY="${1#*=}" ;;
     -h|--help)   sed -n '2,20p' "$0"; exit 0 ;;
@@ -76,10 +78,16 @@ existing_filters() {
   echo "$EXISTING" | jq -c --arg id "$1" '[.[] | select(.id==$id)][0].filters // []'
 }
 
-# Build the file list (recurses into dashboards/advanced/). (Portable read loop —
-# avoids Bash 4's `mapfile`, which stock macOS Bash 3.2 lacks.)
+# Build the file list. Default: only the always-populated top-level dashboards. --advanced
+# (or --only naming an advanced file) also pulls in dashboards/advanced/, which need optional
+# data sources. (Portable read loop — avoids Bash 4's `mapfile`, which stock macOS Bash 3.2 lacks.)
 FILES=()
-while IFS= read -r line; do FILES+=("$line"); done < <(find "$DIR/dashboards" -type f -name '*.json' | sort)
+if [ "$ADVANCED" = 1 ] || [ -n "$ONLY" ]; then
+  FIND_ARGS=(-type f -name '*.json')
+else
+  FIND_ARGS=(-maxdepth 1 -type f -name '*.json')
+fi
+while IFS= read -r line; do FILES+=("$line"); done < <(find "$DIR/dashboards" "${FIND_ARGS[@]}" | sort)
 if [ -n "$ONLY" ]; then
   IFS=',' read -ra WANTED <<< "$ONLY"
   SELECTED=()

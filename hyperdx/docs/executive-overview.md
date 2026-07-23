@@ -50,44 +50,6 @@ These apply to every compatible tile on the dashboard.
 
 ## Platform — at a glance
 
-### ClickHouse failed queries — number · Raw SQL
-
-- **Tables:** `default.otel_metrics_sum`
-
-<details><summary>SQL query</summary>
-
-```sql
-SELECT sum(d) AS "Failed queries" FROM (
-  SELECT max(Value) - min(Value) AS d
-  FROM default.otel_metrics_sum
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName = 'ClickHouseProfileEvents_FailedQuery'
-  GROUP BY ResourceAttributes['service.instance.id']
-)
-```
-
-</details>
-
-### ClickHouse running queries — number · Raw SQL
-
-- **Tables:** `default.otel_metrics_gauge`
-
-<details><summary>SQL query</summary>
-
-```sql
-SELECT sum(v) AS "Running queries" FROM (
-  SELECT argMax(Value, TimeUnix) AS v
-  FROM default.otel_metrics_gauge
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName = 'ClickHouseMetrics_Query'
-  GROUP BY ResourceAttributes['service.instance.id']
-)
-```
-
-</details>
-
 ### K8s nodes ready — number · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
@@ -102,25 +64,6 @@ SELECT countIf(ready = 1) AS "Nodes ready" FROM (
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
     AND MetricName = 'k8s.node.condition_ready'
   GROUP BY node
-)
-```
-
-</details>
-
-### Collector refused spans — number · Raw SQL
-
-- **Tables:** `default.otel_metrics_sum`
-
-<details><summary>SQL query</summary>
-
-```sql
-SELECT sum(d) AS "Refused spans" FROM (
-  SELECT max(Value) - min(Value) AS d
-  FROM default.otel_metrics_sum
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName = 'otelcol_receiver_refused_spans_total'
-  GROUP BY ResourceAttributes['service.instance.id']
 )
 ```
 

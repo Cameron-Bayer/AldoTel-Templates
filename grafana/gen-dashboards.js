@@ -169,6 +169,7 @@ function dashboard(uid, title, description, panels, extraVars = []) {
 
 function write(name, dash) {
   const file = path.join(OUT, name);
+  fs.mkdirSync(path.dirname(file), { recursive: true });
   fs.writeFileSync(file, JSON.stringify(dash, null, 2) + '\n');
   console.log('wrote', path.relative(process.cwd(), file), `(${dash.panels.length} panels)`);
 }
@@ -557,46 +558,6 @@ function execSummary() {
       ] },
     ]));
 
-  // --- ClickStack platform (the pipeline itself: collector + ClickHouse) ---
-  // Cumulative counters (otel_metrics_sum) are charted as per-instance windowed
-  // deltas/rates via sumDelta(); gauges use latest-per-instance via gaugeLatest().
-  p.push(row('ClickStack platform (collector + ClickHouse)', 40));
-  p.push(stat('Collector refused / sec', { h: 5, w: 6, x: 0, y: 41 },
-    `SELECT (${sumDelta('otelcol_receiver_refused_spans_total')}\n      + ${sumDelta('otelcol_receiver_refused_log_records_total')}\n      + ${sumDelta('otelcol_receiver_refused_metric_points_total')}) / ${WINDOW_S_SAFE} AS value`,
-    { unit: 'short', decimals: 3, thresholds: { mode: 'absolute', steps: [
-      { color: 'green', value: null }, { color: 'red', value: 0.001 }] } }));
-  p.push(stat('Export failures / sec', { h: 5, w: 6, x: 6, y: 41 },
-    `SELECT ${sumDelta('otelcol_exporter_send_failed_log_records_total')} / ${WINDOW_S_SAFE} AS value`,
-    { unit: 'short', decimals: 3, thresholds: { mode: 'absolute', steps: [
-      { color: 'green', value: null }, { color: 'red', value: 0.001 }] } }));
-  p.push(stat('Exporter queue used %', { h: 5, w: 6, x: 12, y: 41 },
-    `SELECT 100 * ${gaugeLatest('otelcol_exporter_queue_size')} / greatest(${gaugeLatest('otelcol_exporter_queue_capacity')}, 1) AS value`,
-    { unit: 'percent', decimals: 1, thresholds: { mode: 'absolute', steps: [
-      { color: 'green', value: null }, { color: 'yellow', value: 50 }, { color: 'red', value: 80 }] } }));
-  p.push(stat('Ingest accepted / sec', { h: 5, w: 6, x: 18, y: 41 },
-    `SELECT (${sumDelta('otelcol_receiver_accepted_spans_total')}\n      + ${sumDelta('otelcol_receiver_accepted_log_records_total')}\n      + ${sumDelta('otelcol_receiver_accepted_metric_points_total')}) / ${WINDOW_S_SAFE} AS value`,
-    { unit: 'short', decimals: 1 }));
-  p.push(stat('CH failed queries / sec', { h: 5, w: 6, x: 0, y: 46 },
-    `SELECT ${sumDelta('ClickHouseProfileEvents_FailedQuery')} / ${WINDOW_S_SAFE} AS value`,
-    { unit: 'short', decimals: 3, thresholds: { mode: 'absolute', steps: [
-      { color: 'green', value: null }, { color: 'yellow', value: 0.1 }, { color: 'red', value: 1 }] } }));
-  p.push(stat('CH running queries', { h: 5, w: 6, x: 6, y: 46 },
-    `SELECT ${gaugeLatest('ClickHouseMetrics_Query')} AS value`,
-    { unit: 'short', decimals: 0 }));
-  p.push(stat('CH memory tracked', { h: 5, w: 6, x: 12, y: 46 },
-    `SELECT ${gaugeLatest('ClickHouseMetrics_MemoryTracking')} AS value`,
-    { unit: 'bytes_iec', decimals: 1 }));
-  p.push(stat('CH disk free %', { h: 5, w: 6, x: 18, y: 46 },
-    `SELECT 100 * ${gaugeLatest('ClickHouseAsyncMetrics_DiskAvailable_default')} / greatest(${gaugeLatest('ClickHouseAsyncMetrics_DiskTotal_default')}, 1) AS value`,
-    { unit: 'percent', decimals: 1, thresholds: { mode: 'absolute', steps: [
-      { color: 'red', value: null }, { color: 'yellow', value: 15 }, { color: 'green', value: 25 }] } }));
-  p.push(timeseries('Collector throughput (accepted vs refused, per interval)', { h: 7, w: 12, x: 0, y: 51 },
-    `SELECT time,\n       sumIf(d, kind = 'accepted') AS accepted,\n       sumIf(d, kind = 'refused') AS refused\nFROM (\n  SELECT ${MI} AS time,\n         if(MetricName LIKE '%refused%', 'refused', 'accepted') AS kind,\n         ${INST} AS i, MetricName AS m,\n         max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_sum\n  WHERE MetricName IN (\n    'otelcol_receiver_accepted_spans_total', 'otelcol_receiver_accepted_log_records_total', 'otelcol_receiver_accepted_metric_points_total',\n    'otelcol_receiver_refused_spans_total', 'otelcol_receiver_refused_log_records_total', 'otelcol_receiver_refused_metric_points_total')\n    AND ${MF}\n  GROUP BY time, kind, i, m)\nGROUP BY time ORDER BY time`,
-    { unit: 'short', interval: '5m' }));
-  p.push(timeseries('ClickHouse queries vs failures (per interval)', { h: 7, w: 12, x: 12, y: 51 },
-    `SELECT time,\n       sumIf(d, m = 'ClickHouseProfileEvents_Query') AS queries,\n       sumIf(d, m = 'ClickHouseProfileEvents_FailedQuery') AS failed\nFROM (\n  SELECT ${MI} AS time, MetricName AS m, ${INST} AS i,\n         max(Value) - min(Value) AS d\n  FROM ${DB}.otel_metrics_sum\n  WHERE MetricName IN ('ClickHouseProfileEvents_Query', 'ClickHouseProfileEvents_FailedQuery') AND ${MF}\n  GROUP BY time, m, i)\nGROUP BY time ORDER BY time`,
-    { unit: 'short', interval: '5m' }));
-
   return dashboard('clickstack-exec-summary', 'ClickStack · Executive Summary',
     'One-pane health overview across services, Kubernetes, and logs — top signals from all three ClickStack Grafana dashboards.', p);
 }
@@ -706,5 +667,5 @@ write('service-health-golden-signals.json', serviceHealth());
 write('kubernetes-cluster-overview.json', k8sOverview());
 write('logs-errors-overview.json', logsOverview());
 write('host-os-metrics.json', hostOverview());
-write('latency-histograms.json', latencyHistograms());
+write('advanced/latency-histograms.json', latencyHistograms());
 console.log('done.');

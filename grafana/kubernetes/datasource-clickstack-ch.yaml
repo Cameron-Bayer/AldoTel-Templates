@@ -9,8 +9,16 @@
 # ClickStack Grafana deployment already injects (the same one its built-in
 # `clickhouse` data source uses) — no secret handling required.
 #
-# If your ClickHouse is reachable at a different host/port, edit `server`/`port`
-# below (or pass -ChServer / -ChPort, or --ch-server / --ch-port, to the installer).
+# TLS: this defaults to the native-secure port (9440) with CA verification,
+# matching a TLS-hardened ClickStack where plaintext 9000/8123 is disabled. The
+# CA certificate is read from a file already mounted into the Grafana pod
+# (`$__file{...}`), mirroring the chart's built-in `clickhouse` data source.
+#   * Different CA path?  edit `tlsCACert` below (or pass -CaCertPath / --ca-cert-path).
+#   * Plaintext ClickStack (no TLS)?  pass -Insecure / --insecure to the installer,
+#     which flips `secure`/`tlsAuthWithCACert` to false, drops the CA cert, and
+#     defaults the port to 9000.
+#   * Different host/port?  edit `server`/`port` (or pass -ChServer/-ChPort,
+#     --ch-server/--ch-port).
 apiVersion: 1
 datasources:
   - name: ClickStack ClickHouse
@@ -20,9 +28,12 @@ datasources:
     isDefault: false
     jsonData:
       defaultDatabase: default
-      port: 9000
+      port: 9440
       server: clickstack-clickhouse-clickhouse-headless
       username: app
       protocol: native
+      secure: true
+      tlsAuthWithCACert: true
     secureJsonData:
       password: $__env{CH_PASSWORD}
+      tlsCACert: $__file{/etc/grafana/certs/ca.crt}

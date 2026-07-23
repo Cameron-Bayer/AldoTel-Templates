@@ -102,9 +102,11 @@ ndash="$(jq '.dashboards | length' "$REQ")"
 for ((i=0; i<ndash; i++)); do
   name="$(jq -r ".dashboards[$i].name" "$REQ")"
   file="$(jq -r ".dashboards[$i].file" "$REQ")"
+  tier="$(jq -r ".dashboards[$i].tier // \"default\"" "$REQ")"
   receivers="$(jq -r ".dashboards[$i].receivers | join(\"; \")" "$REQ")"
   echo ""
-  echo "== $name ($file) =="
+  tier_tag=""; [ "$tier" = "advanced" ] && tier_tag=" [advanced]"
+  echo "== $name ($file)$tier_tag =="
   echo "   receivers: $receivers"
 
   req_fail=0; opt_fail=0
@@ -131,7 +133,7 @@ for ((i=0; i<ndash; i++)); do
   elif [ "$opt_fail" -gt 0 ]; then status="DEGRADED"
   else status="OK"; fi
   [ "$status" != "FAIL" ] && RECOMMEND+=("$file")
-  SUMMARY+=("$(printf '%-40s %-9s req_missing=%d opt_missing=%d' "$name" "$status" "$req_fail" "$opt_fail")")
+  SUMMARY+=("$(printf '%-40s %-9s %-9s req_missing=%d opt_missing=%d' "$name" "$tier" "$status" "$req_fail" "$opt_fail")")
 done
 
 echo ""

@@ -51,9 +51,3 @@ variable "slo_burn_rate" {
   default     = 14.4
   description = "SLO fast-burn alert fires above this multiple of the 99.9% error budget (14.4x = classic 1h fast-burn page)."
 }
-
-variable "ch_failed_queries_per_sec" {
-  type        = number
-  default     = 1
-  description = "ClickHouse failed-query alert fires above this many failed queries per second."
-}

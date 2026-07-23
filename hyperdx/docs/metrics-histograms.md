@@ -4,7 +4,7 @@
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
-- **Template:** `dashboards/metrics-histograms.json` · tag `tmpl:metrics-histograms`
+- **Template:** `dashboards/advanced/metrics-histograms.json` · tag `tmpl:metrics-histograms`
 - **Data required:** Application OTLP explicit-bucket histogram metrics (http.*.duration / rpc.*.duration); ClickHouse Keeper histogram metrics (ClickHouseHistogramMetrics_keeper_*) for the Keeper latency tile
 
 ## Dashboard filters

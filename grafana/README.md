@@ -12,7 +12,7 @@ teams that already standardize on Grafana.
 > **Running ClickStack on Kubernetes?** Its bundled Grafana uses ephemeral storage, so
 > UI/API imports vanish on the next pod restart. Use the durable ConfigMap-provisioning
 > installer in [`kubernetes/`](kubernetes/README.md) — one command installs the data
-> source, all six dashboards, and the alerts so they survive restarts.
+> source, the default dashboards, and the alerts so they survive restarts.
 
 ---
 
@@ -28,7 +28,7 @@ Follow these steps once and you'll have both.
 > On **Grafana Cloud** (or anywhere you can't write to `/etc/grafana/provisioning`), see
 > [Installing alerts without filesystem access](#installing-alerts-without-filesystem-access-grafana-cloud).
 
-**1. Download the two folders** — `grafana/dashboards/` (6 JSON files) and
+**1. Download the two folders** — `grafana/dashboards/` (6 JSON files: 5 default + `advanced/latency-histograms.json`) and
 `grafana/alerting/` (3 YAML files).
 
 **2. Add the ClickHouse data source** — *Connections → Data sources → Add → ClickHouse*.
@@ -42,7 +42,8 @@ field). This is the one gotcha:
 
 **3. Import the dashboards (UI, no restart)** — for each JSON:
 *Dashboards → New → Import → Upload JSON file →* pick your ClickHouse datasource →
-**Import**. Repeat for all six.
+**Import**. Repeat for each default dashboard (the `dashboards/advanced/` set is opt-in
+and needs the extra data source noted in its row above).
 
 **4. Configure the alerts *before* you install them (so you restart only once)** —
 edit the two YAML files in `alerting/` on disk first:
@@ -61,7 +62,7 @@ restart Grafana once:
    volumes:
      - ./alerting:/etc/grafana/provisioning/alerting
    ```
-   Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (10 rules).
+   Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (8 rules).
    Later threshold tweaks just need a `POST /api/admin/provisioning/alerting/reload`
    (no full restart).
 
@@ -74,7 +75,7 @@ File-based provisioning needs write access to `/etc/grafana/provisioning/`, whic
 Cloud and some managed setups don't allow. In that case the **dashboards still import
 normally** (step 3); for the **alerts**, use the Terraform provider instead — see
 [`alerting/terraform/`](alerting/terraform/README.md) for a ready-to-apply example that
-creates the same 10 rules, the alert contact point, and the notification policy via the
+creates the same 8 rules, the alert contact point, and the notification policy via the
 Grafana API.
 
 ---
@@ -88,19 +89,25 @@ Grafana API.
 | `dashboards/kubernetes-cluster-overview.json` | **Kubernetes Cluster Overview** | `otel_metrics_gauge` | Are nodes/pods healthy? CPU, memory, restarts, deployment availability. |
 | `dashboards/logs-errors-overview.json` | **Logs & Errors Overview** | `otel_logs` | How much are we logging, what's erroring, and what do the latest errors say? |
 | `dashboards/host-os-metrics.json` | **Host / OS Metrics** | `otel_metrics_gauge`, `otel_metrics_sum` | Are the underlying hosts healthy? CPU, memory, load, disk and network I/O per host. |
-| `dashboards/latency-histograms.json` | **Latency Histograms** | `otel_metrics_histogram` | How fast are requests? Average latency and request rate for HTTP server/client and RPC calls. |
 
-All six use only the **default OpenTelemetry ClickHouse schema** that ClickStack ships
-with, so they work on any ClickStack / HyperDX + ClickHouse deployment.
+These five use only the **default OpenTelemetry ClickHouse schema** that ClickStack ships
+with (`otel_traces` / `otel_logs` / `otel_metrics_*`), so they populate on a standard
+ClickStack / HyperDX deployment with no extra data sources.
 
-**Filters:** the Service Health, Kubernetes, Logs, Host / OS, and Latency dashboards include a
+**Advanced** (`dashboards/advanced/` — opt-in, needs an optional data source):
+
+| File | Dashboard | Reads from | Needs |
+|------|-----------|-----------|-------|
+| `dashboards/advanced/latency-histograms.json` | **Latency Histograms** | `otel_metrics_histogram` | Your apps must emit OTLP **explicit-bucket histogram** metrics (`http.*.duration` / `rpc.*.duration`). Average latency and request rate for HTTP server/client and RPC calls. |
+
+**Filters:** the Service Health, Kubernetes, Logs, and Host / OS dashboards include a
 **Service**, **Namespace**, or **Host** drop-down (multi-select, defaults to *All*) at the top, so
 you can narrow every panel to the workloads you care about. The Executive Summary is intentionally
 unfiltered — it's the always-on overview.
 
 **Alerts:** a companion set of Grafana unified-alerting rules (error rate, latency,
 SLO fast-burn, ingestion stalled, pods not running, container restarts, error/fatal
-logs, collector drops, ClickHouse failed queries) lives in
+logs) lives in
 [`alerting/`](alerting/README.md) — a generic webhook by default, tunable thresholds. Use these when
 you want Grafana to *page you*, not just visualize.
 
@@ -246,9 +253,6 @@ image for full size.
 - **Logs:** logs/sec, error+ logs/sec, error log %, fatal count; volume-by-severity and
   error-by-service trends.
 - **Needs attention:** every service ranked by error rate, color-coded.
-- **ClickStack platform:** the pipeline's own health — OTel collector refused/sec, export
-  failures, exporter queue used %, ingest accepted/sec; ClickHouse failed queries/sec,
-  running queries, memory tracked, disk free %; plus throughput and query/failure trends.
 - *A single at-a-glance page for status pages, war-rooms, or a leadership screen. No filters.*
 
 ### Service Health — Golden Signals (`otel_traces`)

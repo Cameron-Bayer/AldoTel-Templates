@@ -1,9 +1,10 @@
 {
-  "_comment": "Drives preflight.ps1/.sh (compatibility check) and documents per-dashboard requirements. metricType maps to the otel_metrics_<type> table. required=false tiles degrade gracefully if the metric is absent.",
+  "_comment": "Drives preflight.ps1/.sh (compatibility check) and documents per-dashboard requirements. tier is \"default\" (always populated on a full appliance deploy) or \"advanced\" (opt-in, needs optional data sources; imported only with -Advanced/--advanced). metricType maps to the otel_metrics_<type> table. required=false tiles degrade gracefully if the metric is absent.",
   "dashboards": [
     {
       "file": "clickhouse-health.json",
       "tmpl": "tmpl:clickhouse-health",
+      "tier": "advanced",
       "name": "ClickHouse — Operations",
       "receivers": [
         "ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)"
@@ -92,6 +93,7 @@
     {
       "file": "kubernetes-infrastructure.json",
       "tmpl": "tmpl:k8s-infrastructure",
+      "tier": "default",
       "name": "Kubernetes — Infrastructure",
       "receivers": [
         "kubeletstats receiver",
@@ -224,6 +226,7 @@
     {
       "file": "services-red.json",
       "tmpl": "tmpl:services-red",
+      "tier": "default",
       "name": "Services — RED (Rate / Errors / Duration)",
       "receivers": [
         "Application traces (OTLP)"
@@ -246,6 +249,7 @@
     {
       "file": "logs-overview.json",
       "tmpl": "tmpl:logs-overview",
+      "tier": "default",
       "name": "Logs — Overview",
       "receivers": [
         "Application/container logs (filelog or OTLP)"
@@ -268,6 +272,7 @@
     {
       "file": "collector-health.json",
       "tmpl": "tmpl:collector-health",
+      "tier": "advanced",
       "name": "OTel Collector — Pipeline Health",
       "receivers": [
         "OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)"
@@ -338,6 +343,7 @@
     {
       "file": "clickhouse-queryperf.json",
       "tmpl": "tmpl:clickhouse-queryperf",
+      "tier": "advanced",
       "name": "ClickHouse — Query Performance & Errors",
       "receivers": [
         "ClickHouse metrics scraped into OTel (for the summary number tiles)",
@@ -367,6 +373,7 @@
     {
       "file": "clickhouse-storage-mergetree.json",
       "tmpl": "tmpl:ch-storage",
+      "tier": "advanced",
       "name": "ClickHouse — Storage & MergeTree",
       "receivers": [
         "All tiles read system.parts / system.part_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.parts and system.part_log (part_log must be enabled, which it is by default)"
@@ -376,6 +383,7 @@
     {
       "file": "clickhouse-keeper-replication.json",
       "tmpl": "tmpl:ch-keeper",
+      "tier": "advanced",
       "name": "ClickHouse — Keeper & Replication",
       "receivers": [
         "ClickHouse metrics scraped into OTel (Keeper gauges/ProfileEvents)",
@@ -417,6 +425,7 @@
     {
       "file": "executive-overview.json",
       "tmpl": "tmpl:exec-overview",
+      "tier": "default",
       "name": "Executive Overview",
       "receivers": [
         "Application traces (OTLP), application/container logs, ClickHouse metrics and K8s metrics — this is a cross-cutting roll-up; tiles degrade gracefully when a given signal is absent"
@@ -451,6 +460,7 @@
     {
       "file": "host-os.json",
       "tmpl": "tmpl:host-os",
+      "tier": "default",
       "name": "Host / OS Metrics",
       "receivers": [
         "hostmetrics receiver (system.* scrapers: cpu, memory, load, disk, network, paging)"
@@ -497,6 +507,7 @@
     {
       "file": "metrics-histograms.json",
       "tmpl": "tmpl:metrics-histograms",
+      "tier": "advanced",
       "name": "Latency Histograms",
       "receivers": [
         "Application OTLP explicit-bucket histogram metrics (http.*.duration / rpc.*.duration)",

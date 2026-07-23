@@ -90,7 +90,8 @@ $summary   = @()
 
 foreach ($d in $req.dashboards) {
   Write-Host ""
-  Write-Host "== $($d.name) ($($d.file)) ==" -ForegroundColor Cyan
+  $tierTag = if ($d.tier -eq 'advanced') { ' [advanced]' } else { '' }
+  Write-Host "== $($d.name) ($($d.file))$tierTag ==" -ForegroundColor Cyan
   Write-Host ("   receivers: " + ($d.receivers -join '; ')) -ForegroundColor DarkGray
 
   $reqFail = 0; $optFail = 0
@@ -109,7 +110,7 @@ foreach ($d in $req.dashboards) {
 
   $status = if ($reqFail -gt 0) { 'FAIL' } elseif ($optFail -gt 0) { 'DEGRADED' } else { 'OK' }
   if ($status -ne 'FAIL') { $recommend += $d.file }
-  $summary += [pscustomobject]@{ Dashboard = $d.name; Status = $status; ReqMissing = $reqFail; OptMissing = $optFail }
+  $summary += [pscustomobject]@{ Dashboard = $d.name; Tier = $d.tier; Status = $status; ReqMissing = $reqFail; OptMissing = $optFail }
 }
 
 Write-Host ""

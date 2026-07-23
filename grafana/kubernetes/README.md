@@ -17,9 +17,9 @@ dashboards, and alerts all come back automatically on every restart.
 
 | Component | ConfigMap patched | Notes |
 |-----------|-------------------|-------|
-| `clickstack-ch` ClickHouse data source | `clickstack-grafana-datasources` | From [`datasource-clickstack-ch.yaml`](datasource-clickstack-ch.yaml). The alert rules reference this fixed UID. |
-| 6 dashboards (`../dashboards/*.json`) | `clickstack-grafana-dashboards` | Each dashboard's datasource variable (`clickhouseDatasource`) is pinned to `clickstack-ch` so panels resolve with no prompt. |
-| 10 alert rules + contact point + policy (`../alerting/*.yaml`) | `clickstack-grafana-alerting` | Also ensures the Grafana Deployment mounts it at `/etc/grafana/provisioning/alerting`. |
+| `clickstack-ch` ClickHouse data source | `clickstack-grafana-datasources` | From [`datasource-clickstack-ch.yaml`](datasource-clickstack-ch.yaml). Defaults to the **native-secure** port `9440` with CA verification (matches a TLS-hardened ClickStack); pass `-Insecure`/`--insecure` for a plaintext ClickStack. The alert rules reference this fixed UID. |
+| 5 default dashboards (`../dashboards/*.json`) | `clickstack-grafana-dashboards` | Each dashboard's datasource variable (`clickhouseDatasource`) is pinned to `clickstack-ch` so panels resolve with no prompt. Pass `-Advanced`/`--advanced` to also install `../dashboards/advanced/` (needs an optional data source). |
+| 8 alert rules + contact point + policy (`../alerting/*.yaml`) | `clickstack-grafana-alerting` | Also ensures the Grafana Deployment mounts it at `/etc/grafana/provisioning/alerting`. |
 
 ## Prerequisites
 
@@ -28,6 +28,11 @@ dashboards, and alerts all come back automatically on every restart.
 - The ClickStack Grafana Deployment already injects a `CH_PASSWORD` env var (its built-in
   `clickhouse` data source uses it) — the provisioned `clickstack-ch` data source reuses it,
   so **you don't pass a password**.
+- **TLS (default):** the data source connects over the native-secure port `9440` and verifies
+  ClickHouse against a CA certificate read from `-CaCertPath` (default
+  `/etc/grafana/certs/ca.crt`) — the same file the chart's built-in `clickhouse` data source
+  already mounts into the Grafana pod. On a plaintext (non-TLS) ClickStack, pass
+  `-Insecure`/`--insecure`, which strips TLS and defaults the port to `9000`.
 
 ## Wire up notifications (do this first)
 
@@ -52,8 +57,11 @@ you run the installer so Grafana only restarts once:
 # Different namespace, data source + dashboards only (no alerts):
 ./install-k8s.ps1 -Namespace obs -SkipAlerts
 
-# Non-default ClickHouse endpoint:
-./install-k8s.ps1 -ChServer my-clickhouse-headless -ChPort 9000
+# Plaintext (non-TLS) ClickStack, and/or a non-default endpoint:
+./install-k8s.ps1 -Insecure -ChServer my-clickhouse-headless -ChPort 9000
+
+# Also install the advanced/ deep-dive dashboards:
+./install-k8s.ps1 -Advanced
 ```
 
 **bash (macOS / Linux, needs `jq`):**
@@ -66,8 +74,11 @@ chmod +x install-k8s.sh   # first time only
 # Different namespace, data source + dashboards only (no alerts):
 ./install-k8s.sh --namespace obs --skip-alerts
 
-# Non-default ClickHouse endpoint:
-./install-k8s.sh --ch-server my-clickhouse-headless --ch-port 9000
+# Plaintext (non-TLS) ClickStack, and/or a non-default endpoint:
+./install-k8s.sh --insecure --ch-server my-clickhouse-headless --ch-port 9000
+
+# Also install the advanced/ deep-dive dashboards:
+./install-k8s.sh --advanced
 ```
 
 Key parameters (all optional, defaults match the stock ClickStack chart). PowerShell
@@ -79,7 +90,10 @@ flags are shown; the bash equivalents are the lowercase `--kebab-case` forms
 | `-Namespace` | `clickstack` | Namespace of the Grafana deployment/ConfigMaps. |
 | `-Deployment` | `clickstack-grafana` | Grafana Deployment name. |
 | `-DatasourcesConfigMap` / `-DashboardsConfigMap` / `-AlertingConfigMap` | `clickstack-grafana-*` | Override if your release prefix differs. |
-| `-ChServer` / `-ChPort` | `clickstack-clickhouse-clickhouse-headless` / `9000` | ClickHouse endpoint baked into the data source. |
+| `-ChServer` / `-ChPort` | `clickstack-clickhouse-clickhouse-headless` / `9440` | ClickHouse endpoint baked into the data source (`9440` = native-secure; `-Insecure` defaults it to `9000`). |
+| `-CaCertPath` | `/etc/grafana/certs/ca.crt` | CA cert file (already mounted in the Grafana pod) used to verify ClickHouse TLS. |
+| `-Insecure` | off | Plaintext (non-TLS) ClickStack: strip TLS from the data source, default the port to `9000`. |
+| `-Advanced` | off | Also provision `../dashboards/advanced/` (deep dives needing an optional data source). |
 | `-SkipAlerts` | off | Install data source + dashboards only. |
 | `-NoRestart` | off | Patch the ConfigMaps but don't roll Grafana (do it yourself later). |
 

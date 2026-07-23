@@ -23,7 +23,10 @@ ALERTING_CM='clickstack-grafana-alerting'
 # so it is intentionally NOT configurable.
 DS_UID='clickstack-ch'
 CH_SERVER='clickstack-clickhouse-clickhouse-headless'
-CH_PORT='9000'
+CH_PORT='9440'
+CA_CERT_PATH='/etc/grafana/certs/ca.crt'
+INSECURE=0
+ADVANCED=0
 SKIP_ALERTS=0
 NO_RESTART=0
 
@@ -36,7 +39,10 @@ Usage: ./install-k8s.sh [options]
   --dashboards-cm <name>      Dashboards provisioning ConfigMap (default: clickstack-grafana-dashboards)
   --alerting-cm <name>        Alerting provisioning ConfigMap (default: clickstack-grafana-alerting)
   --ch-server <host>          ClickHouse endpoint host (default: clickstack-clickhouse-clickhouse-headless)
-  --ch-port <port>            ClickHouse endpoint port (default: 9000)
+  --ch-port <port>            ClickHouse endpoint port (default: 9440, native-secure)
+  --ca-cert-path <path>       CA cert file mounted in the Grafana pod for TLS verify (default: /etc/grafana/certs/ca.crt)
+  --insecure                  Plaintext (non-TLS) ClickStack: strip TLS, default port to 9000
+  --advanced                  Also provision dashboards/advanced/ (need optional data sources)
   --skip-alerts               Install data source + dashboards only
   --no-restart                Patch the ConfigMaps but don't roll Grafana
   -h, --help                  Show this help
@@ -52,6 +58,9 @@ while [ $# -gt 0 ]; do
     --alerting-cm) ALERTING_CM="$2"; shift 2;;
     --ch-server) CH_SERVER="$2"; shift 2;;
     --ch-port) CH_PORT="$2"; shift 2;;
+    --ca-cert-path) CA_CERT_PATH="$2"; shift 2;;
+    --insecure) INSECURE=1; shift;;
+    --advanced) ADVANCED=1; shift;;
     --skip-alerts) SKIP_ALERTS=1; shift;;
     --no-restart) NO_RESTART=1; shift;;
     -h|--help) usage; exit 0;;
@@ -78,7 +87,23 @@ kubectl get deployment "$DEPLOYMENT" -n "$NS" -o name >/dev/null
 
 # --- 1. Data source ----------------------------------------------------------
 step "Provisioning data source '$DS_UID' into ConfigMap '$DATASOURCES_CM'"
-DS_YAML="$(sed -e "s|server: .*|server: $CH_SERVER|" -e "s|port: [0-9]*|port: $CH_PORT|" "$DS_FILE")"
+if [ "$INSECURE" -eq 1 ]; then
+  # Plaintext ClickStack: strip TLS and default the port to 9000 unless overridden.
+  [ "$CH_PORT" = "9440" ] && CH_PORT='9000'
+  DS_YAML="$(sed \
+    -e "s|server: .*|server: $CH_SERVER|" \
+    -e "s|port: [0-9]*|port: $CH_PORT|" \
+    -e "s|secure: true|secure: false|" \
+    -e "s|tlsAuthWithCACert: true|tlsAuthWithCACert: false|" \
+    -e "/tlsCACert:/d" \
+    "$DS_FILE")"
+else
+  DS_YAML="$(sed \
+    -e "s|server: .*|server: $CH_SERVER|" \
+    -e "s|port: [0-9]*|port: $CH_PORT|" \
+    -e "s|tlsCACert: \$__file{[^}]*}|tlsCACert: \$__file{$CA_CERT_PATH}|" \
+    "$DS_FILE")"
+fi
 jq -n --arg k "$DS_UID.yaml" --arg v "$DS_YAML" '{data: {($k): $v}}' > "$TMP/ds-patch.json"
 kubectl patch configmap "$DATASOURCES_CM" -n "$NS" --type merge -p "$(cat "$TMP/ds-patch.json")" >/dev/null
 echo "    added key $DS_UID.yaml"
@@ -86,7 +111,14 @@ echo "    added key $DS_UID.yaml"
 # --- 2. Dashboards -----------------------------------------------------------
 step "Provisioning dashboards into ConfigMap '$DASHBOARDS_CM'"
 echo '{}' > "$TMP/dashdata.json"
-for f in "$DASHBOARDS_DIR"/*.json; do
+# Default: only the always-populated top-level dashboards. --advanced also provisions
+# dashboards/advanced/, which need optional data sources (OTLP histograms).
+DASH_FILES=("$DASHBOARDS_DIR"/*.json)
+if [ "$ADVANCED" = 1 ] && [ -d "$DASHBOARDS_DIR/advanced" ]; then
+  DASH_FILES+=("$DASHBOARDS_DIR"/advanced/*.json)
+fi
+for f in "${DASH_FILES[@]}"; do
+  [ -e "$f" ] || continue
   base="$(basename "$f")"
   baked="$(jq -c --arg uid "$DS_UID" '
     (.templating.list[]? | select(.type=="datasource")) |=

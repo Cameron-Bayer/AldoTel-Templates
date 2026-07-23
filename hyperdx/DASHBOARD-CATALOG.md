@@ -32,12 +32,14 @@ Imported display names are prefixed **`ClickStack ·`**; filenames and stable ta
 
 ## Dashboard locations
 
-- **`hyperdx/dashboards/`** — the **8 default** dashboards every customer should import:
-  `executive-overview`, `services-red`, `logs-overview`, `kubernetes-infrastructure`,
-  `collector-health`, `clickhouse-health`, `host-os`, and `metrics-histograms`.
-- **`hyperdx/dashboards/advanced/`** — **3 advanced ClickHouse deep-dive** dashboards for operators
-  and DBAs: `clickhouse-queryperf`, `clickhouse-storage-mergetree`, and
-  `clickhouse-keeper-replication`.
+- **`hyperdx/dashboards/`** — the **5 default** dashboards every customer should import; they
+  populate on a standard appliance deploy: `executive-overview`, `services-red`, `logs-overview`,
+  `kubernetes-infrastructure`, and `host-os`.
+- **`hyperdx/dashboards/advanced/`** — **6 opt-in** dashboards (import with `--advanced`), each
+  needing an optional data source a standard deploy doesn't ingest by default: `collector-health`
+  (collector `:8888`), `clickhouse-health` (ClickHouse `:9363` metrics), `metrics-histograms`
+  (app OTLP histograms), and the ClickHouse deep dives `clickhouse-queryperf`,
+  `clickhouse-storage-mergetree`, and `clickhouse-keeper-replication`.
 
 ---
 
@@ -76,7 +78,7 @@ work.
 Add the `clickhouse` (or Prometheus) receiver so ClickHouse's `ProfileEvents`/`Metrics` land as OTel
 metrics. Then these light up.
 
-- **`clickhouse-health`** — ClickHouse operations: disk free %, active merges, pending mutations,
+- **`clickhouse-health`** *(advanced)* — ClickHouse operations: disk free %, active merges, pending mutations,
   running queries, and memory tracking.
 - **`clickhouse-queryperf`** *(advanced)* — *most* tiles are Raw SQL on `system.query_log`
   (Tier-1-style), but the summary number tiles need `ClickHouseMetrics_{Query,MemoryTracking}`.
@@ -89,7 +91,7 @@ Your OTel Collector must be deployed with the right receivers (and, for Kubernet
 
 - **`kubernetes-infrastructure`** — needs `kubeletstats` **and** `k8s_cluster` receivers (`k8s.*` metrics); the cluster-events tiles also need the `k8sobjects` receiver.
 - **`host-os`** — needs the **`hostmetrics`** receiver (`system.*` CPU/memory/load/disk/network).
-- **`collector-health`** — needs the collector's **own** `:8888` self-telemetry scraped back into OTel.
+- **`collector-health`** *(advanced)* — needs the collector's **own** `:8888` self-telemetry scraped back into OTel.
 
 ### 🔵 Tier 4 — Needs your applications instrumented
 Your services must send OpenTelemetry **traces** / **logs**. This is the core ClickStack use case,
@@ -98,7 +100,7 @@ but a bare cluster with un-instrumented apps won't populate these.
 - **`services-red`** — needs OTLP **traces** with server spans (`SpanKind = 'Server'`) and
   `StatusCode`; includes the compact SLO strip.
 - **`logs-overview`** — needs application/container **logs** (filelog or OTLP).
-- **`metrics-histograms`** — needs OTLP **histogram** metrics (`http.*.duration` / `rpc.*.duration`).
+- **`metrics-histograms`** *(advanced)* — needs OTLP **histogram** metrics (`http.*.duration` / `rpc.*.duration`).
 
 ### ⭐ Always works (degrades gracefully)
 - **`executive-overview`** — a cross-domain landing page. Every tile shows what it can and quietly hides
@@ -149,17 +151,15 @@ every tile degrades gracefully, it's also the safest way to *see your telemetry 
 you wire up more pipelines.
 
 **What you need.** Nothing hard-required — it shows whatever is flowing. Fills in fully once you have
-server spans, logs, ClickHouse metrics, and k8s metrics.
+server spans, logs, and k8s metrics.
 
 **What you'll see.**
 - **Service health — at a glance:** server-span error rate %, request volume, server-span latency p95,
   log error rate %.
-- **Platform — at a glance:** ClickHouse failed queries, ClickHouse running queries, K8s nodes ready,
-  collector refused spans.
+- **Platform — at a glance:** K8s nodes ready.
 - **Top services:** *Services by error rate* → click a row to open **Traces**; *Services by log
   errors* → click a row to open **Logs**.
-- **Traffic & ingest:** ingest throughput (spans accepted vs refused) and request rate & errors from
-  server spans.
+- **Request traffic:** request rate & errors from server spans.
 
 **How to read it.** Start top-left and scan right; anything red/non-zero in the "at a glance" rows is
 your cue to click into the matching table below and drill down. Empty tiles = that signal isn't

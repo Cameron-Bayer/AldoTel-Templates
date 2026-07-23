@@ -10,8 +10,8 @@ enable only what they run.
 
 ```powershell
 # 1. Get the templates
-git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
-cd AldoTel-HyperDX-Templates/hyperdx
+git clone https://github.com/Cameron-Bayer/AldoTel-Templates.git
+cd AldoTel-Templates/hyperdx
 
 # 2. Point at your HyperDX API (Team Settings → API Keys → Personal API Access Key)
 $env:HDX_API_URL = "http://localhost:8000"
@@ -19,15 +19,16 @@ $env:HDX_API_KEY = "<your Personal API Access Key>"
 
 # 3. Check what has data, then import
 ./preflight.ps1       # rates each dashboard OK/DEGRADED/FAIL
-./import.ps1          # upserts all dashboards (idempotent)
+./import.ps1          # upserts the default dashboards (idempotent)
+./import.ps1 -Advanced   # also import the advanced/ deep dives (optional data sources)
 ```
 
 **bash (macOS / Linux):**
 
 ```bash
 # 1. Get the templates
-git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
-cd AldoTel-HyperDX-Templates/hyperdx
+git clone https://github.com/Cameron-Bayer/AldoTel-Templates.git
+cd AldoTel-Templates/hyperdx
 
 # 2. Point at your HyperDX API (Team Settings → API Keys → Personal API Access Key)
 export HDX_API_URL="http://localhost:8000"
@@ -35,11 +36,15 @@ export HDX_API_KEY="<your Personal API Access Key>"
 
 # 3. Check what has data, then import
 ./preflight.sh        # rates each dashboard OK/DEGRADED/FAIL
-./import.sh           # upserts all dashboards (idempotent)
+./import.sh           # upserts the default dashboards (idempotent)
+./import.sh --advanced   # also import the advanced/ deep dives (optional data sources)
 ```
 
-Prefer a subset? `./import.sh --only services-red.json,logs-overview.json`. Full details,
-flags, and prerequisites are in [Install](#install) below.
+Prefer a subset? `./import.sh --only services-red.json,logs-overview.json`. The **default**
+import covers the dashboards that populate on a standard appliance deploy; the **advanced/**
+tier (`--advanced`) adds deep dives that need optional data sources (ClickHouse metrics,
+collector self-telemetry, or OTLP histograms). Full details, flags, and prerequisites are in
+[Install](#install) below.
 
 > 📖 **New here? Start with the [Dashboard Catalog & Field Guide](DASHBOARD-CATALOG.md)** — a
 > plain-language, per-dashboard breakdown of what each one is for, why you'd use it, exactly what
@@ -53,26 +58,27 @@ flags, and prerequisites are in [Install](#install) below.
 > 📄 **Per-dashboard reference pages** (auto-generated, optional) live in [`docs/`](docs/) — one page
 > per dashboard with a screenshot and every tile's query. Handy for lookups; not needed to install.
 
-**Default dashboards** (`dashboards/` — import these first):
+**Default dashboards** (`dashboards/` — import these first; populated on a standard appliance deploy):
 
 | File | What it shows | Source kind |
 |------|---------------|-------------|
-| `dashboards/executive-overview.json` | One landing page: cross-domain KPI tiles (server-span/log error %, p95, CH queries, nodes ready, collector drops) + **click-through** tables (services → Traces / Logs) + ingest & request/error trends | trace + log + metric |
+| `dashboards/executive-overview.json` | One landing page: cross-domain KPI tiles (server-span/log error %, p95, nodes ready) + **click-through** tables (services → Traces / Logs) + request/error trends | trace + log + metric |
 | `dashboards/services-red.json` | RED method: request rate, error rate %, p50/p95/p99 latency, slowest routes, latency heatmap — plus a folded-in **SLO strip** (availability SLI, error budget, multi-window burn rate 1h/6h/24h/3d) | trace |
 | `dashboards/logs-overview.json` | Log volume by severity, error rate, normalized error signatures, **new** error patterns, error sources by namespace/pod, live error stream | log |
 | `dashboards/kubernetes-infrastructure.json` | Node CPU/mem, deployment availability, pod **count** by phase, restarts, saturation, top pod memory, node filesystem usage — plus **container-vs-limit** CPU/memory utilization and **cluster events** (Warnings, top reasons, live stream) | metric + log |
-| `dashboards/collector-health.json` | OTel Collector pipeline: accepted/refused/failed spans & metric points, exporter queue utilization & sent, processor in/out (drops), scraper errors, collector CPU/mem | metric |
-| `dashboards/clickhouse-health.json` | **ClickHouse — Operations:** query/insert rate, failed queries, memory tracking, merges/mutations, running queries, disk free %, active merges, pending mutations | metric + SQL |
 | `dashboards/host-os.json` | **Host / OS:** CPU busy %, load average, memory & swap used %, disk & network throughput, and a per-host summary table — from the `hostmetrics` receiver | metric |
-| `dashboards/metrics-histograms.json` | **Latency histograms:** p50/p95/p99/avg for HTTP server/client + RPC server calls (bucket-interpolated), avg-latency & request-rate trends, and ClickHouse Keeper latency — from OTLP explicit-bucket histograms | metric |
 
-**Advanced ClickHouse deep-dives** (`dashboards/advanced/` — optional; for ClickHouse operators/DBAs):
+**Advanced dashboards** (`dashboards/advanced/` — opt-in with `--advanced`; each needs an
+**optional data source** that a standard appliance deploy does not ingest by default):
 
-| File | What it shows | Source kind |
-|------|---------------|-------------|
-| `dashboards/advanced/clickhouse-queryperf.json` | Query rate by kind, p95/p99 duration, memory/query, exceptions, slowest queries, top error codes (`system.query_log` + metrics) | metric + SQL |
-| `dashboards/advanced/clickhouse-storage-mergetree.json` | MergeTree storage: disk & compression KPIs, part-events / merge-duration / bytes & rows over time, largest tables, too-many-parts watch, recent merges (`system.parts` / `system.part_log`) | SQL |
-| `dashboards/advanced/clickhouse-keeper-replication.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | metric + SQL |
+| File | What it shows | Needs |
+|------|---------------|-------|
+| `dashboards/advanced/collector-health.json` | OTel Collector pipeline: accepted/refused/failed spans & metric points, exporter queue utilization & sent, processor in/out (drops), scraper errors, collector CPU/mem | collector `:8888` self-telemetry scraped back into OTel |
+| `dashboards/advanced/clickhouse-health.json` | **ClickHouse — Operations:** query/insert rate, failed queries, memory tracking, merges/mutations, running queries, disk free %, active merges, pending mutations | ClickHouse `:9363` metrics scraped into OTel (+ Raw SQL on `system.*`) |
+| `dashboards/advanced/metrics-histograms.json` | **Latency histograms:** p50/p95/p99/avg for HTTP server/client + RPC server calls (bucket-interpolated), avg-latency & request-rate trends, and ClickHouse Keeper latency | app OTLP **explicit-bucket histogram** metrics (`http.*.duration` / `rpc.*.duration`) |
+| `dashboards/advanced/clickhouse-queryperf.json` | Query rate by kind, p95/p99 duration, memory/query, exceptions, slowest queries, top error codes (`system.query_log` + metrics) | ClickHouse metrics and/or Raw SQL access |
+| `dashboards/advanced/clickhouse-storage-mergetree.json` | MergeTree storage: disk & compression KPIs, part-events / merge-duration / bytes & rows over time, largest tables, too-many-parts watch, recent merges (`system.parts` / `system.part_log`) | Raw SQL access to `system.*` |
+| `dashboards/advanced/clickhouse-keeper-replication.json` | ClickHouse Keeper: sessions, watches, request rate by type, commits vs failed, packets, in-flight, commit/process time, Keeper errors; plus replication status & queue tables (empty on single-node, populate when replicated) | ClickHouse metrics and/or Raw SQL access |
 
 ## Screenshots
 
@@ -171,11 +177,11 @@ The importer resolves those at install time, so the JSON stays portable.
 ### 0. Get the templates
 
 ```bash
-git clone https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates.git
-cd AldoTel-HyperDX-Templates/hyperdx
+git clone https://github.com/Cameron-Bayer/AldoTel-Templates.git
+cd AldoTel-Templates/hyperdx
 ```
 
-> Or grab a pinned release from the [Releases](https://github.com/Cameron-Bayer/AldoTel-HyperDX-Templates/releases)
+> Or grab a pinned release from the [Releases](https://github.com/Cameron-Bayer/AldoTel-Templates/releases)
 > page / **Code → Download ZIP**. If your HyperDX API isn't already reachable, port-forward it first:
 > `kubectl port-forward -n clickstack svc/clickstack-app 8000:8000`.
 

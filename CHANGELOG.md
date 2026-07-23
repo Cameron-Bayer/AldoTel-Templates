@@ -21,12 +21,12 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 - **Grafana deliverable (`grafana/`)** — six dashboards (Executive Summary, Service Health /
   golden signals, Kubernetes Cluster Overview, Logs & Errors Overview, Host / OS Metrics, Latency
   Histograms) over the same ClickHouse
-  data, plus a **provisioned alerting pack** (`grafana/alerting/`) of ten unified-alerting rules
+  data, plus a **provisioned alerting pack** (`grafana/alerting/`) of eight unified-alerting rules
   (generic webhook by default) shipped as YAML **and** Terraform. Portable via a datasource variable,
   with a durable ConfigMap installer for ClickStack-on-Kubernetes (`grafana/kubernetes/`).
-  Includes a **ClickStack platform-health row** (OTel collector accepted/refused/queue and
-  ClickHouse queries/failures/memory/disk), a per-service **SLO & error-budget burn** table,
-  and matching alerts (SLO fast-burn, container restarts, collector drops, ClickHouse failed queries).
+  Includes a per-service **SLO & error-budget burn** table and matching alerts (SLO fast-burn,
+  container restarts). ClickHouse- and collector-internal views are opt-in (advanced tier), since
+  those metrics are not scraped by every deployment.
 - **Customer-facing docs** — each section README embeds an architecture diagram (Mermaid),
   live screenshots, and a glossary, so leadership and engineers share one document per product.
 - **Alerts pack (`hyperdx/alerts/`)** — importable HyperDX alerts bound to dashboard tiles, one per
@@ -49,12 +49,15 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ### Changed
 
-- **Dashboards consolidated 10 → 9 and split into default + advanced.** The six everyday
-  dashboards stay in [`hyperdx/dashboards/`](hyperdx/dashboards/); three ClickHouse deep-dives
-  (`clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication`) moved
-  to `hyperdx/dashboards/advanced/`. The import scripts and `gen-docs.js` recurse into `advanced/`,
-  so `./import.ps1` still installs everything. (The HyperDX pack later grew to 11 with the Host / OS
-  and Latency Histogram dashboards above.)
+- **Dashboards split into a default tier and an opt-in `advanced/` tier so first import is always
+  populated.** Five HyperDX dashboards import by default and light up on any ClickStack from traces,
+  logs, and k8s/host metrics (executive overview, services RED, logs, Kubernetes, host / OS). Six
+  more live in `hyperdx/dashboards/advanced/` (collector health, ClickHouse operations,
+  `clickhouse-queryperf`, `clickhouse-storage-mergetree`, `clickhouse-keeper-replication`, latency
+  histograms) because they depend on ClickHouse-internal / collector-internal metrics or
+  explicit-bucket histograms that aren't collected by every deployment. `./import.ps1` installs the
+  default tier; add `-Advanced` / `--advanced` (or `-Only <name>`) to install the rest. Grafana
+  mirrors this: five dashboards install by default and `advanced/latency-histograms` is opt-in.
 - **`slo-errorbudget` folded into `services-red`.** The standalone SLO dashboard was removed; its
   Availability (SLI), error-budget-remaining, and multi-window burn-rate (1h/6h/24h/3d) now live as
   a compact **SLO strip** at the bottom of Services — RED.
@@ -91,6 +94,19 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ### Fixed
 
+- **Durable Grafana install now targets the appliance's TLS-hardened ClickHouse.** The provisioned
+  ConfigMap datasource (`grafana/kubernetes/datasource-clickstack-ch.yaml`) connects over the native
+  secure port `9440` with `secure: true`, CA verification
+  (`tlsCACert: $__file{/etc/grafana/certs/ca.crt}`), user `app`, and `$__env{CH_PASSWORD}`. The
+  `install-k8s.ps1` / `install-k8s.sh` installers gained `-CaCertPath` / `--ca-cert-path` and an
+  `-Insecure` / `--insecure` escape hatch for non-TLS ClickStacks.
+- **Removed dashboard tiles and alert rules that depended on never-collected metrics.** The
+  Executive Overview's ClickHouse-query / running-query / collector-refused-spans / ingest-throughput
+  tiles (fed by `otelcol_*` and `ClickHouseProfileEvents_*`, which are not scraped on the appliance)
+  were removed, and the two "ClickStack Platform" alert rules (collector-dropping, ClickHouse failed
+  queries) were dropped from both the YAML and Terraform packs — leaving **eight** rules in three
+  groups (Services, Kubernetes, Logs). Those signals live in the opt-in advanced dashboards for
+  deployments that do scrape collector / ClickHouse internals.
 - **Cumulative OTel counters now shown as per-instance deltas/rates.** Collector and ClickHouse
   counter tiles previously summed raw cumulative values across restarts and instances; they now
   compute per-`service.instance.id` deltas over the selected window and honor the time picker.

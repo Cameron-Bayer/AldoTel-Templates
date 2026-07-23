@@ -19,10 +19,17 @@
 
 .PARAMETER Only
   Comma-separated list of dashboard file names to act on (e.g. "services-red.json,logs-overview.json").
+  A named file is resolved from any tier (top-level or advanced/).
+
+.PARAMETER Advanced
+  Also import the advanced/ tier (deep-dive dashboards that require optional data sources:
+  ClickHouse metrics, collector self-telemetry, or OTLP histograms). By default only the
+  always-populated top-level dashboards are imported. See DASHBOARD-CATALOG.md for prerequisites.
 
 .EXAMPLE
   $env:HDX_API_URL = "http://localhost:8000"; $env:HDX_API_KEY = "<key>"
-  ./import.ps1                 # upsert all
+  ./import.ps1                 # upsert the default (top-level) tier
+  ./import.ps1 -Advanced       # also upsert advanced/ deep dives
   ./import.ps1 -DryRun         # preview
   ./import.ps1 -Only services-red.json
   ./import.ps1 -Delete         # remove template-managed dashboards
@@ -31,6 +38,7 @@ param(
   [switch]$DryRun,
   [switch]$Delete,
   [switch]$Duplicate,
+  [switch]$Advanced,
   [string]$Only
 )
 
@@ -78,7 +86,11 @@ function Find-Existing($tmplTag) {
 }
 
 # --- select files ---
-$files = Get-ChildItem -Path (Join-Path $PSScriptRoot "dashboards") -Filter *.json -Recurse
+# Default: only the always-populated top-level dashboards. -Advanced (or -Only naming an
+# advanced file) also pulls in dashboards/advanced/, which need optional data sources.
+$dashRoot = Join-Path $PSScriptRoot "dashboards"
+$recurse = [bool]$Advanced -or [bool]$Only
+$files = Get-ChildItem -Path $dashRoot -Filter *.json -File -Recurse:$recurse
 if ($Only) {
   $wanted = $Only.Split(',') | ForEach-Object { $_.Trim() }
   $files = $files | Where-Object { $wanted -contains $_.Name }

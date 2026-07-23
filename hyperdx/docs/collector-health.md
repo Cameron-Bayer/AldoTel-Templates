@@ -4,7 +4,7 @@
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
-- **Template:** `dashboards/collector-health.json` · tag `tmpl:collector-health`
+- **Template:** `dashboards/advanced/collector-health.json` · tag `tmpl:collector-health`
 - **Data required:** OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)
 
 ## Preview
