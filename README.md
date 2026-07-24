@@ -13,7 +13,7 @@ that read the *same* ClickHouse / OTel data — no extra collectors or schema ch
 > and **Grafana to watch & page** (high-level golden-signal boards + provisioned alert rules).
 > They read the same data, so you can run either or both.
 
-> **Status:** current release `1.0.0-rc1` (see [`VERSION`](VERSION)). The `main` branch may
+> **Status:** current release `1.0.0-rc2` (see [`VERSION`](VERSION)). The `main` branch may
 > include unreleased changes, listed under *Unreleased* in [`CHANGELOG.md`](CHANGELOG.md).
 
 ---

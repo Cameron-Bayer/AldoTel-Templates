@@ -5,6 +5,8 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ## [Unreleased]
 
+## [1.0.0-rc2] — 2026-07-24
+
 ### Added
 
 - **Four new coverage areas across both platforms — Host/OS, Kubernetes events, container-level

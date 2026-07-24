@@ -2,7 +2,7 @@
   "slug": "collector-drops",
   "signal": "Collector dropping telemetry",
   "dashboard": "collector-health",
-  "tile": "Refused spans (should be 0)",
+  "tile": "Refused spans (window)",
   "alert": {
     "name": "ClickStack · Collector refusing spans",
     "source": "tile",
