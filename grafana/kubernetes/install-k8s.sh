@@ -13,7 +13,7 @@
 # ClickStack Grafana pod — you do not pass a password here.
 set -euo pipefail
 
-NS='clickstack'
+NS='aldotel'
 DEPLOYMENT='clickstack-grafana'
 DATASOURCES_CM='clickstack-grafana-datasources'
 DASHBOARDS_CM='clickstack-grafana-dashboards'
@@ -33,7 +33,7 @@ NO_RESTART=0
 usage() {
   cat <<'EOF'
 Usage: ./install-k8s.sh [options]
-  --namespace <ns>            Namespace of the Grafana deployment/ConfigMaps (default: clickstack)
+  --namespace <ns>            Namespace of the Grafana deployment/ConfigMaps (default: aldotel)
   --deployment <name>         Grafana Deployment name (default: clickstack-grafana)
   --datasources-cm <name>     Datasources provisioning ConfigMap (default: clickstack-grafana-datasources)
   --dashboards-cm <name>      Dashboards provisioning ConfigMap (default: clickstack-grafana-dashboards)

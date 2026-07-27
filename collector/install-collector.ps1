@@ -25,8 +25,8 @@
 
 .PARAMETER Namespace
   Namespace where ClickStack / the appliance is installed. Match your deploy
-  (the ClickStack tier defaults to 'clickstack'; an ALDOTel chart deploy is
-  often 'aldotel'). Default: clickstack.
+  (the ALDOTel appliance deploys into 'aldotel'; a bare open-source ClickStack
+  tier is often 'clickstack'). Default: aldotel.
 
 .PARAMETER Release
   Helm release name for this scraper. Default: clickstack-metrics-collector.
@@ -67,7 +67,7 @@
   Remove the scraper release (helm uninstall) and the dedicated cert if present.
 
 .EXAMPLE
-  ./install-collector.ps1 -Namespace aldotel
+  ./install-collector.ps1
 
 .EXAMPLE
   ./install-collector.ps1 -Namespace clickstack -CreateDedicatedCert
@@ -77,7 +77,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Namespace = 'clickstack',
+    [string]$Namespace = 'aldotel',
     [string]$Release = 'clickstack-metrics-collector',
     [string]$CollectorService = 'clickstack-otel-collector',
     [string]$ChService = 'clickstack-clickhouse-clickhouse-headless',

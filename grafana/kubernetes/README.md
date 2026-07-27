@@ -87,7 +87,7 @@ flags are shown; the bash equivalents are the lowercase `--kebab-case` forms
 
 | Parameter | Default | Purpose |
 |-----------|---------|---------|
-| `-Namespace` | `clickstack` | Namespace of the Grafana deployment/ConfigMaps. |
+| `-Namespace` | `aldotel` | Namespace of the Grafana deployment/ConfigMaps. |
 | `-Deployment` | `clickstack-grafana` | Grafana Deployment name. |
 | `-DatasourcesConfigMap` / `-DashboardsConfigMap` / `-AlertingConfigMap` | `clickstack-grafana-*` | Override if your release prefix differs. |
 | `-ChServer` / `-ChPort` | `clickstack-clickhouse-clickhouse-headless` / `9440` | ClickHouse endpoint baked into the data source (`9440` = native-secure; `-Insecure` defaults it to `9000`). |

@@ -15,7 +15,7 @@
 # =============================================================================
 set -euo pipefail
 
-NAMESPACE='clickstack'
+NAMESPACE='aldotel'
 RELEASE='clickstack-metrics-collector'
 COLLECTOR_SERVICE='clickstack-otel-collector'
 CH_SERVICE='clickstack-clickhouse-clickhouse-headless'
@@ -35,7 +35,7 @@ COLLECTOR_CHART="${HELM_REPO_NAME}/opentelemetry-collector"
 usage() {
   cat <<'EOF'
 Usage: install-collector.sh [options]
-  --namespace <ns>              Namespace where ClickStack/appliance is installed (default: clickstack)
+  --namespace <ns>              Namespace where ClickStack/appliance is installed (default: aldotel)
   --release <name>              Helm release name (default: clickstack-metrics-collector)
   --collector-service <name>    Central OTel Collector Service (default: clickstack-otel-collector)
   --ch-service <name>           ClickHouse headless Service (default: clickstack-clickhouse-clickhouse-headless)

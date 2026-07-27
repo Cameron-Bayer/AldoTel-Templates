@@ -24,7 +24,7 @@
 
 .EXAMPLE
     ./install-k8s.ps1
-    Installs into the default clickstack namespace / clickstack-grafana* ConfigMaps.
+    Installs into the default aldotel namespace / clickstack-grafana* ConfigMaps.
 
 .EXAMPLE
     ./install-k8s.ps1 -Namespace obs -SkipAlerts
@@ -45,7 +45,7 @@
 #>
 [CmdletBinding()]
 param(
-    [string]$Namespace = 'clickstack',
+    [string]$Namespace = 'aldotel',
     [string]$Deployment = 'clickstack-grafana',
     [string]$DatasourcesConfigMap = 'clickstack-grafana-datasources',
     [string]$DashboardsConfigMap = 'clickstack-grafana-dashboards',

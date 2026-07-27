@@ -64,8 +64,8 @@ The emitter identity is either:
 ## Usage
 
 Requires `kubectl` + `helm` configured against the appliance cluster. Match
-`-Namespace` to your deploy (the ClickStack tier defaults to `clickstack`; an
-ALDOTel chart deploy is often `aldotel`).
+`-Namespace` to your deploy (the ALDOTel appliance installs into `aldotel`, the
+default; a bare open-source ClickStack tier is often `clickstack`). Default: `aldotel`.
 
 **PowerShell**
 ```powershell
@@ -94,7 +94,7 @@ ALDOTel chart deploy is often `aldotel`).
 
 | PowerShell | Bash | Default | Purpose |
 |-----------|------|---------|---------|
-| `-Namespace` | `--namespace` | `clickstack` | Namespace where ClickStack/appliance is installed |
+| `-Namespace` | `--namespace` | `aldotel` | Namespace where ClickStack/appliance is installed |
 | `-EmitterSecret` | `--emitter-secret` | `clickstack-emitter-app-secret` | Existing enrolled emitter TLS secret to present over mTLS |
 | `-CreateDedicatedCert` | `--create-dedicated-cert` | off | Mint a dedicated cert-manager emitter identity instead |
 | `-ChService` | `--ch-service` | `clickstack-clickhouse-clickhouse-headless` | ClickHouse headless Service fronting `:9363` |
