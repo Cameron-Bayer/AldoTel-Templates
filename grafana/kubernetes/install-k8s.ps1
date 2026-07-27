@@ -36,6 +36,13 @@
     connects over the native-secure port (9440) with CA verification; -Insecure
     strips TLS and defaults the port to 9000.
 
+.EXAMPLE
+    ./install-k8s.ps1 -Advanced -ReuseDatasource -DatasourceUid clickhouse
+    Installs onto the Observability Appliance, whose Grafana already ships an
+    identical ClickHouse data source (uid `clickhouse`). -ReuseDatasource skips
+    provisioning a new data source, and -DatasourceUid pins every dashboard and
+    alert rule to the existing `clickhouse` UID instead of `clickstack-ch`.
+
 .NOTES
     Requires: kubectl configured against the target cluster.
     The data source password comes from the CH_PASSWORD env var already injected into
@@ -53,6 +60,8 @@ param(
     [string]$ChServer = 'clickstack-clickhouse-clickhouse-headless',
     [int]$ChPort = 9440,
     [string]$CaCertPath = '/etc/grafana/certs/ca.crt',
+    [string]$DatasourceUid = 'clickstack-ch',
+    [switch]$ReuseDatasource,
     [switch]$Insecure,
     [switch]$Advanced,
     [switch]$SkipAlerts,
@@ -60,10 +69,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-# Fixed data source UID. The provisioned alert rules reference it directly (provisioned
-# rules can't prompt for a data source), and datasource-clickstack-ch.yaml declares it —
-# so it is intentionally NOT configurable.
-$DatasourceUid = 'clickstack-ch'
+# Data source UID that dashboards + provisioned alert rules bind to. Provisioned alert
+# rules can't prompt for a data source, so they reference this UID directly. Defaults to
+# the `clickstack-ch` data source this script provisions. On the Observability Appliance,
+# whose Grafana already ships an identical ClickHouse data source (uid `clickhouse`), pass
+# -ReuseDatasource -DatasourceUid clickhouse to bind to it instead of provisioning a new one.
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $grafanaDir = Split-Path -Parent $scriptDir
 $dashboardsDir = Join-Path $grafanaDir 'dashboards'
@@ -85,24 +95,31 @@ Write-Step "Checking Grafana deployment '$Deployment' in namespace '$Namespace'"
 Invoke-Kubectl @('get', 'deployment', $Deployment, '-n', $Namespace, '-o', 'name') | Out-Null
 
 # --- 1. Data source -----------------------------------------------------------
-Write-Step "Provisioning data source '$DatasourceUid' into ConfigMap '$DatasourcesConfigMap'"
-$dsYaml = (Get-Content $dsFile -Raw)
-if ($Insecure) {
-    # Plaintext ClickStack: strip TLS and default the port to 9000 unless overridden.
-    if ($ChPort -eq 9440) { $ChPort = 9000 }
-    $dsYaml = $dsYaml -replace 'secure: true', 'secure: false'
-    $dsYaml = $dsYaml -replace 'tlsAuthWithCACert: true', 'tlsAuthWithCACert: false'
-    $dsYaml = $dsYaml -replace '(?m)^\s*tlsCACert: .*\r?\n', ''
-} else {
-    $dsYaml = $dsYaml -replace '\$__file\{[^}]*\}', ('$__file{' + $CaCertPath + '}')
+if ($ReuseDatasource) {
+    Write-Step "Reusing existing data source '$DatasourceUid' (skipping datasource provisioning)"
+    Write-Host "    dashboards + alert rules will bind to uid '$DatasourceUid'"
 }
-$dsYaml = $dsYaml -replace 'server: .*', "server: $ChServer"
-$dsYaml = $dsYaml -replace 'port: \d+', "port: $ChPort"
-$dsPatch = @{ data = @{ "$DatasourceUid.yaml" = $dsYaml } } | ConvertTo-Json -Depth 6
-$dsPatchFile = Join-Path $tmp 'ds-patch.json'
-Set-Content -Path $dsPatchFile -Value $dsPatch -Encoding utf8
-Invoke-Kubectl @('patch', 'configmap', $DatasourcesConfigMap, '-n', $Namespace, '--type', 'merge', '--patch-file', $dsPatchFile) | Out-Null
-Write-Host "    added key $DatasourceUid.yaml"
+else {
+    Write-Step "Provisioning data source '$DatasourceUid' into ConfigMap '$DatasourcesConfigMap'"
+    $dsYaml = (Get-Content $dsFile -Raw)
+    if ($Insecure) {
+        # Plaintext ClickStack: strip TLS and default the port to 9000 unless overridden.
+        if ($ChPort -eq 9440) { $ChPort = 9000 }
+        $dsYaml = $dsYaml -replace 'secure: true', 'secure: false'
+        $dsYaml = $dsYaml -replace 'tlsAuthWithCACert: true', 'tlsAuthWithCACert: false'
+        $dsYaml = $dsYaml -replace '(?m)^\s*tlsCACert: .*\r?\n', ''
+    } else {
+        $dsYaml = $dsYaml -replace '\$__file\{[^}]*\}', ('$__file{' + $CaCertPath + '}')
+    }
+    $dsYaml = $dsYaml -replace 'server: .*', "server: $ChServer"
+    $dsYaml = $dsYaml -replace 'port: \d+', "port: $ChPort"
+    $dsYaml = $dsYaml -replace 'uid: clickstack-ch', "uid: $DatasourceUid"
+    $dsPatch = @{ data = @{ "$DatasourceUid.yaml" = $dsYaml } } | ConvertTo-Json -Depth 6
+    $dsPatchFile = Join-Path $tmp 'ds-patch.json'
+    Set-Content -Path $dsPatchFile -Value $dsPatch -Encoding utf8
+    Invoke-Kubectl @('patch', 'configmap', $DatasourcesConfigMap, '-n', $Namespace, '--type', 'merge', '--patch-file', $dsPatchFile) | Out-Null
+    Write-Host "    added key $DatasourceUid.yaml"
+}
 
 # --- 2. Dashboards ------------------------------------------------------------
 Write-Step "Provisioning dashboards into ConfigMap '$DashboardsConfigMap'"
@@ -138,15 +155,27 @@ Invoke-Kubectl @('patch', 'configmap', $DashboardsConfigMap, '-n', $Namespace, '
 # --- 3. Alerts ----------------------------------------------------------------
 if (-not $SkipAlerts) {
     Write-Step "Loading alert rules into ConfigMap '$AlertingConfigMap'"
+    # Provisioned alert rules bind to the data source by UID. If a non-default UID is in
+    # use (e.g. -DatasourceUid clickhouse to reuse the appliance's data source), rewrite
+    # the rules' UID onto substituted copies. The `__expr__` expression UID is untouched.
+    $alertSrcDir = $alertingDir
+    if ($DatasourceUid -ne 'clickstack-ch') {
+        $alertSrcDir = Join-Path $tmp 'alerting'
+        New-Item -ItemType Directory -Force -Path $alertSrcDir | Out-Null
+        foreach ($y in Get-ChildItem (Join-Path $alertingDir '*.yaml')) {
+            ((Get-Content $y.FullName -Raw) -replace 'clickstack-ch', $DatasourceUid) |
+                Set-Content -Path (Join-Path $alertSrcDir $y.Name) -Encoding utf8
+        }
+    }
     $alertArgs = @('create', 'configmap', $AlertingConfigMap, '-n', $Namespace)
-    foreach ($y in Get-ChildItem (Join-Path $alertingDir '*.yaml')) { $alertArgs += "--from-file=$($y.FullName)" }
+    foreach ($y in Get-ChildItem (Join-Path $alertSrcDir '*.yaml')) { $alertArgs += "--from-file=$($y.FullName)" }
     $alertArgs += @('--dry-run=client', '-o', 'yaml')
     $cmYaml = & kubectl @alertArgs
     if ($LASTEXITCODE -ne 0) { throw "building alerting ConfigMap failed:`n$cmYaml" }
     $cmFile = Join-Path $tmp 'alerting-cm.yaml'
     Set-Content -Path $cmFile -Value $cmYaml -Encoding utf8
     Invoke-Kubectl @('apply', '-f', $cmFile) | Out-Null
-    Write-Host "    loaded $((Get-ChildItem (Join-Path $alertingDir '*.yaml')).Count) YAML file(s)"
+    Write-Host "    loaded $((Get-ChildItem (Join-Path $alertSrcDir '*.yaml')).Count) YAML file(s)"
 
     Write-Step "Ensuring Grafana mounts the alerting provisioning folder"
     $container = (Invoke-Kubectl @('get', 'deployment', $Deployment, '-n', $Namespace, '-o', 'jsonpath={.spec.template.spec.containers[0].name}'))

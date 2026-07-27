@@ -93,12 +93,43 @@ flags are shown; the bash equivalents are the lowercase `--kebab-case` forms
 | `-ChServer` / `-ChPort` | `clickstack-clickhouse-clickhouse-headless` / `9440` | ClickHouse endpoint baked into the data source (`9440` = native-secure; `-Insecure` defaults it to `9000`). |
 | `-CaCertPath` | `/etc/grafana/certs/ca.crt` | CA cert file (already mounted in the Grafana pod) used to verify ClickHouse TLS. |
 | `-Insecure` | off | Plaintext (non-TLS) ClickStack: strip TLS from the data source, default the port to `9000`. |
+| `-DatasourceUid` | `clickstack-ch` | UID that dashboards + alert rules bind to. Set to an existing datasource's UID (e.g. `clickhouse`) to reuse it. |
+| `-ReuseDatasource` | off | Skip provisioning a data source entirely; bind dashboards + alert rules to the existing `-DatasourceUid`. See [Observability Appliance](#observability-appliance) below. |
 | `-Advanced` | off | Also provision `../dashboards/advanced/` (deep dives needing an optional data source). |
 | `-SkipAlerts` | off | Install data source + dashboards only. |
 | `-NoRestart` | off | Patch the ConfigMaps but don't roll Grafana (do it yourself later). |
 
 The script restarts Grafana at the end so provisioning re-runs. It is **idempotent** — re-run
 it any time (e.g. after editing a dashboard or the webhook URL).
+
+## Observability Appliance
+
+The Azure Local **Observability Appliance** ships a Grafana whose provisioning layout differs
+from the stock chart in two ways that matter here:
+
+- **A single `clickstack-grafana` ConfigMap** holds `datasources.yaml`, `dashboardproviders.yaml`,
+  and `grafana.ini` as *subPath-mounted keys* — there is **no** separate
+  `clickstack-grafana-datasources` ConfigMap, so the default datasource step fails with
+  `configmaps "clickstack-grafana-datasources" not found`.
+- It **already ships an identical ClickHouse data source** (uid **`clickhouse`**) — native-secure
+  `9440`, CA-verified, `CH_PASSWORD` from env — so there is nothing to provision.
+
+Reuse that data source instead of creating a new one:
+
+```powershell
+./install-k8s.ps1 -Advanced -ReuseDatasource -DatasourceUid clickhouse
+```
+
+```bash
+./install-k8s.sh --advanced --reuse-datasource --datasource-uid clickhouse
+```
+
+`-ReuseDatasource` skips the datasource step, and `-DatasourceUid clickhouse` pins every
+dashboard's datasource variable **and** every provisioned alert rule to the existing
+`clickhouse` UID (the `../dashboards/*` and `../alerting/*.yaml` files ship with `clickstack-ch`
+and are rewritten on the fly — the source files are untouched). Dashboards merge into the
+appliance's existing `clickstack-grafana-dashboards` ConfigMap; alerts are created and mounted
+as usual.
 
 ## Verify
 

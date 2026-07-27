@@ -18,10 +18,13 @@ DEPLOYMENT='clickstack-grafana'
 DATASOURCES_CM='clickstack-grafana-datasources'
 DASHBOARDS_CM='clickstack-grafana-dashboards'
 ALERTING_CM='clickstack-grafana-alerting'
-# Fixed data source UID. The provisioned alert rules reference it directly (provisioned
-# rules can't prompt for a data source), and datasource-clickstack-ch.yaml declares it —
-# so it is intentionally NOT configurable.
+# Data source UID that dashboards + provisioned alert rules bind to. Provisioned alert
+# rules can't prompt for a data source, so they reference this UID directly. Defaults to
+# the `clickstack-ch` data source this script provisions. On the Observability Appliance,
+# whose Grafana already ships an identical ClickHouse data source (uid `clickhouse`), pass
+# --reuse-datasource --datasource-uid clickhouse to bind to it instead of provisioning one.
 DS_UID='clickstack-ch'
+REUSE_DS=0
 CH_SERVER='clickstack-clickhouse-clickhouse-headless'
 CH_PORT='9440'
 CA_CERT_PATH='/etc/grafana/certs/ca.crt'
@@ -41,6 +44,8 @@ Usage: ./install-k8s.sh [options]
   --ch-server <host>          ClickHouse endpoint host (default: clickstack-clickhouse-clickhouse-headless)
   --ch-port <port>            ClickHouse endpoint port (default: 9440, native-secure)
   --ca-cert-path <path>       CA cert file mounted in the Grafana pod for TLS verify (default: /etc/grafana/certs/ca.crt)
+  --datasource-uid <uid>      Data source UID dashboards + alert rules bind to (default: clickstack-ch)
+  --reuse-datasource          Skip provisioning a data source; bind to an existing --datasource-uid (e.g. clickhouse)
   --insecure                  Plaintext (non-TLS) ClickStack: strip TLS, default port to 9000
   --advanced                  Also provision dashboards/advanced/ (need optional data sources)
   --skip-alerts               Install data source + dashboards only
@@ -59,6 +64,8 @@ while [ $# -gt 0 ]; do
     --ch-server) CH_SERVER="$2"; shift 2;;
     --ch-port) CH_PORT="$2"; shift 2;;
     --ca-cert-path) CA_CERT_PATH="$2"; shift 2;;
+    --datasource-uid) DS_UID="$2"; shift 2;;
+    --reuse-datasource) REUSE_DS=1; shift;;
     --insecure) INSECURE=1; shift;;
     --advanced) ADVANCED=1; shift;;
     --skip-alerts) SKIP_ALERTS=1; shift;;
@@ -86,27 +93,34 @@ step "Checking Grafana deployment '$DEPLOYMENT' in namespace '$NS'"
 kubectl get deployment "$DEPLOYMENT" -n "$NS" -o name >/dev/null
 
 # --- 1. Data source ----------------------------------------------------------
-step "Provisioning data source '$DS_UID' into ConfigMap '$DATASOURCES_CM'"
-if [ "$INSECURE" -eq 1 ]; then
-  # Plaintext ClickStack: strip TLS and default the port to 9000 unless overridden.
-  [ "$CH_PORT" = "9440" ] && CH_PORT='9000'
-  DS_YAML="$(sed \
-    -e "s|server: .*|server: $CH_SERVER|" \
-    -e "s|port: [0-9]*|port: $CH_PORT|" \
-    -e "s|secure: true|secure: false|" \
-    -e "s|tlsAuthWithCACert: true|tlsAuthWithCACert: false|" \
-    -e "/tlsCACert:/d" \
-    "$DS_FILE")"
+if [ "$REUSE_DS" -eq 1 ]; then
+  step "Reusing existing data source '$DS_UID' (skipping datasource provisioning)"
+  echo "    dashboards + alert rules will bind to uid '$DS_UID'"
 else
-  DS_YAML="$(sed \
-    -e "s|server: .*|server: $CH_SERVER|" \
-    -e "s|port: [0-9]*|port: $CH_PORT|" \
-    -e "s|tlsCACert: \$__file{[^}]*}|tlsCACert: \$__file{$CA_CERT_PATH}|" \
-    "$DS_FILE")"
+  step "Provisioning data source '$DS_UID' into ConfigMap '$DATASOURCES_CM'"
+  if [ "$INSECURE" -eq 1 ]; then
+    # Plaintext ClickStack: strip TLS and default the port to 9000 unless overridden.
+    [ "$CH_PORT" = "9440" ] && CH_PORT='9000'
+    DS_YAML="$(sed \
+      -e "s|server: .*|server: $CH_SERVER|" \
+      -e "s|port: [0-9]*|port: $CH_PORT|" \
+      -e "s|secure: true|secure: false|" \
+      -e "s|tlsAuthWithCACert: true|tlsAuthWithCACert: false|" \
+      -e "/tlsCACert:/d" \
+      -e "s|uid: clickstack-ch|uid: $DS_UID|" \
+      "$DS_FILE")"
+  else
+    DS_YAML="$(sed \
+      -e "s|server: .*|server: $CH_SERVER|" \
+      -e "s|port: [0-9]*|port: $CH_PORT|" \
+      -e "s|tlsCACert: \$__file{[^}]*}|tlsCACert: \$__file{$CA_CERT_PATH}|" \
+      -e "s|uid: clickstack-ch|uid: $DS_UID|" \
+      "$DS_FILE")"
+  fi
+  jq -n --arg k "$DS_UID.yaml" --arg v "$DS_YAML" '{data: {($k): $v}}' > "$TMP/ds-patch.json"
+  kubectl patch configmap "$DATASOURCES_CM" -n "$NS" --type merge -p "$(cat "$TMP/ds-patch.json")" >/dev/null
+  echo "    added key $DS_UID.yaml"
 fi
-jq -n --arg k "$DS_UID.yaml" --arg v "$DS_YAML" '{data: {($k): $v}}' > "$TMP/ds-patch.json"
-kubectl patch configmap "$DATASOURCES_CM" -n "$NS" --type merge -p "$(cat "$TMP/ds-patch.json")" >/dev/null
-echo "    added key $DS_UID.yaml"
 
 # --- 2. Dashboards -----------------------------------------------------------
 step "Provisioning dashboards into ConfigMap '$DASHBOARDS_CM'"
@@ -136,9 +150,20 @@ kubectl patch configmap "$DASHBOARDS_CM" -n "$NS" --type merge -p "$(cat "$TMP/d
 # --- 3. Alerts ---------------------------------------------------------------
 if [ "$SKIP_ALERTS" -eq 0 ]; then
   step "Loading alert rules into ConfigMap '$ALERTING_CM'"
+  # Provisioned alert rules bind to the data source by UID. If a non-default UID is in
+  # use (e.g. --datasource-uid clickhouse), rewrite the rules' UID onto substituted
+  # copies. The `__expr__` expression UID is untouched (no 'clickstack-ch' substring).
+  ALERT_SRC_DIR="$ALERTING_DIR"
+  if [ "$DS_UID" != "clickstack-ch" ]; then
+    ALERT_SRC_DIR="$TMP/alerting"
+    mkdir -p "$ALERT_SRC_DIR"
+    for y in "$ALERTING_DIR"/*.yaml; do
+      sed "s|clickstack-ch|$DS_UID|g" "$y" > "$ALERT_SRC_DIR/$(basename "$y")"
+    done
+  fi
   cm_args=(create configmap "$ALERTING_CM" -n "$NS")
   count=0
-  for y in "$ALERTING_DIR"/*.yaml; do cm_args+=(--from-file="$y"); count=$((count+1)); done
+  for y in "$ALERT_SRC_DIR"/*.yaml; do cm_args+=(--from-file="$y"); count=$((count+1)); done
   cm_args+=(--dry-run=client -o yaml)
   kubectl "${cm_args[@]}" | kubectl apply -f - >/dev/null
   echo "    loaded $count YAML file(s)"
