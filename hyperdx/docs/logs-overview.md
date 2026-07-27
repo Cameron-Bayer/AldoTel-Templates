@@ -1,4 +1,4 @@
-# ClickStack · Logs — Overview
+# ClickStack - Logs - Overview
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,7 +9,7 @@
 
 ## Preview
 
-![ClickStack · Logs — Overview](images/logs-overview.png)
+![ClickStack - Logs - Overview](images/logs-overview.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
@@ -22,6 +22,9 @@ These apply to every compatible tile on the dashboard.
 | Service | `ServiceName` | Logs (`default.otel_logs`) |
 | Severity | `SeverityText` | Logs (`default.otel_logs`) |
 
+## Log health & investigation
+Application and infrastructure logs ingested into ClickStack via OpenTelemetry. Filter by **Service** or **Severity** and adjust the time range. Look for error/fatal spikes, newly appearing error signatures, and failures concentrated on specific services or pods; click any row to open the matching logs.
+
 ## Volume & error rate
 
 ### Log volume by severity — stacked_bar
@@ -31,7 +34,7 @@ These apply to every compatible tile on the dashboard.
 - **Group by:** `SeverityText`
 - **Columns used:** `SeverityText`
 
-### Error / fatal rate by service — line
+### Error & fatal log count over time, by service — line
 
 - **Source / table:** Logs → `default.otel_logs`
 - **Measure(s):** count(*) as `errors`  — where `SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal` (lucene)
@@ -39,8 +42,9 @@ These apply to every compatible tile on the dashboard.
 - **Columns used:** `ServiceName`, `SeverityText`
 
 ## Top errors & patterns
+Error/fatal messages grouped into **signatures** — similar messages collapsed together after replacing IDs and numbers with `<id>`/`<n>`, so recurring failures stand out. The second table highlights signatures that are new in the last 24h (absent in the prior 7 days). These two tables use fixed 24h/7d windows, not the dashboard time range.
 
-### Top error signatures (normalized) — click a row to open Logs — table · Raw SQL
+### Top error signatures (normalized) - click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
 - **Drill-down:** click a row → opens search
@@ -64,7 +68,7 @@ LIMIT 50
 
 </details>
 
-### New log patterns in last 24h (vs prior 7d) — click a row to open Logs — table · Raw SQL
+### New log patterns in last 24h (vs prior 7d) - click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
 - **Drill-down:** click a row → opens search
@@ -79,28 +83,29 @@ WITH normalized AS (
   FROM default.otel_logs
   WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
 )
-SELECT ServiceName, pattern,
-       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,
-       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d
+SELECT ServiceName AS "Service", pattern AS "Error signature",
+       countIf(Timestamp > now() - INTERVAL 1 DAY) AS "Last 24h",
+       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS "Prior 7d"
 FROM normalized
 GROUP BY ServiceName, pattern
-HAVING prior_7d = 0 AND last_24h > 0
-ORDER BY last_24h DESC
+HAVING "Prior 7d" = 0 AND "Last 24h" > 0
+ORDER BY "Last 24h" DESC
 LIMIT 50
 ```
 
 </details>
 
 ## Live stream
+Most recent error/fatal logs. The Namespace and Pod columns are populated only for Kubernetes workloads and may be blank for other log sources.
 
-### Live error stream — click a row for full log detail — search
+### Live error stream - click a row for full log detail — search
 
 - **Source / table:** Logs → `default.otel_logs`
 - **Columns shown:** `Timestamp, SeverityText, ServiceName, ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body`
 - **Filter:** `SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal` (lucene)
 - **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `ResourceAttributes['k8s.pod.name']`, `ServiceName`, `SeverityText`, `Body`, `Timestamp`
 
-### Top error sources (namespace / pod) — click a row to open Logs — table · Raw SQL
+### Top Kubernetes error sources (namespace / pod) - click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
 - **Drill-down:** click a row → opens search
@@ -120,3 +125,20 @@ LIMIT 50
 ```
 
 </details>
+
+### Log error rate % — number
+
+- **Source / table:** Logs → `default.otel_logs`
+- **Measure(s):** avg(`if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)`)
+- **Columns used:** `SeverityText`
+
+### Total logs (selected range) — number
+
+- **Source / table:** Logs → `default.otel_logs`
+- **Measure(s):** count(*)
+
+### Error + fatal logs (selected range) — number
+
+- **Source / table:** Logs → `default.otel_logs`
+- **Measure(s):** sum(`if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)`)
+- **Columns used:** `SeverityText`

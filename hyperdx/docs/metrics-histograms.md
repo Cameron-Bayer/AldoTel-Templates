@@ -1,4 +1,4 @@
-# ClickStack · Latency Histograms
+# ClickStack - Latency Histograms
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -15,8 +15,11 @@ These apply to every compatible tile on the dashboard.
 |---|---|---|
 | Service | `ServiceName` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
 
+## Latency histograms
+Request-latency percentiles and trends computed from OpenTelemetry **explicit-bucket histogram** metrics (`http.*.duration`, `rpc.*.duration`), plus ClickHouse Keeper latency. Filter by **Service** and time range. Empty tables mean no matching histogram metrics were received in the window — services must emit OTLP histograms for these panels to populate.
+
 ## Request latency percentiles (OTLP histograms)
-Percentiles are interpolated from explicit-bucket histogram metrics (`otel_metrics_histogram`) over the selected window: per-series bucket deltas are summed, then linearly interpolated. Values are in **milliseconds** (`http.*.duration` / `rpc.*.duration` semconv). Avg = Σ / count.
+Percentiles are interpolated from explicit-bucket histogram metrics (`otel_metrics_histogram`) over the selected window: per-series bucket deltas are summed, then linearly interpolated. Values are in **milliseconds** (`http.*.duration` / `rpc.*.duration` semconv). Avg = Σ / count. **p50** is typical latency; **p95 / p99** are the slowest 5% / 1% of requests. Compare p95/p99 against your service SLO — a widening gap between p50 and p99 signals worsening tail latency.
 
 ### HTTP server latency by service — table · Raw SQL
 
@@ -183,7 +186,7 @@ ORDER BY ts
 </details>
 
 ## ClickHouse Keeper latency (histograms)
-Keeper operation latency distributions from ClickHouse's own histogram metrics (`ClickHouseHistogramMetrics_keeper_*`). Values are in **milliseconds**. Cluster-wide (not affected by the Service filter).
+Keeper operation latency distributions from ClickHouse's own histogram metrics (`ClickHouseHistogramMetrics_keeper_*`). Values are in **milliseconds**. The **Operation** column is the ClickHouse Keeper metric identifier (with the prefix stripped). Cluster-wide (not affected by the Service filter).
 
 ### Keeper operation latency percentiles — table · Raw SQL
 

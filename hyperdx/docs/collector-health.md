@@ -1,4 +1,4 @@
-# ClickStack · OTel Collector — Pipeline Health
+# ClickStack - OTel Collector - Pipeline Health
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,7 +9,7 @@
 
 ## Preview
 
-![ClickStack · OTel Collector — Pipeline Health](images/collector-health.png)
+![ClickStack - OTel Collector - Pipeline Health](images/collector-health.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
@@ -22,7 +22,7 @@ These apply to every compatible tile on the dashboard.
 | Collector | `ResourceAttributes['service.instance.id']` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
 
 ## Pipeline — at a glance
-Counters below are shown as **deltas over the selected time range** (not raw cumulative totals). Refused / failed / send-failed should stay at **0**.
+OTel Collector self-health from its internal `otelcol_*` metrics — enable the Collector's internal telemetry and ingest it into ClickStack, or this dashboard stays empty. Counters below are shown as **deltas over the selected time range** (not raw cumulative totals), and line charts labeled *per interval* show counts per time bucket, **not per second**. Refused / failed / send-failed should stay at **0**.
 
 ### Refused spans (window) — number · Raw SQL
 
@@ -103,8 +103,9 @@ SELECT max(util) AS "Queue utilization" FROM (
 </details>
 
 ## Traces pipeline
+Span receiver/exporter throughput and the exporter queue. Sustained queue utilization above 50% means backlog is building; above 80% risks dropped telemetry.
 
-### Spans: accepted vs refused vs failed (per-window rate) — line · Raw SQL
+### Spans: accepted vs refused vs failed (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -131,7 +132,7 @@ ORDER BY ts
 
 </details>
 
-### Exporter sent spans (per-window rate) — line · Raw SQL
+### Exporter sent spans (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -190,7 +191,7 @@ ORDER BY ts
 
 ## Logs & metrics pipeline
 
-### Logs: accepted vs refused vs send-failed (per-window rate) — line · Raw SQL
+### Logs: accepted vs refused vs send-failed (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -217,7 +218,7 @@ ORDER BY ts
 
 </details>
 
-### Metric points: accepted vs refused (per-window rate) — line · Raw SQL
+### Metric points: accepted vs refused (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -244,7 +245,7 @@ ORDER BY ts
 
 </details>
 
-### Scraper: scraped vs errored metric points (per-window rate) — line · Raw SQL
+### Scraper: scraped vs errored metric points (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -279,6 +280,7 @@ ORDER BY ts
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
 ## Collector resources
+Collector process resource usage. **RSS** is total resident process memory; **heap alloc** is Go runtime-allocated memory. Steadily rising memory, in-flight requests, or CPU can indicate backpressure.
 
 ### Collector memory (RSS / heap) — line
 
@@ -287,7 +289,7 @@ ORDER BY ts
 - **Measure(s):** max(`Value`) as `rss`; max(`Value`) as `heap alloc`
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
-### Collector CPU (cores, per-window rate) — line · Raw SQL
+### Collector CPU (cores) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 

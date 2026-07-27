@@ -113,6 +113,19 @@
     },
     {
       "id": null,
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "id": null,
       "type": "stat",
       "title": "Average logs/sec (selected range)",
       "datasource": {
@@ -219,8 +232,7 @@
           "unit": "cps",
           "decimals": 2,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -297,8 +309,7 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -375,8 +386,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -410,6 +420,19 @@
         "justifyMode": "auto"
       },
       "description": "Total Fatal-severity log records in the selected time range. Any value above zero is shown in red."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Log trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -589,8 +612,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Number of log records in each Grafana time bucket, stacked by severity."
+      "description": "Number of log records in each Grafana time bucket, stacked by severity.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -664,8 +687,21 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Error- and Fatal-severity log records per time bucket for each selected service. Values are counts, not events per second."
+      "description": "Error- and Fatal-severity log records per time bucket for each selected service. Values are counts, not events per second.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Error details",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -868,45 +904,6 @@
         }
       },
       "description": "The 100 newest Error- or Fatal-severity log records matching the current filters. Messages are truncated to 200 characters."
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "At a glance",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Log trends",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 10
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Error details",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 19
-      },
-      "panels": []
     }
   ]
 }

@@ -1,4 +1,4 @@
-# ClickStack · ClickHouse — Operations
+# ClickStack - ClickHouse - Operations
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,12 +9,12 @@
 
 ## Preview
 
-![ClickStack · ClickHouse — Operations](images/clickhouse-health.png)
+![ClickStack - ClickHouse - Operations](images/clickhouse-health.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
 ## Operations — at a glance
-Query/insert/cache counters are shown as **deltas over the selected time range**. Replication & Keeper detail lives in the **ClickHouse — Keeper & Replication** (advanced) dashboard.
+Query/insert/cache counters are shown as **deltas over the selected time range**; line charts labeled *per interval* are counts per time bucket, not per second. Reads ClickHouse OTel metrics plus `system.disks`, `system.merges`, and `system.mutations` — the connected user must be able to query those system tables. Replication & Keeper detail lives in the **ClickHouse — Keeper & Replication** (advanced) dashboard.
 
 ### Running queries — number · Raw SQL
 
@@ -66,7 +66,7 @@ SELECT min(free_space / total_space) AS "Disk free" FROM system.disks WHERE tota
 
 </details>
 
-### Memory tracking — number · Raw SQL
+### Current tracked memory — number · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
@@ -87,7 +87,7 @@ SELECT sum(v) AS "Memory tracked" FROM (
 
 ## Query activity
 
-### Query rate (per-window) — line · Raw SQL
+### Queries (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -113,7 +113,7 @@ ORDER BY ts
 
 </details>
 
-### Failed queries (per-window) — line · Raw SQL
+### Failed queries (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -139,7 +139,7 @@ ORDER BY ts
 
 </details>
 
-### Inserted rows (per-window) — line · Raw SQL
+### Inserted rows (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -165,7 +165,7 @@ ORDER BY ts
 
 </details>
 
-### SELECT vs INSERT queries (per-window) — line · Raw SQL
+### SELECT vs INSERT queries (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -193,6 +193,7 @@ ORDER BY ts
 </details>
 
 ## Merges & mutations
+Background **merges** compact immutable data parts; **mutations** rewrite parts to apply UPDATE/DELETE/TTL. Sustained growth in either means background work may be falling behind. A few pending mutations is normal.
 
 ### Active merges — number · Raw SQL
 
@@ -226,8 +227,9 @@ SELECT count() AS "Pending mutations" FROM system.mutations WHERE is_done = 0
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
 ## I/O & cache
+Read bytes served **from cache** vs **from source** (disk / object store), plus async-insert throughput. A rising share of source reads relative to cache reads can increase query latency.
 
-### Page-cache read bytes: cache vs source (per-window) — line · Raw SQL
+### Page-cache read bytes: cache vs source (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -254,7 +256,7 @@ ORDER BY ts
 
 </details>
 
-### Async insert bytes (per-window) — line · Raw SQL
+### Async insert bytes (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 

@@ -1,4 +1,4 @@
-# ClickStack · ClickHouse — Storage & MergeTree
+# ClickStack - ClickHouse - Storage & MergeTree
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,9 +9,12 @@
 
 ## Preview
 
-![ClickStack · ClickHouse — Storage & MergeTree](images/clickhouse-storage-mergetree.png)
+![ClickStack - ClickHouse - Storage & MergeTree](images/clickhouse-storage-mergetree.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
+
+## Storage & MergeTree health
+Disk usage, data parts, merges, and mutations from ClickHouse system tables (`system.parts`, `system.disks`, `system.merges`, `system.mutations`, `system.part_log`) — the connected user must be able to read these, and the part-event charts need `part_log` collection enabled. **MergeTree basics:** data lives in immutable **parts**; background **merges** compact small parts into larger ones, and **mutations** rewrite parts to apply UPDATE/DELETE/TTL. A sustained rise in part counts or pending mutations means background work is falling behind.
 
 ## Storage — at a glance
 
@@ -27,7 +30,7 @@ SELECT sum(bytes_on_disk) FROM system.parts WHERE active
 
 </details>
 
-### Compression ratio (uncompressed / compressed) — number · Raw SQL
+### Compression ratio (higher = more space saved) — number · Raw SQL
 
 - **Tables:** `system.parts`
 
@@ -85,7 +88,7 @@ ORDER BY t
 
 </details>
 
-### Merge duration — p95 / max — line · Raw SQL
+### Merge duration - p95 / max — line · Raw SQL
 
 - **Tables:** `system.part_log`
 
@@ -105,7 +108,7 @@ ORDER BY t
 
 </details>
 
-### Bytes written — inserted vs merged / interval — line · Raw SQL
+### Bytes written - inserted vs merged / interval — line · Raw SQL
 
 - **Tables:** `system.part_log`
 
@@ -124,7 +127,7 @@ ORDER BY t
 
 </details>
 
-### Rows processed — inserted vs merged / interval — line · Raw SQL
+### Rows processed - inserted vs merged / interval — line · Raw SQL
 
 - **Tables:** `system.part_log`
 
@@ -144,6 +147,7 @@ ORDER BY t
 </details>
 
 ## Tables & parts
+Per-table disk, rows, and part counts. **'Too many parts'**: rapidly growing part counts or many small parts mean merges can't keep up (ClickHouse throttles or rejects inserts once a table passes its `parts_to_throw_insert` limit) — evaluate against your configured limits.
 
 ### Largest tables by disk — table · Raw SQL
 
@@ -220,7 +224,7 @@ LIMIT 30
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT min(round(100 * free_space / nullIf(total_space, 0), 1)) AS "Disk free %"
+SELECT min(free_space / nullIf(total_space, 0)) AS "Disk free %"
 FROM system.disks
 ```
 
@@ -306,3 +310,6 @@ ORDER BY parts_to_do DESC
 ```
 
 </details>
+
+## Capacity & background work
+Disk headroom and in-flight merges/mutations. Investigate disk free below 15% (critical below 5%). A few pending mutations is normal; a large or growing backlog is not.

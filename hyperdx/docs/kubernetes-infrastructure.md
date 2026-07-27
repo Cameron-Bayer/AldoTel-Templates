@@ -1,4 +1,4 @@
-# ClickStack · Kubernetes — Infrastructure
+# ClickStack - Kubernetes - Infrastructure
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,7 +9,7 @@
 
 ## Preview
 
-![ClickStack · Kubernetes — Infrastructure](images/kubernetes-infrastructure.png)
+![ClickStack - Kubernetes - Infrastructure](images/kubernetes-infrastructure.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
@@ -21,9 +21,13 @@ These apply to every compatible tile on the dashboard.
 |---|---|---|
 | Namespace | `ResourceAttributes['k8s.namespace.name']` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
 
-## Nodes
+## Kubernetes infrastructure health
+Node, pod, namespace, and container health from the OpenTelemetry **kubeletstats** receiver, plus cluster events from the **k8sobjects** receiver. Use the **Namespace** filter and time range — note that node and cluster-event tiles are always cluster-wide. Start with node readiness, pods not running, container restarts, saturation, and warning events.
 
-### Node CPU usage (cores) — line · Raw SQL
+## Nodes
+Per-node CPU, memory, filesystem, and readiness. The CPU (cores) and memory values are absolute usage, not percentages — compare them against each node's allocatable capacity. Investigate filesystem usage above ~80% (critical above ~90%).
+
+### Node CPU usage (cores; vs allocatable) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
@@ -44,7 +48,7 @@ ORDER BY ts
 
 </details>
 
-### Node memory usage — line · Raw SQL
+### Node memory used (vs allocatable) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
@@ -65,7 +69,7 @@ ORDER BY ts
 
 </details>
 
-### Nodes — status, CPU, memory, uptime — table · Raw SQL
+### Nodes - status, CPU, memory, uptime — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
 
@@ -99,20 +103,22 @@ ORDER BY g.cpu DESC
 
 </details>
 
-### Nodes ready — number · Raw SQL
+### Kubernetes nodes ready % — number · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT countIf(ready = 1) AS "Nodes ready" FROM (
-  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready
-  FROM default.otel_metrics_gauge
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+SELECT if(total = 0, 0, ready / total) AS "Nodes ready" FROM (
+  SELECT countIf(ready = 1) AS ready, count() AS total FROM (
+    SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready
+    FROM default.otel_metrics_gauge
+    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
       AND MetricName = 'k8s.node.condition_ready'
-  GROUP BY node
+    GROUP BY node
+  )
 )
 ```
 
@@ -141,6 +147,7 @@ SELECT ts, node, usage / capacity AS "Filesystem" FROM (
 </details>
 
 ## Pods
+Pod phase, deployment availability, and per-pod usage against configured limits. **Deployment availability** = ready ÷ desired replicas; below 100% means some replicas are unavailable. Sustained pod CPU/memory near 100% of its limit risks throttling or OOM (out-of-memory) kills.
 
 ### Deployment availability (ready / desired) — line
 
@@ -171,7 +178,7 @@ ORDER BY count() DESC
 
 </details>
 
-### Pods — status & resources — table · Raw SQL
+### Pods - status & resources — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
 
@@ -230,6 +237,7 @@ LIMIT 100
 - **Columns used:** `ResourceAttributes['k8s.pod.name']`, `Value`, `MetricName`, `TimeUnix`
 
 ## Namespaces
+CPU and memory aggregated per namespace, with namespace phase (Active / Terminating).
 
 ### Namespace CPU usage (cores) — line · Raw SQL
 
@@ -279,7 +287,7 @@ ORDER BY ts
 
 </details>
 
-### Namespaces — phase, CPU, memory — table · Raw SQL
+### Namespaces - phase, CPU, memory — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
@@ -315,6 +323,7 @@ ORDER BY agg.cpu DESC
 </details>
 
 ## Saturation & restarts
+Cluster-wide health signals. **Saturation** is how close a resource is to exhaustion (e.g. node memory used ÷ total). Watch for pods not Running, new container restarts, and node memory saturation above ~85% (critical above ~95%).
 
 ### Pods not Running — number · Raw SQL
 
@@ -335,7 +344,7 @@ SELECT countIf(phase NOT IN (2, 3)) AS "Not running" FROM (
 
 </details>
 
-### New container restarts (window) — number · Raw SQL
+### Container restarts (selected range) — number · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
@@ -400,7 +409,7 @@ LIMIT 50
 </details>
 
 ## Container utilization
-Per-container usage as a fraction of its configured CPU/memory **limit** and **request** (`k8s.container.*_utilization` from kubeletstats). Sustained values near 100% of limit risk throttling/OOM.
+Per-container usage as a fraction of its configured CPU/memory **limit** and **request** (`k8s.container.*_utilization` from kubeletstats). Sustained values near 100% of limit risk CPU throttling or OOM (out-of-memory) termination.
 
 ### Container CPU vs limit % — line · Raw SQL
 
@@ -442,7 +451,7 @@ ORDER BY ts
 
 </details>
 
-### Containers — utilization vs limit / request — table · Raw SQL
+### Containers - utilization vs limit / request — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
 

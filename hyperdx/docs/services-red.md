@@ -1,4 +1,4 @@
-# ClickStack · Services — RED (Rate / Errors / Duration)
+# ClickStack - Services - RED (Rate / Errors / Duration)
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,7 +9,7 @@
 
 ## Preview
 
-![ClickStack · Services — RED (Rate / Errors / Duration)](images/services-red.png)
+![ClickStack - Services - RED (Rate / Errors / Duration)](images/services-red.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
@@ -21,9 +21,13 @@ These apply to every compatible tile on the dashboard.
 |---|---|---|
 | Service | `ServiceName` | Traces (`default.otel_traces`) |
 
-## Rate & errors
+## Service request health (RED)
+**RED** summarizes each service's request **R**ate, **E**rror rate, and **D**uration (latency), from OpenTelemetry **server spans**. Filter by **Service** and adjust the time range. Watch for rising error rates, latency above your service target, and an SLO burn rate above 1.
 
-### Request rate by service — line
+## Rate & errors
+Server request throughput and error percentage per service, from OpenTelemetry server spans.
+
+### Server request count over time, by service — line
 
 - **Source / table:** Traces → `default.otel_traces`
 - **Measure(s):** count(*) as `requests`  — where `SpanKind:Server` (lucene)
@@ -38,8 +42,9 @@ These apply to every compatible tile on the dashboard.
 - **Columns used:** `ServiceName`, `StatusCode`, `SpanKind`
 
 ## Latency & error breakdown
+**p50 / p95 / p99** are latency percentiles: 50%, 95%, and 99% of requests complete within that time. A widening gap between p50 and p99 indicates worsening tail latency.
 
-### Latency p50 / p95 / p99 — line
+### Server latency percentiles (p50 / p95 / p99) — line
 
 - **Source / table:** Traces → `default.otel_traces`
 - **Measure(s):** quantile(`Duration / 1000000000`) as `p50`  — where `SpanKind = 'Server'` (sql); quantile(`Duration / 1000000000`) as `p95`  — where `SpanKind = 'Server'` (sql); quantile(`Duration / 1000000000`) as `p99`  — where `SpanKind = 'Server'` (sql)
@@ -53,8 +58,9 @@ These apply to every compatible tile on the dashboard.
 - **Columns used:** `StatusCode`, `StatusMessage`, `SpanKind`
 
 ## Slow routes & distribution
+Slowest HTTP routes by p95, plus a latency anomaly detector and a distribution heatmap. The anomaly chart compares recent p95 against a rolling baseline; the shaded ±3σ band is three standard deviations around that baseline, so points above it are unusually slow. That chart uses a fixed last-24h window (against an 8-day baseline) and ignores the time picker.
 
-### Slowest routes (p95) — min 20 requests — table · Raw SQL
+### Slowest routes (p95) - min 20 requests — table · Raw SQL
 
 - **Tables:** `default.otel_traces`
 
@@ -82,7 +88,7 @@ LIMIT 50
 
 </details>
 
-### Latency anomaly — p95 vs rolling baseline (±3σ control band) — line · Raw SQL
+### P95 latency anomaly — last 24h vs 8-day baseline (±3σ band) — line · Raw SQL
 
 - **Tables:** `default.otel_traces`
 
@@ -122,9 +128,9 @@ ORDER BY t
 - **Columns used:** `Duration`, `SpanKind`
 
 ## SLO & error budget
-Availability = successful server requests / total server requests. Burn-rate windows (1h / 6h / 24h / 3d) are **fixed SLO windows** and intentionally ignore the time picker; a burn rate > 1 means the 99.9% budget is being spent too fast.
+An **SLO** (service-level objective) is your reliability target; the **SLI** (service-level indicator) is the measured value. Availability = successful server requests ÷ total server requests. Burn-rate windows (1h / 6h / 24h / 3d) are **fixed SLO windows** and intentionally ignore the time picker; a burn rate > 1 means the 99.9% error budget is being spent faster than sustainable.
 
-### Availability (SLI) — number
+### Availability (SLI = success rate) — number
 
 - **Source / table:** Traces → `default.otel_traces`
 - **Measure(s):** avg(`if(StatusCode = 'Error', 0, 1)`) as `availability`  — where `SpanKind:Server` (lucene)
@@ -154,9 +160,9 @@ WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
 
 ```sql
 WITH 0.001 AS budget
-SELECT window,
-       round(error_ratio, 5) AS error_ratio,
-       round(error_ratio / budget, 2) AS burn_rate
+SELECT window AS "Window",
+       round(error_ratio, 5) AS "Error rate",
+       round(error_ratio / budget, 2) AS "Burn rate (×)"
 FROM (
   SELECT '1h' AS window, 1 AS ord,
          countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio

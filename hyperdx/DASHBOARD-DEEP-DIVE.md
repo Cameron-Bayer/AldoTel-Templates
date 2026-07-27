@@ -72,7 +72,7 @@ Both styles respect the dashboard filters described below.
 
 ### Rate & errors
 
-**Request rate by service** — server request volume per service over time.
+**Server request count over time, by service** — server request volume per service over time.
 - **Q: What does this show?** The number of server spans each service handles in each time interval, so a request is counted where it is actually handled.
 - **Q: How should I read it?** This is the overall shape of your traffic. A line falling to zero indicates a service has stopped receiving requests. A sudden spike may indicate a surge in demand or a retry loop upstream.
 
@@ -82,7 +82,7 @@ Both styles respect the dashboard filters described below.
 
 ### Latency & error breakdown
 
-**Latency p50 / p95 / p99** — response time at three percentiles.
+**Server latency percentiles (p50 / p95 / p99)** — response time at three percentiles.
 - **Q: Why three lines?** The p50 line reflects the typical user experience, while p95 and p99 reflect the slowest requests. If p50 is stable but p99 climbs, a specific subset of requests is affected while most users are unaffected.
 
 **Errors by status message** — a breakdown of failures by their reported reason.
@@ -93,7 +93,7 @@ Both styles respect the dashboard filters described below.
 **Slowest routes (p95)** — a ranked table of the slowest endpoints. Selecting a row opens the underlying traces for that route.
 - **Q: How should I use it?** Identify the endpoint with the worst p95 latency, then select it to inspect the individual slow traces and see where the time is being spent.
 
-**Latency anomaly — p95 vs rolling baseline** — live p95 latency plotted against a self-calibrating expected range.
+**Latency anomaly — P95 latency anomaly (last 24h vs 8-day baseline)** — live p95 latency plotted against a self-calibrating expected range.
 - **Q: What is the shaded band?** The chart calculates an expected baseline from roughly the previous 24 hours of data and surrounds it with a statistical range (three standard deviations). The band represents "normal" for this service.
 - **Q: How should I read it?** When the live line rises above the upper edge of the band, latency is unusually high relative to its own recent history. Because the band adapts automatically, the same chart works for both fast and slow services without manual thresholds.
 
@@ -102,7 +102,7 @@ Both styles respect the dashboard filters described below.
 
 ### SLO strip
 
-**Availability (SLI)** — the measured proportion of successful server requests, color-coded against the 99.9% objective.
+**Availability (SLI = success rate)** — the measured proportion of successful server requests, color-coded against the 99.9% objective.
 - **Q: What is an SLI?** A Service Level Indicator is the measured "good request" ratio. Dips below the objective consume error budget.
 
 **Error budget remaining** — how much of the 0.1% monthly budget is still available.
@@ -128,7 +128,7 @@ Both styles respect the dashboard filters described below.
 **Log volume by severity** — total log throughput, segmented by severity level.
 - **Q: How should I read it?** The overall height reflects logging volume; the error and fatal segments are the focus. Error filters use `SeverityNumber >= 17` and lowercase severity text, so numeric and textual severities both match.
 
-**Error / fatal rate by service** — the rate of error and fatal logs per service.
+**Error & fatal log count over time, by service** — the rate of error and fatal logs per service.
 - **Q: What is it for?** Identifying which service began reporting errors, and when.
 
 ### Top errors & patterns
@@ -159,14 +159,14 @@ Both styles respect the dashboard filters described below.
 
 ### Nodes
 
-**Node CPU usage (cores)** and **Node memory usage** — resource consumption per node over time.
+**Node CPU usage (cores; vs allocatable)** and **Node memory used (vs allocatable)** — resource consumption per node over time.
 - **Q: How should I read it?** These indicate your physical headroom. Memory approaching a node's capacity risks pod eviction or termination.
 
 **Nodes — status, CPU, memory, uptime** — a per-node summary table.
 - **Q: What is it for?** A single-glance roster of node health. A status of *Not Ready* requires immediate attention.
 
-**Nodes ready** — the count of nodes in a ready state.
-- **Q: How should I read it?** This should equal your total node count. A lower number means a node has dropped out of the cluster.
+**Kubernetes nodes ready %** — the percentage of nodes in a ready state.
+- **Q: How should I read it?** This should be 100%. A lower value means a node has dropped out of the cluster.
 
 **Node filesystem usage %** — disk utilisation per node.
 - **Q: Why monitor it?** A full node disk disrupts image pulls, logging, and database writes. This should be addressed well before it reaches capacity.
@@ -240,7 +240,7 @@ Both styles respect the dashboard filters described below.
 
 ### Collector resources
 
-**Collector memory (RSS / heap)** and **Collector CPU seconds** — the collector's own resource usage.
+**Collector memory (RSS / heap)** and **Collector CPU (cores)** — the collector's own resource usage.
 - **Q: Why monitor this?** Memory approaching the collector's limit is a common root cause of the refusals described above. This is where to look when the pipeline is dropping data.
 
 ---
@@ -252,8 +252,8 @@ Both styles respect the dashboard filters described below.
 
 ### Operations — at a glance
 
-**Disk free %**, **Running queries**, **Active merges**, **Pending mutations**, and **Memory tracking**.
-- **Q: What indicates a problem?** Low disk free %, rising active merges, or growing pending mutations means ClickHouse is struggling to keep up with writes or background work. Memory tracking approaching the server limit means queries will begin to fail.
+**Disk free %**, **Running queries**, **Active merges**, **Pending mutations**, and **Current tracked memory**.
+- **Q: What indicates a problem?** Low disk free %, rising active merges, or growing pending mutations means ClickHouse is struggling to keep up with writes or background work. Tracked memory approaching the server limit means queries will begin to fail.
 
 ### Query activity
 
@@ -269,7 +269,7 @@ Both styles respect the dashboard filters described below.
 
 ### Disk & memory
 
-**Disk free %** from `system.disks` and **Memory tracking** from ClickHouse metrics.
+**Disk free %** from `system.disks` and **Current tracked memory** from ClickHouse metrics.
 - **Q: How should I read it?** Disk trending toward full is urgent because it blocks writes; memory tracking near the server limit predicts query failures.
 
 ---
@@ -283,11 +283,11 @@ Both styles respect the dashboard filters described below.
 
 ### Query performance — at a glance
 
-**Failed queries**, **Running queries (now)**, and **Memory tracking** — a summary of current query health.
+**Failed queries (selected window)**, **Running queries (now)**, and **Peak tracked memory (selected window)** — a summary of current query health.
 
 ### Query trends
 
-**Query rate by kind** — query volume segmented into selects, inserts, and other operations.
+**Queries per interval by kind** — query volume segmented into selects, inserts, and other operations.
 **Query duration — p95 / p99** — the slow tail of query latency.
 - **Q: How should I read it?** A rising p99 indicates some queries are becoming more expensive, often a sign of data growth or a query that would benefit from optimisation.
 
@@ -318,7 +318,7 @@ Both styles respect the dashboard filters described below.
 
 ### Throughput & merges
 
-**Part events / 5 min** — the rate of inserts, merges, and mutations.
+**Part events / interval** — the rate of inserts, merges, and mutations.
 - **Q: How should I read it?** Each insert creates a new data segment, and merges compact them. Healthy operation shows merges keeping pace with inserts.
 
 **Merge duration — p95 / max** — how long merges take; increasing durations indicate merge pressure.
@@ -348,7 +348,7 @@ Both styles respect the dashboard filters described below.
 
 ### Throughput & latency
 
-**Keeper request rate by type**, **Commits vs failed commits**, **Packets received / sent**, **In-flight requests & watches**, and **Keeper commit-wait & process time**.
+**Keeper requests per interval, by type**, **Commits vs failed commits (per interval)**, **Packets received / sent (per interval)**, **In-flight requests & watches**, and **Keeper commit-wait & process time**.
 - **Q: What is the key warning sign?** Failed commits above zero, or a rising commit-wait time, indicates the consensus layer is unhealthy — typically due to slow disk or network issues between Keeper nodes.
 
 **Keeper / ZooKeeper errors (last 24h)** — a table of coordination-related error counts.
@@ -358,7 +358,7 @@ Both styles respect the dashboard filters described below.
 **Replica status** — per-table replication state, including leader status, read-only status, and lag.
 - **Q: How should I read it?** A read-only replica or a growing delay indicates a replica falling behind or disconnected from the coordination layer.
 
-**Replication queue (stuck tasks)** — replication tasks ordered by retry count.
+**Replication queue (highest retry counts)** — replication tasks ordered by retry count.
 - **Q: How should I read it?** Tasks with a high retry count and a recorded exception are stuck in a retry loop, which is the direct cause of replicas diverging.
 
 ---
@@ -370,12 +370,12 @@ Both styles respect the dashboard filters described below.
 
 ### Service health — at a glance
 
-**Server-span error rate (%)**, **request volume (server spans)**, **server-span latency p95**, and **Log error rate (%)**.
+**Server error rate (%)**, **Server requests (selected range)**, **95th-percentile server latency (p95)**, and **Log error rate (%)**.
 - **Q: What is this for?** Four figures that answer whether the applications are healthy right now. The color rules present them as a simple status indicator.
 
 ### Platform — at a glance
 
-**K8s nodes ready.**
+**Kubernetes nodes ready %.**
 - **Q: What is this for?** A quick view of the underlying cluster — how many Kubernetes nodes are reporting ready. ClickHouse and collector-pipeline internals live in the **advanced** dashboards (opt-in), since those metrics are not collected by default.
 
 ### Top services
@@ -385,7 +385,7 @@ Both styles respect the dashboard filters described below.
 
 ### Request traffic
 
-**Request rate & errors (server spans)** — overall application request volume with the error count overlaid.
+**Request & error counts over time (traces)** — overall application request volume with the error count overlaid.
 
 ---
 
@@ -401,7 +401,7 @@ Both styles respect the dashboard filters described below.
 **CPU busy %** — the percentage of time the CPU spent doing work (all non-idle states), per host.
 - **Q: How is it computed?** Per CPU core per scrape, the non-idle fractions are summed, then averaged across cores and the interval — so it is not inflated by core count.
 
-**Load average (1m)** — the run-queue length averaged over one minute.
+**1-minute load average (vs CPU cores)** — the run-queue length averaged over one minute.
 - **Q: How should I read it?** Compare against the core count: a load well above the number of cores means processes are waiting for CPU even if busy % looks moderate.
 
 ### Memory & swap
@@ -435,12 +435,12 @@ Both styles respect the dashboard filters described below.
 
 ### Trends
 
-**Average latency by service** and **Request rate by service** — latency and traffic over time.
+**Avg HTTP server latency by service** and **HTTP request rate by service** — latency and traffic over time.
 - **Q: Why show request rate alongside latency?** A latency change is only meaningful with traffic context — a p99 spike at very low volume is often a single slow request, not a systemic regression.
 
 ### ClickHouse Keeper latency
 
-**Keeper request latency** — percentiles of ClickHouse Keeper request-processing time from the CH histogram metrics.
+**Keeper operation latency percentiles** — percentiles of ClickHouse Keeper request-processing time from the CH histogram metrics.
 - **Q: Why is it here?** Keeper coordinates ClickHouse replication; rising Keeper latency can slow inserts and replication cluster-wide.
 
 ---

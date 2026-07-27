@@ -113,6 +113,19 @@
     },
     {
       "id": null,
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
       "type": "stat",
       "title": "Average incoming requests/sec (selected range)",
       "datasource": {
@@ -219,8 +232,7 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -374,8 +386,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -409,6 +420,19 @@
         "justifyMode": "auto"
       },
       "description": "Number of services with at least 20 requests whose observed error percentage exceeds 0.1% in the selected range. Red means one or more services are below target."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Traffic, errors & latency trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -482,8 +506,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Incoming request count in each Grafana time bucket, stacked by service."
+      "description": "Incoming request count in each Grafana time bucket, stacked by service.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -557,8 +581,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Latency across all selected services: p50 is the median, p95 covers 95% of requests, and p99 highlights the slowest 1%."
+      "description": "Latency across all selected services: p50 is the median, p95 covers 95% of requests, and p99 highlights the slowest 1%.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -632,8 +656,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Percentage of incoming requests marked Error in each time bucket, aggregated across all selected services."
+      "description": "Percentage of incoming requests marked Error in each time bucket, aggregated across all selected services.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -707,8 +731,21 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Number of incoming requests marked Error in each Grafana time bucket for each service. This is a count, not errors per second."
+      "description": "Number of incoming requests marked Error in each Grafana time bucket for each service. This is a count, not errors per second.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Service comparison",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -1182,45 +1219,6 @@
         }
       },
       "description": "Selected-range comparison against a fixed 99.9% availability target. Budget left estimates remaining allowed errors for this range and may be negative. A burn value of 1x consumes budget at the allowed rate; 14.4x or higher is critical. Services with fewer than 20 requests are omitted."
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "At a glance",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 6
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Traffic, errors & latency trends",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 11
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Service comparison",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "panels": []
     }
   ]
 }

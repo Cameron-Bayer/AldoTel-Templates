@@ -1,4 +1,4 @@
-# ClickStack · ClickHouse — Keeper & Replication
+# ClickStack - ClickHouse - Keeper & Replication
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,11 +9,12 @@
 
 ## Preview
 
-![ClickStack · ClickHouse — Keeper & Replication](images/clickhouse-keeper-replication.png)
+![ClickStack - ClickHouse - Keeper & Replication](images/clickhouse-keeper-replication.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
-## Keeper — at a glance
+## Keeper — coordination health
+ClickHouse **Keeper** (a ZooKeeper-compatible service) manages replicated-table metadata and cluster consensus. These panels use Keeper gauges and cumulative ProfileEvent counters exported via OTel, and are empty when Keeper/ZooKeeper isn't configured. **Sessions** = connected clients; **Watches** = change subscriptions (unexpected sustained growth can indicate leaked clients); **Outstanding requests** = requests queued awaiting processing. Session and connection counts are workload-dependent.
 
 ### Active sessions — number
 
@@ -45,7 +46,7 @@ _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
 ## Throughput & latency
 
-### Keeper request rate by type — line · Raw SQL
+### Keeper requests per interval, by type — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -72,7 +73,7 @@ ORDER BY ts
 
 </details>
 
-### Commits vs failed commits — line · Raw SQL
+### Commits vs failed commits (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -99,7 +100,7 @@ ORDER BY ts
 
 </details>
 
-### Packets received / sent — line · Raw SQL
+### Packets received / sent (per interval) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -233,7 +234,7 @@ LIMIT 30
 
 </details>
 
-### Replication queue (stuck tasks) — table · Raw SQL
+### Replication queue (highest retry counts) — table · Raw SQL
 
 - **Tables:** `system.replication_queue`
 

@@ -5,6 +5,20 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ## [Unreleased]
 
+### Changed
+
+- **Dashboard clarity pass (customer-facing) across both platforms.** Tiles and panels were
+  renamed to be self-explanatory at a glance (e.g. Grafana **Service Health (Golden Signals)** →
+  **Service Health** and **Latency Histograms** → **Request Latency & Volume**; many HyperDX/Grafana
+  charts gained clearer "per interval" / "selected range" wording, `vs allocatable` / `vs CPU cores`
+  qualifiers, and per-tile descriptions). Section headers and intro tiles were added, and the
+  Services-RED SLO strip (Availability SLI, error-budget-remaining, burn-rate) labels were clarified.
+  Grafana dashboard file names are unchanged.
+- **Grafana dashboards are once again fully generated.** All clarity edits were ported into
+  `grafana/gen-dashboards.js`, so `node grafana/gen-dashboards.js` reproduces the committed JSON —
+  restoring the generator as the single source of truth. Narrative docs (`grafana/README.md`,
+  `hyperdx/DASHBOARD-DEEP-DIVE.md`) and the auto-generated `hyperdx/docs/` were updated to match.
+
 ## [1.0.0-rc2] — 2026-07-24
 
 ### Added

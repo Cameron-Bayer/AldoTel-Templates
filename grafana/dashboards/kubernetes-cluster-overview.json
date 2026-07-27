@@ -113,6 +113,19 @@
     },
     {
       "id": null,
+      "type": "row",
+      "title": "Cluster & workload health",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
       "type": "stat",
       "title": "Ready nodes (latest in range)",
       "datasource": {
@@ -289,8 +302,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -363,8 +375,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -402,6 +413,19 @@
         "justifyMode": "auto"
       },
       "description": "Increase in restart counters across containers in the selected namespaces during the selected time range. Longer ranges may produce larger totals."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Node & workload resource usage",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -475,8 +499,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "CPU cores used by each node over time. Compare with the node's allocatable CPU capacity."
+      "description": "CPU cores used by each node over time. Compare with the node's allocatable CPU capacity.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -550,8 +574,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Memory used by each node over time. Compare with node capacity; this panel shows bytes, not utilization percentage."
+      "description": "Memory used by each node over time. Compare with node capacity; this panel shows bytes, not utilization percentage.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -625,8 +649,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "CPU cores used by the ten pods with the highest average CPU usage over the selected time range."
+      "description": "CPU cores used by the ten pods with the highest average CPU usage over the selected time range.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -700,8 +724,21 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Available replicas divided by desired replicas for each deployment. 100% means all desired replicas are available; below 100% indicates unavailable replicas."
+      "description": "Available replicas divided by desired replicas for each deployment. 100% means all desired replicas are available; below 100% indicates unavailable replicas.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Workload details",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -965,8 +1002,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "CPU usage as a percentage of each container's configured CPU limit. Sustained values near or above 100% indicate throttling risk. Containers without limits do not appear."
+      "description": "CPU usage as a percentage of each container's configured CPU limit. Sustained values near or above 100% indicate throttling risk. Containers without limits do not appear.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -1040,8 +1077,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Memory usage as a percentage of each container's configured memory limit. Values approaching 100% indicate out-of-memory termination risk."
+      "description": "Memory usage as a percentage of each container's configured memory limit. Values approaching 100% indicate out-of-memory termination risk.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -1249,8 +1286,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -1494,45 +1530,6 @@
         }
       },
       "description": "The 100 newest Kubernetes events in the selected time range. Warning events are shown in red and Normal events in green."
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Cluster & workload health",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 6
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Node & workload resource usage",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 11
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Workload details",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "panels": []
     }
   ]
 }

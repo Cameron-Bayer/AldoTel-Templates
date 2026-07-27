@@ -195,8 +195,7 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -450,8 +449,8 @@
           "sort": "desc"
         }
       },
-      "interval": "5m",
-      "description": "Number of server requests in each automatic Grafana chart interval. Interval width changes when the time range changes."
+      "description": "Number of server requests in each automatic Grafana chart interval. Interval width changes when the time range changes.",
+      "interval": "5m"
     },
     {
       "id": null,
@@ -521,8 +520,8 @@
           "sort": "desc"
         }
       },
-      "interval": "5m",
-      "description": "Percentage of server requests marked Error in each chart interval; lower is better."
+      "description": "Percentage of server requests marked Error in each chart interval; lower is better.",
+      "interval": "5m"
     },
     {
       "id": null,
@@ -715,8 +714,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -789,8 +787,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -950,8 +947,7 @@
           "unit": "cps",
           "decimals": 2,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -1028,8 +1024,7 @@
           "unit": "percent",
           "decimals": 2,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -1106,8 +1101,7 @@
           "unit": "short",
           "decimals": 0,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -1214,8 +1208,8 @@
           "sort": "desc"
         }
       },
-      "interval": "5m",
-      "description": "Log record count in each chart interval, stacked by OpenTelemetry severity. Interval width changes with the selected time range."
+      "description": "Log record count in each chart interval, stacked by OpenTelemetry severity. Interval width changes with the selected time range.",
+      "interval": "5m"
     },
     {
       "id": null,
@@ -1289,8 +1283,8 @@
           "sort": "desc"
         }
       },
-      "interval": "5m",
-      "description": "Error-or-higher log record count per chart interval, grouped by reporting service."
+      "description": "Error-or-higher log record count per chart interval, grouped by reporting service.",
+      "interval": "5m"
     },
     {
       "id": null,

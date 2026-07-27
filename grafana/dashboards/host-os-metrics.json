@@ -60,10 +60,10 @@
           "type": "grafana-clickhouse-datasource",
           "uid": "${clickhouseDatasource}"
         },
-        "definition": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
+        "definition": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
         "query": {
           "refId": "host-var",
-          "rawSql": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
+          "rawSql": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
           "meta": {
             "builderOptions": {
               "database": "default"
@@ -110,6 +110,19 @@
         "content": "## Host / OS metrics\nHost CPU, memory, load, disk, and network metrics collected by the OpenTelemetry Collector and stored in ClickHouse. **Summary cards are averages over the selected time range**; charts use automatic Grafana intervals. Use the **Host** filter to narrow the fleet. No data usually means the host-metrics receiver isn't reporting or the selected hosts had no samples."
       },
       "transparent": false
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Fleet summary",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -219,8 +232,7 @@
           "unit": "percent",
           "decimals": 1,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -297,8 +309,7 @@
           "unit": "percent",
           "decimals": 1,
           "color": {
-            "mode": "thresholds",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
@@ -409,6 +420,19 @@
     },
     {
       "id": null,
+      "type": "row",
+      "title": "CPU & memory trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "panels": []
+    },
+    {
+      "id": null,
       "type": "timeseries",
       "title": "CPU utilization by host",
       "datasource": {
@@ -479,8 +503,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Non-idle CPU percentage for each selected host over time. Sustained values above 75% warrant attention; above 90% are critical."
+      "description": "Non-idle CPU percentage for each selected host over time. Sustained values above 75% warrant attention; above 90% are critical.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -554,8 +578,21 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Used-memory percentage for each selected host over time. Sustained values above 80% warrant attention; above 92% are critical."
+      "description": "Used-memory percentage for each selected host over time. Sustained values above 80% warrant attention; above 92% are critical.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Disk & network activity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -629,8 +666,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Combined bytes read and written by each host during each chart interval. This is volume, not bytes per second."
+      "description": "Combined bytes read and written by each host during each chart interval. This is volume, not bytes per second.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -704,8 +741,21 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Combined bytes received and transmitted by each host during each chart interval. This is volume, not bytes per second."
+      "description": "Combined bytes received and transmitted by each host during each chart interval. This is volume, not bytes per second.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Per-host summary",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -903,58 +953,6 @@
         }
       },
       "description": "Per-host averages over the full selected time range, sorted by average CPU utilization. These are not the latest samples."
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Fleet summary",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 5
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "CPU & memory trends",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 10
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Disk & network activity",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 19
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Per-host summary",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "panels": []
     }
   ]
 }

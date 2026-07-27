@@ -85,7 +85,7 @@ Grafana API.
 | File | Dashboard | Reads from | Answers |
 |------|-----------|-----------|---------|
 | `dashboards/executive-summary.json` | **Executive Summary** | all three | One-pane health across services, Kubernetes, and logs — top signals only. |
-| `dashboards/service-health-golden-signals.json` | **Service Health (Golden Signals)** | `otel_traces` | Are my services up, fast, and error-free? (Rate / Errors / Duration per service) |
+| `dashboards/service-health-golden-signals.json` | **Service Health** | `otel_traces` | Are my services up, fast, and error-free? (Rate / Errors / Duration per service) |
 | `dashboards/kubernetes-cluster-overview.json` | **Kubernetes Cluster Overview** | `otel_metrics_gauge` | Are nodes/pods healthy? CPU, memory, restarts, deployment availability. |
 | `dashboards/logs-errors-overview.json` | **Logs & Errors Overview** | `otel_logs` | How much are we logging, what's erroring, and what do the latest errors say? |
 | `dashboards/host-os-metrics.json` | **Host / OS Metrics** | `otel_metrics_gauge`, `otel_metrics_sum` | Are the underlying hosts healthy? CPU, memory, load, disk and network I/O per host. |
@@ -98,7 +98,7 @@ ClickStack / HyperDX deployment with no extra data sources.
 
 | File | Dashboard | Reads from | Needs |
 |------|-----------|-----------|-------|
-| `dashboards/advanced/latency-histograms.json` | **Latency Histograms** | `otel_metrics_histogram` | Your apps must emit OTLP **explicit-bucket histogram** metrics (`http.*.duration` / `rpc.*.duration`). Average latency and request rate for HTTP server/client and RPC calls. |
+| `dashboards/advanced/latency-histograms.json` | **Request Latency & Volume** | `otel_metrics_histogram` | Your apps must emit OTLP **explicit-bucket histogram** metrics (`http.*.duration` / `rpc.*.duration`). Average latency and request rate for HTTP server/client and RPC calls. |
 
 **Filters:** the Service Health, Kubernetes, Logs, and Host / OS dashboards include a
 **Service**, **Namespace**, or **Host** drop-down (multi-select, defaults to *All*) at the top, so
@@ -121,11 +121,11 @@ the telemetry you actually send. Use this to predict what will have data before 
 | Dashboard | Needs | Stays empty if… |
 |-----------|-------|-----------------|
 | **Executive Summary** | any of the signals below | nothing is flowing into ClickStack yet |
-| **Service Health (Golden Signals)** | trace spans in `otel_traces` (apps instrumented with OTel tracing) | your services don't emit server spans |
+| **Service Health** | trace spans in `otel_traces` (apps instrumented with OTel tracing) | your services don't emit server spans |
 | **Kubernetes Cluster Overview** | `otel_metrics_gauge` from the OTel **k8s cluster receiver** + **kubelet stats receiver** (ClickStack's infra collectors ship these) | those receivers aren't enabled or scraping |
 | **Logs & Errors Overview** | log rows in `otel_logs` (container logs and/or app OTLP logs) | no log pipeline is wired up |
 | **Host / OS Metrics** | `system.*` metrics from the OTel **hostmetrics receiver** | the hostmetrics receiver isn't enabled |
-| **Latency Histograms** | explicit-bucket histogram metrics (`http.*.duration` / `rpc.*.duration`) in `otel_metrics_histogram` | your apps don't emit OTLP histogram metrics |
+| **Request Latency & Volume** | explicit-bucket histogram metrics (`http.*.duration` / `rpc.*.duration`) in `otel_metrics_histogram` | your apps don't emit OTLP histogram metrics |
 
 **Empty dashboard? quick checks**
 
@@ -247,34 +247,42 @@ image for full size.
 ## Dashboard details
 
 ### Executive Summary (all three sources)
-- **Services:** requests/sec, error rate %, latency p95, services-seen count; request-volume
-  and overall error-rate trends.
-- **Kubernetes:** Nodes Ready, Pods Running, Pods Not Running, container restarts (in range).
-- **Logs:** logs/sec, error+ logs/sec, error log %, fatal count; volume-by-severity and
-  error-by-service trends.
-- **Needs attention:** every service ranked by error rate, color-coded.
+- **Application request health:** average server request rate, server request error rate,
+  95th-percentile server latency, and a services-receiving-requests count; plus
+  server-requests and server-error-rate trends per chart interval.
+- **Kubernetes workload health:** ready nodes, running pods, pods pending/failed/unknown,
+  and container restarts during the selected range.
+- **Application logs:** average log record rate, average error-and-fatal log rate,
+  error-and-fatal share of logs, fatal-log count; plus log-records-by-severity and
+  error-logs-by-service trends.
+- **Service health details:** every service ranked by error percentage, color-coded.
 - *A single at-a-glance page for status pages, war-rooms, or a leadership screen. No filters.*
 
-### Service Health — Golden Signals (`otel_traces`)
+### Service Health (`otel_traces`)
 - **Filter:** `Service` (multi-select, default All).
-- **Stats:** requests/sec, error rate %, latency p95, and a **Services < SLO (99.9%)** count
-  (all over the whole selected range).
-- **Timeseries:** request volume by service, latency percentiles (p50/p95/p99),
-  overall error rate, errors per interval by service.
-- **Tables:** per-service RED breakdown (Req/s, Errors, Error %, p50/p95/p99) with a
-  color-coded Error % column; and a **Service SLO & error-budget burn** table
-  (availability %, budget left %, burn rate — burn rate ≥14.4 is page-worthy).
+- **At a glance:** average requests/sec, request error %, 95th-percentile latency, and a
+  **Services below 99.9% availability** count (all over the whole selected range).
+- **Trends:** request count per time bucket by service, request latency percentiles
+  (p50/p95/p99), request error % over time, error count per time bucket by service.
+- **Tables:** a per-service RED breakdown (Req/s, Errors, Error %, p50/p95/p99) with a
+  color-coded Error % column; and a **99.9% availability & error-budget** table
+  (availability %, error-budget use, burn rate — burn rate ≥14.4 is page-worthy).
 - *Only inbound "server" spans are counted (`SpanKind = 'Server'`), so numbers reflect
   requests the service handled — not every internal/outbound span.*
 
 ### Kubernetes Cluster Overview (`otel_metrics_gauge`)
 - **Filter:** `Namespace` (multi-select, default All) — applies to pod/deployment/container
-  panels; node-level panels always show the whole cluster.
-- **Stats:** Nodes Ready, Pods Running, Pods Not Running (excludes completed `Succeeded`
-  Job pods), container restarts **in the selected range**.
-- **Timeseries:** node CPU (cores), node memory (IEC bytes), top 10 pods by CPU,
-  deployment availability % (available/desired replicas).
-- **Tables:** top pods by working-set memory, container restarts in range by pod (color-coded).
+  panels; node-level and event panels always show the whole cluster.
+- **Cluster & workload health:** ready nodes, running pods, pods pending/failed/unknown
+  (excludes completed `Succeeded` Job pods), container restarts **during the selected range**.
+- **Resource usage:** node CPU (cores), node memory (IEC bytes), top 10 pods by CPU,
+  deployment replica availability (available/desired replicas).
+- **Workload details:** top 20 pods by active memory, and containers with restarts in range
+  (color-coded).
+- **Container use vs limits:** top 10 containers by CPU- and by memory-limit utilization,
+  plus a latest-utilization table color-coded against each container's configured limits.
+- **Kubernetes events:** warning-event count, most frequent event reasons, and the most
+  recent events (cluster-wide).
 - *Requires the OpenTelemetry **k8s cluster receiver** + **kubelet stats receiver**
   (ClickStack's infrastructure collectors ship these). Pod phase `2` = Running, `3` = Succeeded.*
 - **Restart counts are windowed.** `k8s.container.restarts` is a cumulative lifetime
@@ -284,10 +292,13 @@ image for full size.
 
 ### Logs & Errors Overview (`otel_logs`)
 - **Filter:** `Service` (multi-select, default All).
-- **Stats:** logs/sec, error+fatal logs/sec, error log %, fatal log count.
-- **Timeseries:** log volume by normalized severity, error+ logs by service.
-- **Tables:** top services by error logs, most recent errors (with message body).
-- *"Error+" means `SeverityNumber >= 17` (error/fatal), falling back to lowercased
+- **At a glance:** average logs/sec, average error-and-fatal logs/sec, error-and-fatal share
+  of logs, fatal-log count.
+- **Log trends:** log count per time bucket by normalized severity, error-and-fatal logs
+  by service.
+- **Error details:** services generating the most error/fatal logs, and the 100 most recent
+  error/fatal logs (with message body).
+- *"Error and fatal" means `SeverityNumber >= 17` (error/fatal), falling back to lowercased
   `SeverityText` — robust to pipelines that set only the number or only the text.
   Severity charts group by a normalized bucket, so `info`/`information` and
   `ERROR`/`error` each collapse to one series. Includes both Kubernetes container

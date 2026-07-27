@@ -113,6 +113,19 @@
     },
     {
       "id": null,
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
       "type": "stat",
       "title": "Average incoming HTTP request latency",
       "datasource": {
@@ -337,6 +350,19 @@
     },
     {
       "id": null,
+      "type": "row",
+      "title": "Trends by service",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
+    },
+    {
+      "id": null,
       "type": "timeseries",
       "title": "Average incoming HTTP latency by service",
       "datasource": {
@@ -407,8 +433,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Request-weighted mean incoming HTTP latency for each service and time bucket. Use tracing views to investigate tail latency."
+      "description": "Request-weighted mean incoming HTTP latency for each service and time bucket. Use tracing views to investigate tail latency.",
+      "interval": "1m"
     },
     {
       "id": null,
@@ -482,8 +508,21 @@
           "sort": "desc"
         }
       },
-      "interval": "1m",
-      "description": "Incoming HTTP request count in each Grafana time bucket for each service. Bucket duration changes with the dashboard time range."
+      "description": "Incoming HTTP request count in each Grafana time bucket for each service. Bucket duration changes with the dashboard time range.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Service & request type",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "panels": []
     },
     {
       "id": null,
@@ -609,45 +648,6 @@
         }
       },
       "description": "Request-weighted average latency and request count by service and request type. Only the 30 highest-volume combinations are shown."
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "At a glance",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 6
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Trends by service",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 11
-      },
-      "panels": []
-    },
-    {
-      "id": null,
-      "type": "row",
-      "title": "Service & request type",
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 20
-      },
-      "panels": []
     }
   ]
 }

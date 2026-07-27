@@ -1,4 +1,4 @@
-# ClickStack · Host / OS Metrics
+# ClickStack - Host / OS Metrics
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -15,8 +15,11 @@ These apply to every compatible tile on the dashboard.
 |---|---|---|
 | Host | `ResourceAttributes['host.name']` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
 
+## Host / OS health
+Per-host CPU, load, memory, swap, disk, and network from the OpenTelemetry hostmetrics receiver (`system.*`). Use the **Host** filter and the time range to focus on specific machines. Watch for sustained CPU or memory pressure, any swap usage, load above the host's CPU-core count, and unusual disk or network spikes.
+
 ## CPU & load
-Host CPU and load average from the OpenTelemetry hostmetrics receiver (`system.*`). CPU busy = 1 − idle, averaged across cores per host.
+Host CPU and load average from the OpenTelemetry hostmetrics receiver (`system.*`). CPU busy = 1 − idle, averaged across cores per host — investigate values sustained above ~85%. Load average counts the tasks running or waiting to run (it is **not** a percentage); compare it with the host's CPU-core count, since sustained load above that count means work is queuing.
 
 ### Host CPU busy % — line · Raw SQL
 
@@ -43,7 +46,7 @@ ORDER BY ts
 
 </details>
 
-### Load average (1m) — line · Raw SQL
+### 1-minute load average (vs CPU cores) — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
@@ -64,6 +67,7 @@ ORDER BY ts
 </details>
 
 ## Memory & swap
+Memory and swap utilization per host. Investigate memory sustained above ~85%; any persistent swap usage usually signals memory pressure.
 
 ### Host memory used % — line · Raw SQL
 
@@ -158,7 +162,7 @@ ORDER BY ts
 
 ## Hosts
 
-### Hosts — CPU, memory, load — table · Raw SQL
+### Hosts - CPU, memory, load — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 

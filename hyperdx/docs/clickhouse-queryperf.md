@@ -1,4 +1,4 @@
-# ClickStack · ClickHouse — Query Performance & Errors
+# ClickStack - ClickHouse - Query Performance & Errors
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
@@ -9,13 +9,16 @@
 
 ## Preview
 
-![ClickStack · ClickHouse — Query Performance & Errors](images/clickhouse-queryperf.png)
+![ClickStack - ClickHouse - Query Performance & Errors](images/clickhouse-queryperf.png)
 
 _Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
+## Query performance & errors
+Combines ClickHouse OTel metrics with the `system.query_log` table to show query volume, tail latency, memory, slow queries, and exceptions. Requires `system.query_log` to be enabled and readable by the connected user — empty trend/table panels usually mean no query-log rows exist in the selected window.
+
 ## Query performance — at a glance
 
-### Failed queries — number · Raw SQL
+### Failed queries (selected window) — number · Raw SQL
 
 - **Tables:** `default.otel_metrics_sum`
 
@@ -41,7 +44,7 @@ SELECT sum(d) AS "Failed queries" FROM (
 - **Measure(s):** last_value(`Value`)
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
-### Memory tracking — number
+### Peak tracked memory (selected window) — number
 
 - **Source / table:** Metrics → `default.otel_metrics_gauge`
 - **Metric(s):** `ClickHouseMetrics_MemoryTracking`  (column `MetricName`)
@@ -49,8 +52,9 @@ SELECT sum(d) AS "Failed queries" FROM (
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
 ## Query trends
+p95 / p99 query duration are the slowest 5% / 1% of completed queries — compare against your workload's expectations. Exceptions should stay at 0.
 
-### Query rate by kind — stacked_bar · Raw SQL
+### Queries per interval by kind — stacked_bar · Raw SQL
 
 - **Tables:** `system.query_log`
 
@@ -71,7 +75,7 @@ ORDER BY t
 
 </details>
 
-### Query duration — p95 / p99 — line · Raw SQL
+### Query duration - p95 / p99 — line · Raw SQL
 
 - **Tables:** `system.query_log`
 
@@ -91,7 +95,7 @@ ORDER BY t
 
 </details>
 
-### Peak memory per query — p95 / max — line · Raw SQL
+### Peak memory per query - p95 / max — line · Raw SQL
 
 - **Tables:** `system.query_log`
 
