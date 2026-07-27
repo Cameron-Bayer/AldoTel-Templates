@@ -12,16 +12,16 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Operations — at a glance\nQuery/insert/cache counters are shown as **deltas over the selected time range**. Replication & Keeper detail lives in the **ClickHouse — Keeper & Replication** (advanced) dashboard."
+        "markdown": "#### Operations — at a glance\nQuery/insert/cache counters are shown as **deltas over the selected time range**; line charts labeled *per interval* are counts per time bucket, not per second. Reads ClickHouse OTel metrics plus `system.disks`, `system.merges`, and `system.mutations` — the connected user must be able to query those system tables. Replication & Keeper detail lives in the **ClickHouse — Keeper & Replication** (advanced) dashboard."
       }
     },
     {
       "name": "Running queries",
       "x": 0,
-      "y": 5,
+      "y": 6,
       "w": 6,
       "h": 4,
       "config": {
@@ -35,7 +35,7 @@
     {
       "name": "Failed queries (window)",
       "x": 6,
-      "y": 5,
+      "y": 6,
       "w": 6,
       "h": 4,
       "config": {
@@ -57,7 +57,7 @@
     {
       "name": "Disk free %",
       "x": 12,
-      "y": 5,
+      "y": 6,
       "w": 6,
       "h": 4,
       "config": {
@@ -87,9 +87,9 @@
       }
     },
     {
-      "name": "Memory tracking",
+      "name": "Current tracked memory",
       "x": 18,
-      "y": 5,
+      "y": 6,
       "w": 6,
       "h": 4,
       "config": {
@@ -107,7 +107,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 9,
+      "y": 10,
       "w": 24,
       "h": 3,
       "config": {
@@ -116,9 +116,9 @@
       }
     },
     {
-      "name": "Query rate (per-window)",
+      "name": "Queries (per interval)",
       "x": 0,
-      "y": 12,
+      "y": 13,
       "w": 12,
       "h": 6,
       "config": {
@@ -130,9 +130,9 @@
       }
     },
     {
-      "name": "Failed queries (per-window)",
+      "name": "Failed queries (per interval)",
       "x": 12,
-      "y": 12,
+      "y": 13,
       "w": 12,
       "h": 6,
       "config": {
@@ -144,9 +144,9 @@
       }
     },
     {
-      "name": "Inserted rows (per-window)",
+      "name": "Inserted rows (per interval)",
       "x": 0,
-      "y": 18,
+      "y": 19,
       "w": 12,
       "h": 6,
       "config": {
@@ -158,9 +158,9 @@
       }
     },
     {
-      "name": "SELECT vs INSERT queries (per-window)",
+      "name": "SELECT vs INSERT queries (per interval)",
       "x": 12,
-      "y": 18,
+      "y": 19,
       "w": 12,
       "h": 6,
       "config": {
@@ -174,18 +174,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 24,
+      "y": 25,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Merges & mutations"
+        "markdown": "#### Merges & mutations\nBackground **merges** compact immutable data parts; **mutations** rewrite parts to apply UPDATE/DELETE/TTL. Sustained growth in either means background work may be falling behind. A few pending mutations is normal."
       }
     },
     {
       "name": "Active merges",
       "x": 0,
-      "y": 27,
+      "y": 30,
       "w": 6,
       "h": 4,
       "config": {
@@ -199,7 +199,7 @@
     {
       "name": "Pending mutations",
       "x": 6,
-      "y": 27,
+      "y": 30,
       "w": 6,
       "h": 4,
       "config": {
@@ -211,9 +211,9 @@
         "colorRules": [
           {
             "operator": "gt",
-            "value": 0,
+            "value": 10,
             "color": "chart-warning",
-            "label": "Mutations running"
+            "label": "Backlog building"
           }
         ]
       }
@@ -221,7 +221,7 @@
     {
       "name": "Merges in progress (gauge)",
       "x": 12,
-      "y": 27,
+      "y": 30,
       "w": 12,
       "h": 6,
       "config": {
@@ -252,18 +252,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 33,
+      "y": 36,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### I/O & cache"
+        "markdown": "#### I/O & cache\nRead bytes served **from cache** vs **from source** (disk / object store), plus async-insert throughput. A rising share of source reads relative to cache reads can increase query latency."
       }
     },
     {
-      "name": "Page-cache read bytes: cache vs source (per-window)",
+      "name": "Page-cache read bytes: cache vs source (per interval)",
       "x": 0,
-      "y": 36,
+      "y": 41,
       "w": 12,
       "h": 6,
       "config": {
@@ -279,9 +279,9 @@
       }
     },
     {
-      "name": "Async insert bytes (per-window)",
+      "name": "Async insert bytes (per interval)",
       "x": 12,
-      "y": 36,
+      "y": 41,
       "w": 12,
       "h": 6,
       "config": {

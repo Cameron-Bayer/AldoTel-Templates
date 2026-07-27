@@ -22,16 +22,27 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### CPU & load\nHost CPU and load average from the OpenTelemetry hostmetrics receiver (`system.*`). CPU busy = 1 − idle, averaged across cores per host."
+        "markdown": "### Host / OS health\nPer-host CPU, load, memory, swap, disk, and network from the OpenTelemetry hostmetrics receiver (`system.*`). Use the **Host** filter and the time range to focus on specific machines. Watch for sustained CPU or memory pressure, any swap usage, load above the host's CPU-core count, and unusual disk or network spikes."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 4,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### CPU & load\nHost CPU and load average from the OpenTelemetry hostmetrics receiver (`system.*`). CPU busy = 1 − idle, averaged across cores per host — investigate values sustained above ~85%. Load average counts the tasks running or waiting to run (it is **not** a percentage); compare it with the host's CPU-core count, since sustained load above that count means work is queuing."
       }
     },
     {
       "name": "Host CPU busy %",
       "x": 0,
-      "y": 5,
+      "y": 11,
       "w": 12,
       "h": 6,
       "config": {
@@ -47,9 +58,9 @@
       }
     },
     {
-      "name": "Load average (1m)",
+      "name": "1-minute load average (vs CPU cores)",
       "x": 12,
-      "y": 5,
+      "y": 11,
       "w": 12,
       "h": 6,
       "config": {
@@ -63,18 +74,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 11,
+      "y": 17,
       "w": 24,
-      "h": 3,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Memory & swap"
+        "markdown": "#### Memory & swap\nMemory and swap utilization per host. Investigate memory sustained above ~85%; any persistent swap usage usually signals memory pressure."
       }
     },
     {
       "name": "Host memory used %",
       "x": 0,
-      "y": 14,
+      "y": 21,
       "w": 12,
       "h": 6,
       "config": {
@@ -92,7 +103,7 @@
     {
       "name": "Host swap used %",
       "x": 12,
-      "y": 14,
+      "y": 21,
       "w": 12,
       "h": 6,
       "config": {
@@ -110,7 +121,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 20,
+      "y": 27,
       "w": 24,
       "h": 5,
       "config": {
@@ -121,7 +132,7 @@
     {
       "name": "Disk I/O (bytes/sec)",
       "x": 0,
-      "y": 25,
+      "y": 32,
       "w": 12,
       "h": 6,
       "config": {
@@ -138,7 +149,7 @@
     {
       "name": "Network I/O (bytes/sec)",
       "x": 12,
-      "y": 25,
+      "y": 32,
       "w": 12,
       "h": 6,
       "config": {
@@ -155,7 +166,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 31,
+      "y": 38,
       "w": 24,
       "h": 3,
       "config": {
@@ -166,7 +177,7 @@
     {
       "name": "Hosts - CPU, memory, load",
       "x": 0,
-      "y": 34,
+      "y": 41,
       "w": 24,
       "h": 7,
       "config": {

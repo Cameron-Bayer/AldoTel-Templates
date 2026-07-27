@@ -21,16 +21,27 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Rate & errors"
+        "markdown": "### Service request health (RED)\n**RED** summarizes each service's request **R**ate, **E**rror rate, and **D**uration (latency), from OpenTelemetry **server spans**. Filter by **Service** and adjust the time range. Watch for rising error rates, latency above your service target, and an SLO burn rate above 1."
       }
     },
     {
-      "name": "Request rate by service",
+      "name": "",
       "x": 0,
-      "y": 3,
+      "y": 4,
+      "w": 24,
+      "h": 4,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Rate & errors\nServer request throughput and error percentage per service, from OpenTelemetry server spans."
+      }
+    },
+    {
+      "name": "Server request count over time, by service",
+      "x": 0,
+      "y": 8,
       "w": 12,
       "h": 6,
       "config": {
@@ -50,7 +61,7 @@
     {
       "name": "Error rate %",
       "x": 12,
-      "y": 3,
+      "y": 8,
       "w": 12,
       "h": 6,
       "config": {
@@ -81,18 +92,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 9,
+      "y": 14,
       "w": 24,
-      "h": 3,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Latency & error breakdown"
+        "markdown": "#### Latency & error breakdown\n**p50 / p95 / p99** are latency percentiles: 50%, 95%, and 99% of requests complete within that time. A widening gap between p50 and p99 indicates worsening tail latency."
       }
     },
     {
-      "name": "Latency p50 / p95 / p99",
+      "name": "Server latency percentiles (p50 / p95 / p99)",
       "x": 0,
-      "y": 12,
+      "y": 18,
       "w": 12,
       "h": 6,
       "config": {
@@ -132,7 +143,7 @@
     {
       "name": "Errors by status message",
       "x": 12,
-      "y": 12,
+      "y": 18,
       "w": 12,
       "h": 6,
       "config": {
@@ -152,18 +163,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 18,
+      "y": 24,
       "w": 24,
-      "h": 3,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Slow routes & distribution"
+        "markdown": "#### Slow routes & distribution\nSlowest HTTP routes by p95, plus a latency anomaly detector and a distribution heatmap. The anomaly chart compares recent p95 against a rolling baseline; the shaded ±3σ band is three standard deviations around that baseline, so points above it are unusually slow. That chart uses a fixed last-24h window (against an 8-day baseline) and ignores the time picker."
       }
     },
     {
       "name": "Slowest routes (p95) - min 20 requests",
       "x": 0,
-      "y": 21,
+      "y": 30,
       "w": 24,
       "h": 6,
       "config": {
@@ -175,9 +186,9 @@
       }
     },
     {
-      "name": "Latency anomaly - p95 vs rolling baseline (±3σ control band)",
+      "name": "P95 latency anomaly — last 24h vs 8-day baseline (±3σ band)",
       "x": 0,
-      "y": 27,
+      "y": 36,
       "w": 24,
       "h": 7,
       "config": {
@@ -191,7 +202,7 @@
     {
       "name": "Server latency distribution (heatmap, seconds)",
       "x": 0,
-      "y": 34,
+      "y": 43,
       "w": 24,
       "h": 7,
       "config": {
@@ -216,18 +227,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 41,
+      "y": 50,
       "w": 24,
       "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### SLO & error budget\nAvailability = successful server requests / total server requests. Burn-rate windows (1h / 6h / 24h / 3d) are **fixed SLO windows** and intentionally ignore the time picker; a burn rate > 1 means the 99.9% budget is being spent too fast."
+        "markdown": "#### SLO & error budget\nAn **SLO** (service-level objective) is your reliability target; the **SLI** (service-level indicator) is the measured value. Availability = successful server requests ÷ total server requests. Burn-rate windows (1h / 6h / 24h / 3d) are **fixed SLO windows** and intentionally ignore the time picker; a burn rate > 1 means the 99.9% error budget is being spent faster than sustainable."
       }
     },
     {
-      "name": "Availability (SLI)",
+      "name": "Availability (SLI = success rate)",
       "x": 0,
-      "y": 47,
+      "y": 56,
       "w": 12,
       "h": 4,
       "config": {
@@ -265,7 +276,7 @@
     {
       "name": "Error budget remaining (window, SLO 99.9%)",
       "x": 12,
-      "y": 47,
+      "y": 56,
       "w": 12,
       "h": 4,
       "config": {
@@ -297,7 +308,7 @@
     {
       "name": "Multi-window burn rate (SLO 99.9%)",
       "x": 0,
-      "y": 51,
+      "y": 60,
       "w": 12,
       "h": 6,
       "config": {
@@ -305,13 +316,13 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window,\n       round(error_ratio, 5) AS error_ratio,\n       round(error_ratio / budget, 2) AS burn_rate\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR AND $__filters\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR AND $__filters\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR AND $__filters\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY AND $__filters\n)\nORDER BY ord"
+        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window AS \"Window\",\n       round(error_ratio, 5) AS \"Error rate\",\n       round(error_ratio / budget, 2) AS \"Burn rate (×)\"\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR AND $__filters\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR AND $__filters\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR AND $__filters\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY AND $__filters\n)\nORDER BY ord"
       }
     },
     {
       "name": "Availability over time (target 99.9%)",
       "x": 12,
-      "y": 51,
+      "y": 60,
       "w": 12,
       "h": 6,
       "config": {

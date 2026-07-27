@@ -27,6 +27,17 @@
       "x": 0,
       "y": 0,
       "w": 24,
+      "h": 4,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Log health & investigation\nApplication and infrastructure logs ingested into ClickStack via OpenTelemetry. Filter by **Service** or **Severity** and adjust the time range. Look for error/fatal spikes, newly appearing error signatures, and failures concentrated on specific services or pods; click any row to open the matching logs."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 4,
+      "w": 24,
       "h": 3,
       "config": {
         "displayType": "markdown",
@@ -36,7 +47,7 @@
     {
       "name": "Log volume by severity",
       "x": 0,
-      "y": 3,
+      "y": 11,
       "w": 12,
       "h": 6,
       "config": {
@@ -54,9 +65,9 @@
       }
     },
     {
-      "name": "Error / fatal rate by service",
+      "name": "Error & fatal log count over time, by service",
       "x": 12,
-      "y": 3,
+      "y": 11,
       "w": 12,
       "h": 6,
       "config": {
@@ -76,18 +87,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 9,
+      "y": 17,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Top errors & patterns"
+        "markdown": "#### Top errors & patterns\nError/fatal messages grouped into **signatures** — similar messages collapsed together after replacing IDs and numbers with `<id>`/`<n>`, so recurring failures stand out. The second table highlights signatures that are new in the last 24h (absent in the prior 7 days). These two tables use fixed 24h/7d windows, not the dashboard time range."
       }
     },
     {
       "name": "Top error signatures (normalized) - click a row to open Logs",
       "x": 0,
-      "y": 12,
+      "y": 22,
       "w": 24,
       "h": 6,
       "config": {
@@ -110,7 +121,7 @@
     {
       "name": "New log patterns in last 24h (vs prior 7d) - click a row to open Logs",
       "x": 0,
-      "y": 18,
+      "y": 28,
       "w": 24,
       "h": 6,
       "config": {
@@ -118,14 +129,14 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName, pattern,\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS last_24h,\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS prior_7d\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING prior_7d = 0 AND last_24h > 0\nORDER BY last_24h DESC\nLIMIT 50",
+        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName AS \"Service\", pattern AS \"Error signature\",\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS \"Last 24h\",\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS \"Prior 7d\"\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING \"Prior 7d\" = 0 AND \"Last 24h\" > 0\nORDER BY \"Last 24h\" DESC\nLIMIT 50",
         "onClick": {
           "type": "search",
           "target": {
             "mode": "id",
             "id": "{{LOGS_SOURCE_ID}}"
           },
-          "whereTemplate": "ServiceName = '{{ServiceName}}' AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))",
+          "whereTemplate": "ServiceName = '{{Service}}' AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))",
           "whereLanguage": "sql"
         }
       }
@@ -133,18 +144,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 24,
+      "y": 34,
       "w": 24,
-      "h": 3,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Live stream"
+        "markdown": "#### Live stream\nMost recent error/fatal logs. The Namespace and Pod columns are populated only for Kubernetes workloads and may be blank for other log sources."
       }
     },
     {
       "name": "Live error stream - click a row for full log detail",
       "x": 0,
-      "y": 27,
+      "y": 38,
       "w": 24,
       "h": 7,
       "config": {
@@ -156,9 +167,9 @@
       }
     },
     {
-      "name": "Top error sources (namespace / pod) - click a row to open Logs",
+      "name": "Top Kubernetes error sources (namespace / pod) - click a row to open Logs",
       "x": 0,
-      "y": 34,
+      "y": 45,
       "w": 24,
       "h": 6,
       "config": {
@@ -177,6 +188,88 @@
           "whereLanguage": "sql"
         }
       }
+    },
+    {
+      "name": "Log error rate %",
+      "x": 0,
+      "w": 8,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 3
+        },
+        "select": [
+          {
+            "aggFn": "avg",
+            "valueExpression": "if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)",
+            "where": "",
+            "whereLanguage": "sql"
+          }
+        ],
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0.01,
+            "color": "chart-warning",
+            "label": "Elevated"
+          },
+          {
+            "operator": "gt",
+            "value": 0.05,
+            "color": "chart-error",
+            "label": "High"
+          }
+        ]
+      },
+      "y": 7
+    },
+    {
+      "name": "Total logs (selected range)",
+      "x": 8,
+      "w": 8,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "select": [
+          {
+            "aggFn": "count",
+            "where": "",
+            "whereLanguage": "sql"
+          }
+        ]
+      },
+      "y": 7
+    },
+    {
+      "name": "Error + fatal logs (selected range)",
+      "x": 16,
+      "w": 8,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "select": [
+          {
+            "aggFn": "sum",
+            "valueExpression": "if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)",
+            "where": "",
+            "whereLanguage": "sql"
+          }
+        ],
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-warning",
+            "label": "Errors present"
+          }
+        ]
+      },
+      "y": 7
     }
   ]
 }

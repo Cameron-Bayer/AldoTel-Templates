@@ -12,6 +12,17 @@
       "x": 0,
       "y": 0,
       "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Storage & MergeTree health\nDisk usage, data parts, merges, and mutations from ClickHouse system tables (`system.parts`, `system.disks`, `system.merges`, `system.mutations`, `system.part_log`) — the connected user must be able to read these, and the part-event charts need `part_log` collection enabled. **MergeTree basics:** data lives in immutable **parts**; background **merges** compact small parts into larger ones, and **mutations** rewrite parts to apply UPDATE/DELETE/TTL. A sustained rise in part counts or pending mutations means background work is falling behind."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 7,
+      "w": 24,
       "h": 3,
       "config": {
         "displayType": "markdown",
@@ -21,7 +32,7 @@
     {
       "name": "Disk used (active parts)",
       "x": 0,
-      "y": 3,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -37,9 +48,9 @@
       }
     },
     {
-      "name": "Compression ratio (uncompressed / compressed)",
+      "name": "Compression ratio (higher = more space saved)",
       "x": 6,
-      "y": 3,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -53,7 +64,7 @@
     {
       "name": "Active parts (total)",
       "x": 12,
-      "y": 3,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -67,7 +78,7 @@
     {
       "name": "Rows stored (active)",
       "x": 18,
-      "y": 3,
+      "y": 10,
       "w": 6,
       "h": 4,
       "config": {
@@ -81,7 +92,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 14,
       "w": 24,
       "h": 3,
       "config": {
@@ -92,7 +103,7 @@
     {
       "name": "Part events / interval (inserts, merges, mutations)",
       "x": 0,
-      "y": 10,
+      "y": 17,
       "w": 12,
       "h": 6,
       "config": {
@@ -106,7 +117,7 @@
     {
       "name": "Merge duration - p95 / max",
       "x": 12,
-      "y": 10,
+      "y": 17,
       "w": 12,
       "h": 6,
       "config": {
@@ -123,7 +134,7 @@
     {
       "name": "Bytes written - inserted vs merged / interval",
       "x": 0,
-      "y": 16,
+      "y": 23,
       "w": 12,
       "h": 6,
       "config": {
@@ -141,7 +152,7 @@
     {
       "name": "Rows processed - inserted vs merged / interval",
       "x": 12,
-      "y": 16,
+      "y": 23,
       "w": 12,
       "h": 6,
       "config": {
@@ -155,18 +166,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 22,
+      "y": 29,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Tables & parts"
+        "markdown": "#### Tables & parts\nPer-table disk, rows, and part counts. **'Too many parts'**: rapidly growing part counts or many small parts mean merges can't keep up (ClickHouse throttles or rejects inserts once a table passes its `parts_to_throw_insert` limit) — evaluate against your configured limits."
       }
     },
     {
       "name": "Largest tables by disk",
       "x": 0,
-      "y": 25,
+      "y": 34,
       "w": 24,
       "h": 6,
       "config": {
@@ -180,7 +191,7 @@
     {
       "name": "Active parts per table (too-many-parts watch)",
       "x": 0,
-      "y": 31,
+      "y": 40,
       "w": 24,
       "h": 6,
       "config": {
@@ -194,7 +205,7 @@
     {
       "name": "Recent merges",
       "x": 0,
-      "y": 37,
+      "y": 46,
       "w": 24,
       "h": 6,
       "config": {
@@ -208,7 +219,7 @@
     {
       "name": "Disk free %",
       "x": 0,
-      "y": 43,
+      "y": 57,
       "w": 8,
       "h": 4,
       "config": {
@@ -216,13 +227,31 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT min(round(100 * free_space / nullIf(total_space, 0), 1)) AS \"Disk free %\"\nFROM system.disks"
+        "sqlTemplate": "SELECT min(free_space / nullIf(total_space, 0)) AS \"Disk free %\"\nFROM system.disks",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        },
+        "colorRules": [
+          {
+            "operator": "lt",
+            "value": 0.15,
+            "color": "chart-warning",
+            "label": "Low"
+          },
+          {
+            "operator": "lt",
+            "value": 0.05,
+            "color": "chart-error",
+            "label": "Critical"
+          }
+        ]
       }
     },
     {
       "name": "Active merges",
       "x": 8,
-      "y": 43,
+      "y": 57,
       "w": 8,
       "h": 4,
       "config": {
@@ -236,7 +265,7 @@
     {
       "name": "Pending mutations",
       "x": 16,
-      "y": 43,
+      "y": 57,
       "w": 8,
       "h": 4,
       "config": {
@@ -244,13 +273,21 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT count() AS \"Pending mutations\" FROM system.mutations WHERE is_done = 0"
+        "sqlTemplate": "SELECT count() AS \"Pending mutations\" FROM system.mutations WHERE is_done = 0",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 10,
+            "color": "chart-warning",
+            "label": "Backlog building"
+          }
+        ]
       }
     },
     {
       "name": "Disk free vs used",
       "x": 0,
-      "y": 47,
+      "y": 61,
       "w": 24,
       "h": 6,
       "config": {
@@ -264,7 +301,7 @@
     {
       "name": "Current merges",
       "x": 0,
-      "y": 53,
+      "y": 67,
       "w": 24,
       "h": 6,
       "config": {
@@ -278,7 +315,7 @@
     {
       "name": "Active mutations",
       "x": 0,
-      "y": 59,
+      "y": 73,
       "w": 24,
       "h": 6,
       "config": {
@@ -287,6 +324,17 @@
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "sqlTemplate": "SELECT database,\n       table,\n       mutation_id,\n       command,\n       parts_to_do,\n       is_done\nFROM system.mutations\nWHERE is_done = 0\nORDER BY parts_to_do DESC"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 52,
+      "w": 24,
+      "h": 5,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Capacity & background work\nDisk headroom and in-flight merges/mutations. Investigate disk free below 15% (critical below 5%). A few pending mutations is normal; a large or growing backlog is not."
       }
     }
   ]

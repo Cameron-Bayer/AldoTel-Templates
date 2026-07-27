@@ -22,16 +22,16 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 5,
+      "h": 7,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Pipeline — at a glance\nCounters below are shown as **deltas over the selected time range** (not raw cumulative totals). Refused / failed / send-failed should stay at **0**."
+        "markdown": "#### Pipeline — at a glance\nOTel Collector self-health from its internal `otelcol_*` metrics — enable the Collector's internal telemetry and ingest it into ClickStack, or this dashboard stays empty. Counters below are shown as **deltas over the selected time range** (not raw cumulative totals), and line charts labeled *per interval* show counts per time bucket, **not per second**. Refused / failed / send-failed should stay at **0**."
       }
     },
     {
       "name": "Refused spans (window)",
       "x": 0,
-      "y": 5,
+      "y": 7,
       "w": 6,
       "h": 4,
       "config": {
@@ -53,7 +53,7 @@
     {
       "name": "Refused log records (window)",
       "x": 6,
-      "y": 5,
+      "y": 7,
       "w": 6,
       "h": 4,
       "config": {
@@ -75,7 +75,7 @@
     {
       "name": "Refused metric points (window)",
       "x": 12,
-      "y": 5,
+      "y": 7,
       "w": 6,
       "h": 4,
       "config": {
@@ -97,7 +97,7 @@
     {
       "name": "Exporter queue utilization %",
       "x": 18,
-      "y": 5,
+      "y": 7,
       "w": 6,
       "h": 4,
       "config": {
@@ -129,18 +129,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 9,
+      "y": 11,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Traces pipeline"
+        "markdown": "#### Traces pipeline\nSpan receiver/exporter throughput and the exporter queue. Sustained queue utilization above 50% means backlog is building; above 80% risks dropped telemetry."
       }
     },
     {
-      "name": "Spans: accepted vs refused vs failed (per-window rate)",
+      "name": "Spans: accepted vs refused vs failed (per interval)",
       "x": 0,
-      "y": 12,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -152,9 +152,9 @@
       }
     },
     {
-      "name": "Exporter sent spans (per-window rate)",
+      "name": "Exporter sent spans (per interval)",
       "x": 12,
-      "y": 12,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -168,7 +168,7 @@
     {
       "name": "Exporter queue size vs capacity",
       "x": 0,
-      "y": 18,
+      "y": 22,
       "w": 12,
       "h": 6,
       "config": {
@@ -199,7 +199,7 @@
     {
       "name": "Exporter queue utilization % (size / capacity)",
       "x": 12,
-      "y": 18,
+      "y": 22,
       "w": 12,
       "h": 6,
       "config": {
@@ -217,7 +217,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 24,
+      "y": 28,
       "w": 24,
       "h": 3,
       "config": {
@@ -226,9 +226,9 @@
       }
     },
     {
-      "name": "Logs: accepted vs refused vs send-failed (per-window rate)",
+      "name": "Logs: accepted vs refused vs send-failed (per interval)",
       "x": 0,
-      "y": 27,
+      "y": 31,
       "w": 12,
       "h": 6,
       "config": {
@@ -240,9 +240,9 @@
       }
     },
     {
-      "name": "Metric points: accepted vs refused (per-window rate)",
+      "name": "Metric points: accepted vs refused (per interval)",
       "x": 12,
-      "y": 27,
+      "y": 31,
       "w": 12,
       "h": 6,
       "config": {
@@ -254,9 +254,9 @@
       }
     },
     {
-      "name": "Scraper: scraped vs errored metric points (per-window rate)",
+      "name": "Scraper: scraped vs errored metric points (per interval)",
       "x": 0,
-      "y": 33,
+      "y": 37,
       "w": 12,
       "h": 6,
       "config": {
@@ -270,7 +270,7 @@
     {
       "name": "Exporter in-flight requests",
       "x": 12,
-      "y": 33,
+      "y": 37,
       "w": 12,
       "h": 6,
       "config": {
@@ -292,18 +292,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 39,
+      "y": 43,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Collector resources"
+        "markdown": "#### Collector resources\nCollector process resource usage. **RSS** is total resident process memory; **heap alloc** is Go runtime-allocated memory. Steadily rising memory, in-flight requests, or CPU can indicate backpressure."
       }
     },
     {
       "name": "Collector memory (RSS / heap)",
       "x": 0,
-      "y": 42,
+      "y": 48,
       "w": 12,
       "h": 6,
       "config": {
@@ -336,9 +336,9 @@
       }
     },
     {
-      "name": "Collector CPU (cores, per-window rate)",
+      "name": "Collector CPU (cores)",
       "x": 12,
-      "y": 42,
+      "y": 48,
       "w": 12,
       "h": 6,
       "config": {

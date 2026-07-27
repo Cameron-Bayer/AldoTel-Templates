@@ -12,6 +12,17 @@
       "x": 0,
       "y": 0,
       "w": 24,
+      "h": 6,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Query performance & errors\nCombines ClickHouse OTel metrics with the `system.query_log` table to show query volume, tail latency, memory, slow queries, and exceptions. Requires `system.query_log` to be enabled and readable by the connected user — empty trend/table panels usually mean no query-log rows exist in the selected window."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 6,
+      "w": 24,
       "h": 3,
       "config": {
         "displayType": "markdown",
@@ -19,9 +30,9 @@
       }
     },
     {
-      "name": "Failed queries",
+      "name": "Failed queries (selected window)",
       "x": 0,
-      "y": 3,
+      "y": 9,
       "w": 8,
       "h": 4,
       "config": {
@@ -43,7 +54,7 @@
     {
       "name": "Running queries (now)",
       "x": 8,
-      "y": 3,
+      "y": 9,
       "w": 8,
       "h": 4,
       "config": {
@@ -62,9 +73,9 @@
       }
     },
     {
-      "name": "Memory tracking",
+      "name": "Peak tracked memory (selected window)",
       "x": 16,
-      "y": 3,
+      "y": 9,
       "w": 8,
       "h": 4,
       "config": {
@@ -89,18 +100,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 13,
       "w": 24,
-      "h": 3,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Query trends"
+        "markdown": "#### Query trends\np95 / p99 query duration are the slowest 5% / 1% of completed queries — compare against your workload's expectations. Exceptions should stay at 0."
       }
     },
     {
-      "name": "Query rate by kind",
+      "name": "Queries per interval by kind",
       "x": 0,
-      "y": 10,
+      "y": 17,
       "w": 12,
       "h": 6,
       "config": {
@@ -114,7 +125,7 @@
     {
       "name": "Query duration - p95 / p99",
       "x": 12,
-      "y": 10,
+      "y": 17,
       "w": 12,
       "h": 6,
       "config": {
@@ -131,7 +142,7 @@
     {
       "name": "Peak memory per query - p95 / max",
       "x": 0,
-      "y": 16,
+      "y": 23,
       "w": 12,
       "h": 6,
       "config": {
@@ -149,7 +160,7 @@
     {
       "name": "Query exceptions",
       "x": 12,
-      "y": 16,
+      "y": 23,
       "w": 12,
       "h": 6,
       "config": {
@@ -163,7 +174,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 22,
+      "y": 29,
       "w": 24,
       "h": 3,
       "config": {
@@ -174,7 +185,7 @@
     {
       "name": "Slowest queries",
       "x": 0,
-      "y": 25,
+      "y": 32,
       "w": 24,
       "h": 6,
       "config": {
@@ -188,7 +199,7 @@
     {
       "name": "Top errors (from query_log)",
       "x": 0,
-      "y": 31,
+      "y": 38,
       "w": 24,
       "h": 6,
       "config": {

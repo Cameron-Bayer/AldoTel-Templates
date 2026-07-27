@@ -28,16 +28,27 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 3,
+      "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Service health — at a glance"
+        "markdown": "### Operational health overview\nA single-pane summary of service and platform health from OpenTelemetry traces, logs, and Kubernetes metrics. Use the **Service** and **Namespace** filters and the time range. Amber/red stats mean elevated errors or latency; click a service row below to drill into its Logs or Traces."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 4,
+      "w": 24,
+      "h": 4,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Service health — at a glance\nRequest volume, error rate, and latency from OpenTelemetry **server spans**, alongside the application-log error rate. p95 latency means 95% of requests completed within that time."
       }
     },
     {
       "name": "Server error rate (%)",
       "x": 0,
-      "y": 3,
+      "y": 8,
       "w": 6,
       "h": 4,
       "config": {
@@ -72,9 +83,9 @@
       }
     },
     {
-      "name": "Server requests (spans)",
+      "name": "Server requests (selected range)",
       "x": 6,
-      "y": 3,
+      "y": 8,
       "w": 6,
       "h": 4,
       "config": {
@@ -90,9 +101,9 @@
       }
     },
     {
-      "name": "Server latency p95",
+      "name": "95th-percentile server latency (p95)",
       "x": 12,
-      "y": 3,
+      "y": 8,
       "w": 6,
       "h": 4,
       "config": {
@@ -115,7 +126,7 @@
     {
       "name": "Log error rate (%)",
       "x": 18,
-      "y": 3,
+      "y": 8,
       "w": 6,
       "h": 4,
       "config": {
@@ -152,7 +163,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 7,
+      "y": 12,
       "w": 24,
       "h": 3,
       "config": {
@@ -161,9 +172,9 @@
       }
     },
     {
-      "name": "K8s nodes ready",
+      "name": "Kubernetes nodes ready %",
       "x": 0,
-      "y": 10,
+      "y": 15,
       "w": 6,
       "h": 4,
       "config": {
@@ -171,13 +182,31 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT countIf(ready = 1) AS \"Nodes ready\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)"
+        "sqlTemplate": "SELECT if(total = 0, 0, ready / total) AS \"Nodes ready\" FROM (\n  SELECT countIf(ready = 1) AS ready, count() AS total FROM (\n    SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'k8s.node.condition_ready'\n    GROUP BY node\n  )\n)",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 0
+        },
+        "colorRules": [
+          {
+            "operator": "lt",
+            "value": 1,
+            "color": "chart-warning",
+            "label": "Node(s) not ready"
+          },
+          {
+            "operator": "lt",
+            "value": 0.8,
+            "color": "chart-error",
+            "label": "Multiple nodes down"
+          }
+        ]
       }
     },
     {
       "name": "",
       "x": 0,
-      "y": 14,
+      "y": 19,
       "w": 24,
       "h": 3,
       "config": {
@@ -188,7 +217,7 @@
     {
       "name": "Services by error rate - click a row to open Traces",
       "x": 0,
-      "y": 17,
+      "y": 22,
       "w": 12,
       "h": 7,
       "config": {
@@ -196,16 +225,16 @@
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "groupBy": "ServiceName",
         "groupByColumnsOnLeft": true,
-        "orderBy": "err_pct DESC",
+        "orderBy": "\"Error rate %\" DESC",
         "select": [
           {
-            "alias": "spans",
+            "alias": "Requests",
             "aggFn": "count",
             "where": "SpanKind = 'Server'",
             "whereLanguage": "sql"
           },
           {
-            "alias": "err_pct",
+            "alias": "Error rate %",
             "aggFn": "avg",
             "valueExpression": "if(StatusCode = 'Error', 100, 0)",
             "where": "SpanKind = 'Server'",
@@ -226,7 +255,7 @@
     {
       "name": "Services by log errors - click a row to open Logs",
       "x": 12,
-      "y": 17,
+      "y": 22,
       "w": 12,
       "h": 7,
       "config": {
@@ -264,7 +293,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 24,
+      "y": 29,
       "w": 24,
       "h": 3,
       "config": {
@@ -273,9 +302,9 @@
       }
     },
     {
-      "name": "Request rate & errors (traces)",
+      "name": "Request & error counts over time (traces)",
       "x": 0,
-      "y": 27,
+      "y": 32,
       "w": 24,
       "h": 6,
       "config": {
