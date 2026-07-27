@@ -60,10 +60,10 @@
           "type": "grafana-clickhouse-datasource",
           "uid": "${clickhouseDatasource}"
         },
-        "definition": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
+        "definition": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.load_average.1m' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
         "query": {
           "refId": "host-var",
-          "rawSql": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
+          "rawSql": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.load_average.1m' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
           "meta": {
             "builderOptions": {
               "database": "default"
