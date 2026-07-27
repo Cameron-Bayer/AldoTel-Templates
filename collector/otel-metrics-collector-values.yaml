@@ -50,6 +50,13 @@ ports:
   metrics:
     enabled: false
 
+# With every port disabled the chart would still render a Service, and a Service
+# with zero ports is rejected by the API server (spec.ports: Required value) --
+# fatal under Helm's server-side apply (Helm 4). This scraper only ever egresses
+# (OTLP -> central collector), so it needs no Service at all: disable it outright.
+service:
+  enabled: false
+
 # Mount an enrolled internal-emitter client cert (tls.crt/tls.key/ca.crt) so the
 # OTLP exporter authenticates to the central collector over mTLS. ca.crt verifies
 # the collector's server cert; the emitter leaf is leaf-pinned in the allow-list.
