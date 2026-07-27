@@ -24,6 +24,7 @@ ALERTING_CM='clickstack-grafana-alerting'
 # whose Grafana already ships an identical ClickHouse data source (uid `clickhouse`), pass
 # --reuse-datasource --datasource-uid clickhouse to bind to it instead of provisioning one.
 DS_UID='clickstack-ch'
+DS_UID_EXPLICIT=0
 REUSE_DS=0
 CH_SERVER='clickstack-clickhouse-clickhouse-headless'
 CH_PORT='9440'
@@ -45,7 +46,8 @@ Usage: ./install-k8s.sh [options]
   --ch-port <port>            ClickHouse endpoint port (default: 9440, native-secure)
   --ca-cert-path <path>       CA cert file mounted in the Grafana pod for TLS verify (default: /etc/grafana/certs/ca.crt)
   --datasource-uid <uid>      Data source UID dashboards + alert rules bind to (default: clickstack-ch)
-  --reuse-datasource          Skip provisioning a data source; bind to an existing --datasource-uid (e.g. clickhouse)
+  --reuse-datasource          Force skipping datasource provisioning; bind to an existing --datasource-uid
+                              (auto-enabled when the datasources ConfigMap is absent, e.g. the appliance)
   --insecure                  Plaintext (non-TLS) ClickStack: strip TLS, default port to 9000
   --advanced                  Also provision dashboards/advanced/ (need optional data sources)
   --skip-alerts               Install data source + dashboards only
@@ -64,7 +66,7 @@ while [ $# -gt 0 ]; do
     --ch-server) CH_SERVER="$2"; shift 2;;
     --ch-port) CH_PORT="$2"; shift 2;;
     --ca-cert-path) CA_CERT_PATH="$2"; shift 2;;
-    --datasource-uid) DS_UID="$2"; shift 2;;
+    --datasource-uid) DS_UID="$2"; DS_UID_EXPLICIT=1; shift 2;;
     --reuse-datasource) REUSE_DS=1; shift;;
     --insecure) INSECURE=1; shift;;
     --advanced) ADVANCED=1; shift;;
@@ -91,6 +93,27 @@ step() { printf '\033[36m==> %s\033[0m\n' "$1"; }
 
 step "Checking Grafana deployment '$DEPLOYMENT' in namespace '$NS'"
 kubectl get deployment "$DEPLOYMENT" -n "$NS" -o name >/dev/null
+
+# --- 0. Auto-detect layout ---------------------------------------------------
+# Stock ClickStack ships a separate datasources ConfigMap that this script provisions
+# `clickstack-ch` into. The Observability Appliance instead keeps datasources.yaml as a
+# subPath key of the single grafana config ConfigMap (no separate datasources CM) and
+# already ships an equivalent ClickHouse data source. When that CM is absent and the user
+# didn't ask to provision, fall back to reusing Grafana's existing data source.
+if [ "$REUSE_DS" -eq 0 ]; then
+  if ! kubectl get configmap "$DATASOURCES_CM" -n "$NS" -o name >/dev/null 2>&1; then
+    REUSE_DS=1
+    step "No '$DATASOURCES_CM' ConfigMap found - appliance layout detected; reusing Grafana's existing data source"
+  fi
+fi
+if [ "$REUSE_DS" -eq 1 ] && [ "$DS_UID_EXPLICIT" -eq 0 ]; then
+  # Detect the existing data source UID from Grafana's config ConfigMap (falls back to
+  # `clickhouse`, the appliance's built-in ClickHouse data source).
+  detected="$(kubectl get configmap "$DEPLOYMENT" -n "$NS" -o 'jsonpath={.data.datasources\.yaml}' 2>/dev/null \
+    | sed -nE 's/^[[:space:]]*uid:[[:space:]]*([^[:space:]]+).*/\1/p' | head -n1)"
+  DS_UID="${detected:-clickhouse}"
+  echo "    binding dashboards + alert rules to existing uid '$DS_UID'"
+fi
 
 # --- 1. Data source ----------------------------------------------------------
 if [ "$REUSE_DS" -eq 1 ]; then

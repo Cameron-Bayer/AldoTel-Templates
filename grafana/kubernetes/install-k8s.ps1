@@ -37,11 +37,12 @@
     strips TLS and defaults the port to 9000.
 
 .EXAMPLE
-    ./install-k8s.ps1 -Advanced -ReuseDatasource -DatasourceUid clickhouse
-    Installs onto the Observability Appliance, whose Grafana already ships an
-    identical ClickHouse data source (uid `clickhouse`). -ReuseDatasource skips
-    provisioning a new data source, and -DatasourceUid pins every dashboard and
-    alert rule to the existing `clickhouse` UID instead of `clickstack-ch`.
+    ./install-k8s.ps1 -Advanced
+    Installs onto the Observability Appliance. The appliance has no separate
+    datasources ConfigMap and already ships an equivalent ClickHouse data source,
+    so the script auto-detects that layout, skips provisioning a data source, and
+    binds every dashboard + alert rule to the existing `clickhouse` UID. Pass
+    -ReuseDatasource / -DatasourceUid explicitly to override the auto-detection.
 
 .NOTES
     Requires: kubectl configured against the target cluster.
@@ -93,6 +94,33 @@ function Write-Step($msg) { Write-Host "==> $msg" -ForegroundColor Cyan }
 
 Write-Step "Checking Grafana deployment '$Deployment' in namespace '$Namespace'"
 Invoke-Kubectl @('get', 'deployment', $Deployment, '-n', $Namespace, '-o', 'name') | Out-Null
+
+# --- 0. Auto-detect layout ----------------------------------------------------
+# Stock ClickStack ships a separate datasources ConfigMap that this script provisions
+# `clickstack-ch` into. The Observability Appliance instead keeps datasources.yaml as a
+# subPath key of the single grafana config ConfigMap (no separate datasources CM) and
+# already ships an equivalent ClickHouse data source. When that CM is absent and the user
+# didn't ask to provision, fall back to reusing Grafana's existing data source.
+$dsUidExplicit = $PSBoundParameters.ContainsKey('DatasourceUid')
+if (-not $ReuseDatasource) {
+    & kubectl get configmap $DatasourcesConfigMap -n $Namespace -o name > $null 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        $ReuseDatasource = $true
+        Write-Step "No '$DatasourcesConfigMap' ConfigMap found - appliance layout detected; reusing Grafana's existing data source"
+    }
+}
+if ($ReuseDatasource -and -not $dsUidExplicit) {
+    # Detect the existing data source UID from Grafana's config ConfigMap (falls back to
+    # `clickhouse`, the appliance's built-in ClickHouse data source).
+    $cfg = & kubectl get configmap $Deployment -n $Namespace -o 'jsonpath={.data.datasources\.yaml}' 2>$null
+    $detected = $null
+    if ($LASTEXITCODE -eq 0 -and $cfg) {
+        $m = [regex]::Match($cfg, '(?m)^\s*uid:\s*(\S+)')
+        if ($m.Success) { $detected = $m.Groups[1].Value }
+    }
+    $DatasourceUid = if ($detected) { $detected } else { 'clickhouse' }
+    Write-Host "    binding dashboards + alert rules to existing uid '$DatasourceUid'"
+}
 
 # --- 1. Data source -----------------------------------------------------------
 if ($ReuseDatasource) {
