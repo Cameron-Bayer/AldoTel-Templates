@@ -117,6 +117,37 @@ kubectl logs -n <ns> -l app.kubernetes.io/instance=clickstack-metrics-collector 
 Then run `hyperdx/preflight.ps1` — the `[advanced]` ClickHouse and collector-health
 rows should flip from `FAIL`/`DEGRADED` to `OK` once metrics have flowed (~1-2 min).
 
+## Bonus: host CPU / memory utilization
+
+The default-tier **Host / OS Metrics** board needs `system.cpu.utilization` and
+`system.memory.utilization`. The appliance's kube-telemetry **DaemonSet** already
+runs the hostmetrics receiver, but leaves those two *ratio* metrics at
+OpenTelemetry's opt-in default of **disabled** — so preflight reports them as
+`MISS [required]` even though the DaemonSet is healthy (`cpu.load_average`,
+`disk.io`, `network.io` all report fine). `enable-host-metrics.ps1` / `.sh` flips
+them on by patching the DaemonSet release **in place**
+(`helm upgrade --reuse-values`, which preserves the injected mTLS OTLP endpoint;
+it also auto-pins the already-installed chart version so nothing else changes):
+
+**PowerShell**
+```powershell
+./collector/enable-host-metrics.ps1 -Namespace aldotel
+./collector/enable-host-metrics.ps1 -Namespace aldotel -Disable   # revert
+```
+
+**Bash**
+```bash
+./collector/enable-host-metrics.sh --namespace aldotel
+./collector/enable-host-metrics.sh --namespace aldotel --disable
+```
+
+> Unlike the scraper above, this patches an **appliance** release
+> (`clickstack-kube-daemonset`), not a release of its own. If the appliance later
+> re-runs its own `install-kube-telemetry.ps1`, the packaged DaemonSet values
+> (which lack these two metrics) revert it — just re-run this script, or bake the
+> same `cpu`/`memory` `metrics:` blocks into the appliance's
+> `configs/kube-otel-daemonset-values.yaml` to make it permanent.
+
 ## Files
 
 | File | Purpose |
@@ -124,6 +155,7 @@ rows should flip from `FAIL`/`DEGRADED` to `OK` once metrics have flowed (~1-2 m
 | [`otel-metrics-collector-values.yaml`](otel-metrics-collector-values.yaml) | Helm values for the upstream `opentelemetry-collector` chart (prometheus receiver → OTLP/mTLS exporter). `__PLACEHOLDER__` tokens are substituted by the installer. |
 | [`emitter-cert.yaml`](emitter-cert.yaml) | Optional dedicated cert-manager emitter identity (applied only with `-CreateDedicatedCert`). |
 | [`install-collector.ps1`](install-collector.ps1) / [`install-collector.sh`](install-collector.sh) | Idempotent `helm upgrade --install` wrapper (+ uninstall). |
+| [`enable-host-metrics.ps1`](enable-host-metrics.ps1) / [`enable-host-metrics.sh`](enable-host-metrics.sh) | Enable `system.cpu.utilization` / `system.memory.utilization` on the appliance's kube-telemetry DaemonSet (opt-in hostmetrics ratios) so **Host / OS Metrics** goes green. Idempotent; `-Disable` reverts. |
 
 ## Notes & caveats
 
