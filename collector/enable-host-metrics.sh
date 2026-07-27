@@ -61,19 +61,22 @@ step() { printf '\033[36m==> %s\033[0m\n' "$1"; }
 if [ "$DISABLE" -eq 1 ]; then ENABLED='false'; VERB='Disabling'; else ENABLED='true'; VERB='Enabling'; fi
 
 # --- Locate the DaemonSet release and pin its current chart version -----------
+# `helm get metadata` returns this ONE release's chart name + version as separate
+# fields; anchor the regex to the adjacent "chart":"..","version":".." pair so the
+# unrelated labels.version is never picked up.
 step "Locating DaemonSet release '$DAEMONSET_RELEASE' in namespace '$NAMESPACE'"
-CHART="$(helm list -n "$NAMESPACE" --filter "^${DAEMONSET_RELEASE}\$" -o json \
-          | grep -o '"chart":"[^"]*"' | head -1 | sed 's/^"chart":"//; s/"$//')"
-if [ -z "$CHART" ]; then
+META="$(helm get metadata "$DAEMONSET_RELEASE" -n "$NAMESPACE" -o json 2>/dev/null)" || {
   echo "DaemonSet release '$DAEMONSET_RELEASE' not found in namespace '$NAMESPACE'. Is the appliance's kube-telemetry installed?  (check: helm list -n $NAMESPACE)" >&2
   exit 1
+}
+PAIR="$(printf '%s' "$META" | grep -o '"chart":"[^"]*","version":"[^"]*"' | head -1 || true)"
+CHART_NAME="$(printf '%s' "$PAIR" | sed 's/^"chart":"//; s/","version.*$//')"
+CHART_VERSION="$(printf '%s' "$PAIR" | sed 's/^.*","version":"//; s/"$//')"
+if [ "$CHART_NAME" != "opentelemetry-collector" ]; then
+  echo "Release '$DAEMONSET_RELEASE' is chart '${CHART_NAME}-${CHART_VERSION}', not opentelemetry-collector. Refusing to patch an unexpected chart." >&2
+  exit 1
 fi
-case "$CHART" in
-  opentelemetry-collector-*) ;;
-  *) echo "Release '$DAEMONSET_RELEASE' is chart '$CHART', not opentelemetry-collector. Refusing to patch an unexpected chart." >&2; exit 1;;
-esac
-CHART_VERSION="${CHART#opentelemetry-collector-}"
-echo "    found (chart $CHART) - pinning that version"
+echo "    found (chart opentelemetry-collector-$CHART_VERSION) - pinning that version"
 
 # --- Stage the two-metric override -------------------------------------------
 step "Staging Helm values override"

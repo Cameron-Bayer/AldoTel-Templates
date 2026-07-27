@@ -74,18 +74,18 @@ $enabled = if ($Disable) { 'false' } else { 'true' }
 $verb    = if ($Disable) { 'Disabling' } else { 'Enabling' }
 
 # --- Locate the DaemonSet release and pin its current chart version -----------
+# `helm get metadata` returns this ONE release's chart name + version as separate
+# scalar fields, so there's no list to parse and no array-enumeration surprises.
 Write-Step "Locating DaemonSet release '$DaemonsetRelease' in namespace '$Namespace'"
-$listJson = Invoke-Native 'helm' @('list', '-n', $Namespace, '-o', 'json') | Out-String
-$releases = @()
-try { $releases = @($listJson | ConvertFrom-Json) } catch { }
-$rel = $releases | Where-Object { $_.name -eq $DaemonsetRelease } | Select-Object -First 1
-if (-not $rel) {
+$metaOut = Invoke-Native 'helm' @('get', 'metadata', $DaemonsetRelease, '-n', $Namespace, '-o', 'json') -AllowFail | Out-String
+if ($LASTEXITCODE -ne 0) {
     throw "DaemonSet release '$DaemonsetRelease' not found in namespace '$Namespace'. Is the appliance's kube-telemetry installed?  (check: helm list -n $Namespace)"
 }
-if ($rel.chart -notmatch '^opentelemetry-collector-') {
-    throw "Release '$DaemonsetRelease' is chart '$($rel.chart)', not opentelemetry-collector. Refusing to patch an unexpected chart."
+$meta = $metaOut | ConvertFrom-Json
+if ($meta.chart -ne 'opentelemetry-collector') {
+    throw "Release '$DaemonsetRelease' is chart '$($meta.chart)-$($meta.version)', not opentelemetry-collector. Refusing to patch an unexpected chart."
 }
-$chartVersion = $rel.chart -replace '^opentelemetry-collector-', ''
+$chartVersion = $meta.version
 Write-Host "    found (chart opentelemetry-collector-$chartVersion) - pinning that version"
 
 # --- Stage the two-metric override -------------------------------------------
