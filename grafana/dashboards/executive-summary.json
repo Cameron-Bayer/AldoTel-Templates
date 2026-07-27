@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-exec-summary",
-  "title": "ClickStack · Executive Summary",
+  "title": "ClickStack - Executive Summary",
   "description": "One-pane health overview across services, Kubernetes, and logs — top signals from all three ClickStack Grafana dashboards.",
   "tags": [
     "clickstack",

@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-logs-overview",
-  "title": "ClickStack · Logs & Errors Overview",
+  "title": "ClickStack - Logs & Errors Overview",
   "description": "Log throughput and error analysis from OpenTelemetry logs in ClickHouse (otel_logs): volume by severity, error rate, and recent errors.",
   "tags": [
     "clickstack",

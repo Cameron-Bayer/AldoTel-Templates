@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-k8s-overview",
-  "title": "ClickStack · Kubernetes Cluster Overview",
+  "title": "ClickStack - Kubernetes Cluster Overview",
   "description": "Cluster and workload health from the OpenTelemetry k8s cluster/kubelet/k8sobjects receivers (otel_metrics_gauge + otel_logs): nodes, pods, CPU/memory, restarts, container-vs-limit utilization, and cluster events.",
   "tags": [
     "clickstack",

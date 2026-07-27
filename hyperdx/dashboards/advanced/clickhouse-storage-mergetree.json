@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · ClickHouse — Storage & MergeTree",
+  "name": "ClickStack - ClickHouse - Storage & MergeTree",
   "tags": [
     "clickstack-templates",
     "clickhouse",
@@ -104,7 +104,7 @@
       }
     },
     {
-      "name": "Merge duration — p95 / max",
+      "name": "Merge duration - p95 / max",
       "x": 12,
       "y": 10,
       "w": 12,
@@ -121,7 +121,7 @@
       }
     },
     {
-      "name": "Bytes written — inserted vs merged / interval",
+      "name": "Bytes written - inserted vs merged / interval",
       "x": 0,
       "y": 16,
       "w": 12,
@@ -139,7 +139,7 @@
       }
     },
     {
-      "name": "Rows processed — inserted vs merged / interval",
+      "name": "Rows processed - inserted vs merged / interval",
       "x": 12,
       "y": 16,
       "w": 12,

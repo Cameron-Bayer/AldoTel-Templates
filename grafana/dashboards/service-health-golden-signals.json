@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-service-health",
-  "title": "ClickStack · Service Health (Golden Signals)",
+  "title": "ClickStack - Service Health (Golden Signals)",
   "description": "RED metrics (Rate, Errors, Duration) for every service, derived from OpenTelemetry traces in ClickHouse (otel_traces).",
   "tags": [
     "clickstack",

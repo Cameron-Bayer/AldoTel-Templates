@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-host-os",
-  "title": "ClickStack · Host / OS Metrics",
+  "title": "ClickStack - Host / OS Metrics",
   "description": "Host and OS health from the OpenTelemetry hostmetrics receiver (system.* in otel_metrics_gauge / otel_metrics_sum): CPU, memory, load, disk and network I/O per host.",
   "tags": [
     "clickstack",

@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · Logs — Overview",
+  "name": "ClickStack - Logs - Overview",
   "tags": [
     "clickstack-templates",
     "logs",
@@ -85,7 +85,7 @@
       }
     },
     {
-      "name": "Top error signatures (normalized) — click a row to open Logs",
+      "name": "Top error signatures (normalized) - click a row to open Logs",
       "x": 0,
       "y": 12,
       "w": 24,
@@ -108,7 +108,7 @@
       }
     },
     {
-      "name": "New log patterns in last 24h (vs prior 7d) — click a row to open Logs",
+      "name": "New log patterns in last 24h (vs prior 7d) - click a row to open Logs",
       "x": 0,
       "y": 18,
       "w": 24,
@@ -142,7 +142,7 @@
       }
     },
     {
-      "name": "Live error stream — click a row for full log detail",
+      "name": "Live error stream - click a row for full log detail",
       "x": 0,
       "y": 27,
       "w": 24,
@@ -156,7 +156,7 @@
       }
     },
     {
-      "name": "Top error sources (namespace / pod) — click a row to open Logs",
+      "name": "Top error sources (namespace / pod) - click a row to open Logs",
       "x": 0,
       "y": 34,
       "w": 24,

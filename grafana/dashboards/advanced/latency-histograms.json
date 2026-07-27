@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-latency-histograms",
-  "title": "ClickStack · Latency Histograms",
+  "title": "ClickStack - Latency Histograms",
   "description": "Request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram): average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls.",
   "tags": [
     "clickstack",

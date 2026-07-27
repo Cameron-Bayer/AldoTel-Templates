@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · ClickHouse — Query Performance & Errors",
+  "name": "ClickStack - ClickHouse - Query Performance & Errors",
   "tags": [
     "clickstack-templates",
     "clickhouse",
@@ -112,7 +112,7 @@
       }
     },
     {
-      "name": "Query duration — p95 / p99",
+      "name": "Query duration - p95 / p99",
       "x": 12,
       "y": 10,
       "w": 12,
@@ -129,7 +129,7 @@
       }
     },
     {
-      "name": "Peak memory per query — p95 / max",
+      "name": "Peak memory per query - p95 / max",
       "x": 0,
       "y": 16,
       "w": 12,

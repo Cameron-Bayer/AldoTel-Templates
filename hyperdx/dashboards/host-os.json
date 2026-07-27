@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · Host / OS Metrics",
+  "name": "ClickStack - Host / OS Metrics",
   "tags": [
     "clickstack-templates",
     "host",
@@ -164,7 +164,7 @@
       }
     },
     {
-      "name": "Hosts — CPU, memory, load",
+      "name": "Hosts - CPU, memory, load",
       "x": 0,
       "y": 34,
       "w": 24,

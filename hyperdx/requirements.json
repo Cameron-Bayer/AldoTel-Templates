@@ -5,7 +5,7 @@
       "file": "clickhouse-health.json",
       "tmpl": "tmpl:clickhouse-health",
       "tier": "advanced",
-      "name": "ClickHouse — Operations",
+      "name": "ClickHouse - Operations",
       "receivers": [
         "ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)"
       ],
@@ -94,7 +94,7 @@
       "file": "kubernetes-infrastructure.json",
       "tmpl": "tmpl:k8s-infrastructure",
       "tier": "default",
-      "name": "Kubernetes — Infrastructure",
+      "name": "Kubernetes - Infrastructure",
       "receivers": [
         "kubeletstats receiver",
         "k8s_cluster receiver",
@@ -227,7 +227,7 @@
       "file": "services-red.json",
       "tmpl": "tmpl:services-red",
       "tier": "default",
-      "name": "Services — RED (Rate / Errors / Duration)",
+      "name": "Services - RED (Rate / Errors / Duration)",
       "receivers": [
         "Application traces (OTLP)"
       ],
@@ -250,7 +250,7 @@
       "file": "logs-overview.json",
       "tmpl": "tmpl:logs-overview",
       "tier": "default",
-      "name": "Logs — Overview",
+      "name": "Logs - Overview",
       "receivers": [
         "Application/container logs (filelog or OTLP)"
       ],
@@ -273,7 +273,7 @@
       "file": "collector-health.json",
       "tmpl": "tmpl:collector-health",
       "tier": "advanced",
-      "name": "OTel Collector — Pipeline Health",
+      "name": "OTel Collector - Pipeline Health",
       "receivers": [
         "OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)"
       ],
@@ -344,7 +344,7 @@
       "file": "clickhouse-queryperf.json",
       "tmpl": "tmpl:clickhouse-queryperf",
       "tier": "advanced",
-      "name": "ClickHouse — Query Performance & Errors",
+      "name": "ClickHouse - Query Performance & Errors",
       "receivers": [
         "ClickHouse metrics scraped into OTel (for the summary number tiles)",
         "Most tiles read system.query_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, and query_log must be enabled"
@@ -374,7 +374,7 @@
       "file": "clickhouse-storage-mergetree.json",
       "tmpl": "tmpl:ch-storage",
       "tier": "advanced",
-      "name": "ClickHouse — Storage & MergeTree",
+      "name": "ClickHouse - Storage & MergeTree",
       "receivers": [
         "All tiles read system.parts / system.part_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.parts and system.part_log (part_log must be enabled, which it is by default)"
       ],
@@ -384,7 +384,7 @@
       "file": "clickhouse-keeper-replication.json",
       "tmpl": "tmpl:ch-keeper",
       "tier": "advanced",
-      "name": "ClickHouse — Keeper & Replication",
+      "name": "ClickHouse - Keeper & Replication",
       "receivers": [
         "ClickHouse metrics scraped into OTel (Keeper gauges/ProfileEvents)",
         "Replication tables read system.replicas / system.replication_queue via Raw SQL — these are empty on single-node installs and populate only on replicated/clustered ClickHouse"

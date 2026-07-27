@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · Kubernetes — Infrastructure",
+  "name": "ClickStack - Kubernetes - Infrastructure",
   "tags": [
     "clickstack-templates",
     "kubernetes",
@@ -61,7 +61,7 @@
       }
     },
     {
-      "name": "Nodes — status, CPU, memory, uptime",
+      "name": "Nodes - status, CPU, memory, uptime",
       "x": 0,
       "y": 9,
       "w": 14,
@@ -169,7 +169,7 @@
       }
     },
     {
-      "name": "Pods — status & resources",
+      "name": "Pods - status & resources",
       "x": 0,
       "y": 30,
       "w": 24,
@@ -280,7 +280,7 @@
       }
     },
     {
-      "name": "Namespaces — phase, CPU, memory",
+      "name": "Namespaces - phase, CPU, memory",
       "x": 0,
       "y": 51,
       "w": 24,
@@ -442,7 +442,7 @@
       }
     },
     {
-      "name": "Containers — utilization vs limit / request",
+      "name": "Containers - utilization vs limit / request",
       "x": 0,
       "y": 81,
       "w": 24,

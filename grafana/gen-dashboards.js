@@ -314,7 +314,7 @@ function serviceHealth() {
     ]));
   const svcVar = queryVar('service', 'Service',
     `SELECT DISTINCT ServiceName FROM ${DB}.otel_traces WHERE ${TF} AND ${SERVER} AND ServiceName != '' ORDER BY ServiceName`);
-  return dashboard('clickstack-service-health', 'ClickStack · Service Health (Golden Signals)',
+  return dashboard('clickstack-service-health', 'ClickStack - Service Health (Golden Signals)',
     'RED metrics (Rate, Errors, Duration) for every service, derived from OpenTelemetry traces in ClickHouse (otel_traces).', p, [svcVar]);
 }
 
@@ -420,7 +420,7 @@ function k8sOverview() {
 
   const nsVar = queryVar('namespace', 'Namespace',
     `SELECT DISTINCT ${RA('k8s.namespace.name')} FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND ${MF} ORDER BY 1`);
-  return dashboard('clickstack-k8s-overview', 'ClickStack · Kubernetes Cluster Overview',
+  return dashboard('clickstack-k8s-overview', 'ClickStack - Kubernetes Cluster Overview',
     'Cluster and workload health from the OpenTelemetry k8s cluster/kubelet/k8sobjects receivers (otel_metrics_gauge + otel_logs): nodes, pods, CPU/memory, restarts, container-vs-limit utilization, and cluster events.', p, [nsVar]);
 }
 
@@ -466,7 +466,7 @@ function logsOverview() {
 
   const svcVar = queryVar('service', 'Service',
     `SELECT DISTINCT ServiceName FROM ${DB}.otel_logs WHERE ${TF} AND ServiceName != '' ORDER BY ServiceName`);
-  return dashboard('clickstack-logs-overview', 'ClickStack · Logs & Errors Overview',
+  return dashboard('clickstack-logs-overview', 'ClickStack - Logs & Errors Overview',
     'Log throughput and error analysis from OpenTelemetry logs in ClickHouse (otel_logs): volume by severity, error rate, and recent errors.', p, [svcVar]);
 }
 
@@ -558,7 +558,7 @@ function execSummary() {
       ] },
     ]));
 
-  return dashboard('clickstack-exec-summary', 'ClickStack · Executive Summary',
+  return dashboard('clickstack-exec-summary', 'ClickStack - Executive Summary',
     'One-pane health overview across services, Kubernetes, and logs — top signals from all three ClickStack Grafana dashboards.', p);
 }
 
@@ -616,7 +616,7 @@ function hostOverview() {
 
   const hostVar = queryVar('host', 'Host',
     `SELECT DISTINCT ${HN} FROM ${DB}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND ${MFU} AND ${HN} != '' ORDER BY 1`);
-  return dashboard('clickstack-host-os', 'ClickStack · Host / OS Metrics',
+  return dashboard('clickstack-host-os', 'ClickStack - Host / OS Metrics',
     'Host and OS health from the OpenTelemetry hostmetrics receiver (system.* in otel_metrics_gauge / otel_metrics_sum): CPU, memory, load, disk and network I/O per host.', p, [hostVar]);
 }
 
@@ -656,7 +656,7 @@ function latencyHistograms() {
 
   const svcVar = queryVar('service', 'Service',
     `SELECT DISTINCT ServiceName FROM ${DB}.otel_metrics_histogram WHERE ${MFU} AND ServiceName != '' ORDER BY ServiceName`);
-  return dashboard('clickstack-latency-histograms', 'ClickStack · Latency Histograms',
+  return dashboard('clickstack-latency-histograms', 'ClickStack - Latency Histograms',
     'Request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram): average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls.', p, [svcVar]);
 }
 

@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · Services — RED (Rate / Errors / Duration)",
+  "name": "ClickStack - Services - RED (Rate / Errors / Duration)",
   "tags": [
     "clickstack-templates",
     "apm",
@@ -161,7 +161,7 @@
       }
     },
     {
-      "name": "Slowest routes (p95) — min 20 requests",
+      "name": "Slowest routes (p95) - min 20 requests",
       "x": 0,
       "y": 21,
       "w": 24,
@@ -175,7 +175,7 @@
       }
     },
     {
-      "name": "Latency anomaly — p95 vs rolling baseline (±3σ control band)",
+      "name": "Latency anomaly - p95 vs rolling baseline (±3σ control band)",
       "x": 0,
       "y": 27,
       "w": 24,

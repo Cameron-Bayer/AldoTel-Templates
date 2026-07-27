@@ -1,5 +1,5 @@
 {
-  "name": "ClickStack · Executive Overview",
+  "name": "ClickStack - Executive Overview",
   "tags": [
     "clickstack-templates",
     "overview",
@@ -186,7 +186,7 @@
       }
     },
     {
-      "name": "Services by error rate — click a row to open Traces",
+      "name": "Services by error rate - click a row to open Traces",
       "x": 0,
       "y": 17,
       "w": 12,
@@ -224,7 +224,7 @@
       }
     },
     {
-      "name": "Services by log errors — click a row to open Logs",
+      "name": "Services by log errors - click a row to open Logs",
       "x": 12,
       "y": 17,
       "w": 12,
