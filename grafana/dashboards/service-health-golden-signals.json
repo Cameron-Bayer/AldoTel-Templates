@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-service-health",
-  "title": "ClickStack - Service Health (Golden Signals)",
+  "title": "ClickStack - Service Health",
   "description": "RED metrics (Rate, Errors, Duration) for every service, derived from OpenTelemetry traces in ClickHouse (otel_traces).",
   "tags": [
     "clickstack",
@@ -97,8 +97,24 @@
   "panels": [
     {
       "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Service health (golden signals)\nBuilt from OpenTelemetry **incoming server spans** stored in ClickHouse. *Traffic* = average requests/sec; *errors* = spans with Error status; *latency* = span duration. **p50 / p95 / p99** mean 50%, 95%, or 99% of requests completed within that time. The final section compares observed errors against a fixed **99.9% availability target** — the *error budget* is how much failure that target still allows. No data usually means no server spans matched the filters."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
       "type": "stat",
-      "title": "Requests / sec",
+      "title": "Average incoming requests/sec (selected range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -107,7 +123,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -162,12 +178,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average incoming server requests per second across the selected time range. Traffic has no universal good/bad threshold."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Error rate",
+      "title": "Request error percentage",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -176,7 +193,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -239,12 +256,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Percentage of incoming server spans marked Error. Green below 1%, yellow 1–4.99%, red 5% or higher."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Latency p95",
+      "title": "95th-percentile request latency",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -253,7 +271,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -279,15 +297,22 @@
           "unit": "ms",
           "decimals": 1,
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 1000
               }
             ]
           },
@@ -305,15 +330,16 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "95% of matching incoming requests completed within this time. Default warning 250 ms, critical 1000 ms — tune to the service objective."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Services < SLO (99.9%)",
+      "title": "Services below 99.9% availability",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -322,7 +348,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -381,12 +407,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Number of services with at least 20 requests whose observed error percentage exceeds 0.1% in the selected range. Red means one or more services are below target."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Request volume by service",
+      "title": "Request count per time bucket by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -395,7 +422,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 12
       },
       "targets": [
         {
@@ -455,12 +482,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Incoming request count in each Grafana time bucket, stacked by service."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Latency percentiles (ms)",
+      "title": "Request latency percentiles",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -469,7 +497,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 12
       },
       "targets": [
         {
@@ -529,12 +557,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Latency across all selected services: p50 is the median, p95 covers 95% of requests, and p99 highlights the slowest 1%."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Overall error rate (%)",
+      "title": "Request error percentage over time",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -543,7 +572,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -603,12 +632,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Percentage of incoming requests marked Error in each time bucket, aggregated across all selected services."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Errors per interval by service",
+      "title": "Error count per time bucket by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -617,7 +647,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -677,12 +707,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Number of incoming requests marked Error in each Grafana time bucket for each service. This is a count, not errors per second."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Service breakdown (RED)",
+      "title": "Service traffic, errors, and latency",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -691,7 +722,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 29
       },
       "targets": [
         {
@@ -837,6 +868,58 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p50 ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Median latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "95th-percentile latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p99 ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "99th-percentile latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Errors"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
           }
         ]
       },
@@ -846,25 +929,26 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Compares traffic, request errors, and latency by service. Percentiles show the latency within which 50%, 95%, or 99% of requests completed."
     },
     {
       "id": null,
       "type": "row",
-      "title": "SLO / error budget (99.9% availability target)",
+      "title": "99.9% availability target & error budget",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 39
       },
       "panels": []
     },
     {
       "id": null,
       "type": "table",
-      "title": "Service SLO & error-budget burn",
+      "title": "99.9% availability and error-budget use by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -873,7 +957,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 40
       },
       "targets": [
         {
@@ -1005,6 +1089,88 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Requests"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Errors"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Burn rate"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Budget burn (x allowed rate)"
+              },
+              {
+                "id": "unit",
+                "value": "none"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Availability %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "red",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 99
+                    },
+                    {
+                      "color": "green",
+                      "value": 99.9
+                    }
+                  ]
+                }
+              }
+            ]
           }
         ]
       },
@@ -1014,7 +1180,47 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Selected-range comparison against a fixed 99.9% availability target. Budget left estimates remaining allowed errors for this range and may be negative. A burn value of 1x consumes budget at the allowed rate; 14.4x or higher is critical. Services with fewer than 20 requests are omitted."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Traffic, errors & latency trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Service comparison",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
     }
   ]
 }

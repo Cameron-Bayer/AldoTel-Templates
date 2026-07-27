@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-latency-histograms",
-  "title": "ClickStack - Latency Histograms",
+  "title": "ClickStack - Request Latency & Volume",
   "description": "Request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram): average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls.",
   "tags": [
     "clickstack",
@@ -97,8 +97,24 @@
   "panels": [
     {
       "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Request latency & volume (metric-based)\nUses OpenTelemetry cumulative HTTP/RPC **histogram** metrics stored in ClickHouse. Cards show request-weighted **averages** computed from the change in histogram Sum and Count — they do **not** show the latency distribution or tail percentiles (p95/p99). *Server* = incoming requests; *client* = outgoing requests. Filter by **Service** above. No data usually means the application doesn't emit these histogram metrics — see **Service Health** for percentile latency from traces."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
       "type": "stat",
-      "title": "Avg server latency",
+      "title": "Average incoming HTTP request latency",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -107,7 +123,7 @@
         "h": 4,
         "w": 8,
         "x": 0,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -117,7 +133,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT sum(dsum) / greatest(sum(dcount), 1) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
+          "rawSql": "SELECT sum(dsum) / nullIf(sum(dcount), 0) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -133,15 +149,22 @@
           "unit": "ms",
           "decimals": 1,
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 1000
               }
             ]
           },
@@ -159,15 +182,16 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Request-weighted average duration of incoming HTTP requests over the selected range. This is a mean, not p95 or worst-case latency."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Server requests / sec",
+      "title": "Average incoming HTTP requests/sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -176,7 +200,7 @@
         "h": 4,
         "w": 8,
         "x": 8,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -231,12 +255,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average incoming HTTP request rate derived from histogram count changes over the selected range. No universal health threshold applies."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Avg client latency",
+      "title": "Average outgoing HTTP request latency",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -245,7 +270,7 @@
         "h": 4,
         "w": 8,
         "x": 16,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -255,7 +280,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT sum(dsum) / greatest(sum(dcount), 1) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.client.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
+          "rawSql": "SELECT sum(dsum) / nullIf(sum(dcount), 0) AS value FROM (\n  SELECT ServiceName AS service,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.client.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, ResourceAttributes['service.instance.id'], toString(Attributes))",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -271,15 +296,22 @@
           "unit": "ms",
           "decimals": 1,
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 250
+              },
+              {
+                "color": "red",
+                "value": 1000
               }
             ]
           },
@@ -297,15 +329,16 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Request-weighted average duration of outgoing HTTP calls made by the selected services. This is a mean and can hide slow tail requests."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Avg server latency by service (ms)",
+      "title": "Average incoming HTTP latency by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -314,7 +347,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 12
       },
       "targets": [
         {
@@ -374,12 +407,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Request-weighted mean incoming HTTP latency for each service and time bucket. Use tracing views to investigate tail latency."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Server request rate by service (per interval)",
+      "title": "Incoming HTTP requests per time bucket by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -388,7 +422,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 12
       },
       "targets": [
         {
@@ -448,12 +482,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Incoming HTTP request count in each Grafana time bucket for each service. Bucket duration changes with the dashboard time range."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Latency by service & operation (avg)",
+      "title": "Average latency by service and request type",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -462,7 +497,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 21
       },
       "targets": [
         {
@@ -497,6 +532,40 @@
           {
             "matcher": {
               "id": "byName",
+              "options": "Metric"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Request type"
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "http.server.duration": {
+                        "text": "Incoming HTTP",
+                        "index": 0
+                      },
+                      "http.client.duration": {
+                        "text": "Outgoing HTTP",
+                        "index": 1
+                      },
+                      "rpc.server.duration": {
+                        "text": "Incoming RPC",
+                        "index": 2
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
               "options": "Avg ms"
             },
             "properties": [
@@ -507,6 +576,26 @@
               {
                 "id": "decimals",
                 "value": 2
+              },
+              {
+                "id": "displayName",
+                "value": "Average latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Requests"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
               }
             ]
           }
@@ -518,7 +607,47 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Request-weighted average latency and request count by service and request type. Only the 30 highest-volume combinations are shown."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Trends by service",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Service & request type",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "panels": []
     }
   ]
 }

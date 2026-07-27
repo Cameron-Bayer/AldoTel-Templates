@@ -97,8 +97,24 @@
   "panels": [
     {
       "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Host / OS metrics\nHost CPU, memory, load, disk, and network metrics collected by the OpenTelemetry Collector and stored in ClickHouse. **Summary cards are averages over the selected time range**; charts use automatic Grafana intervals. Use the **Host** filter to narrow the fleet. No data usually means the host-metrics receiver isn't reporting or the selected hosts had no samples."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
       "type": "stat",
-      "title": "Hosts reporting",
+      "title": "Hosts reporting CPU metrics",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -107,7 +123,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -162,12 +178,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Distinct selected hosts that reported CPU utilization during the selected time range. Compare with the expected fleet size."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Avg CPU busy",
+      "title": "Average CPU utilization (selected range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -176,7 +193,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -239,12 +256,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average non-idle CPU utilization across selected hosts and the full selected time range. Spikes may be hidden by this average."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Avg memory used",
+      "title": "Average memory utilization (selected range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -253,7 +271,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -316,12 +334,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average used-memory percentage across selected hosts and the full selected time range. Green below 80%, yellow 80–92%, red 92% or higher."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Avg load (1m)",
+      "title": "Average 1-minute load (selected range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -330,7 +349,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -353,7 +372,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "none",
           "decimals": 2,
           "color": {
             "mode": "fixed",
@@ -385,12 +404,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average one-minute system load across selected hosts and the selected range. Compare each host's load with its CPU-core count; there is no universal fleet-wide threshold."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "CPU busy % by host",
+      "title": "CPU utilization by host",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -399,7 +419,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 11
       },
       "targets": [
         {
@@ -459,12 +479,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Non-idle CPU percentage for each selected host over time. Sustained values above 75% warrant attention; above 90% are critical."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Memory used % by host",
+      "title": "Memory utilization by host",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -473,7 +494,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 11
       },
       "targets": [
         {
@@ -533,12 +554,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Used-memory percentage for each selected host over time. Sustained values above 80% warrant attention; above 92% are critical."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Disk I/O by host (bytes / interval)",
+      "title": "Disk I/O volume by host (per chart interval)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -547,7 +569,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -607,12 +629,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Combined bytes read and written by each host during each chart interval. This is volume, not bytes per second."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Network I/O by host (bytes / interval)",
+      "title": "Network I/O volume by host (per chart interval)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -621,7 +644,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -681,12 +704,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Combined bytes received and transmitted by each host during each chart interval. This is volume, not bytes per second."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Hosts summary (latest in range)",
+      "title": "Host averages over selected time range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -695,7 +719,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 20
+        "y": 29
       },
       "targets": [
         {
@@ -740,6 +764,32 @@
               {
                 "id": "decimals",
                 "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
               }
             ]
           },
@@ -756,6 +806,32 @@
               {
                 "id": "decimals",
                 "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 92
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
               }
             ]
           },
@@ -772,6 +848,48 @@
               {
                 "id": "decimals",
                 "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 50
+                    },
+                    {
+                      "color": "red",
+                      "value": 80
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load 1m"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
               }
             ]
           }
@@ -783,7 +901,60 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Per-host averages over the full selected time range, sorted by average CPU utilization. These are not the latest samples."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Fleet summary",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "CPU & memory trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Disk & network activity",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Per-host summary",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
     }
   ]
 }

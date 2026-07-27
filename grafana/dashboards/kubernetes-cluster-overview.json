@@ -97,8 +97,24 @@
   "panels": [
     {
       "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Kubernetes cluster overview\nKubernetes metrics and events collected by the OpenTelemetry Collector and stored in ClickHouse. The **Namespace** filter affects workload panels; node and event panels are cluster-wide. Status uses the **latest sample** in the selected range, while restart and event totals cover the **entire range**. Limit-utilization panels only show containers with configured resource limits. No data usually means the relevant Collector receiver is disabled or no matching telemetry was received."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
       "type": "stat",
-      "title": "Nodes Ready",
+      "title": "Ready nodes (latest in range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -107,7 +123,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -162,12 +178,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Nodes whose latest Ready condition in the selected range is true. Compare with the expected cluster node count; any decrease requires investigation."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Pods Running",
+      "title": "Running pods (latest in range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -176,7 +193,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -231,12 +248,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Pods in the selected namespaces whose latest phase is Running. Successfully completed pods are excluded."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Pods Not Running",
+      "title": "Pods pending, failed, or unknown",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -245,7 +263,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -304,12 +322,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Pods whose latest phase is neither Running nor Succeeded. Any non-zero value should be investigated."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Container restarts (in range)",
+      "title": "Container restarts during selected range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -318,7 +337,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 0
+        "y": 7
       },
       "targets": [
         {
@@ -381,12 +400,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Increase in restart counters across containers in the selected namespaces during the selected time range. Longer ranges may produce larger totals."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Node CPU usage (cores)",
+      "title": "Node CPU usage",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -395,7 +415,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 12
       },
       "targets": [
         {
@@ -418,7 +438,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cores",
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -455,7 +475,8 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "CPU cores used by each node over time. Compare with the node's allocatable CPU capacity."
     },
     {
       "id": null,
@@ -469,7 +490,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 12
       },
       "targets": [
         {
@@ -529,12 +550,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Memory used by each node over time. Compare with node capacity; this panel shows bytes, not utilization percentage."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Top 10 pods by CPU (cores)",
+      "title": "Top 10 pods by CPU usage",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -543,7 +565,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -566,7 +588,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cores",
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -603,12 +625,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "CPU cores used by the ten pods with the highest average CPU usage over the selected time range."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Deployment availability (%)",
+      "title": "Deployment replica availability",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -617,7 +640,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -677,12 +700,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Available replicas divided by desired replicas for each deployment. 100% means all desired replicas are available; below 100% indicates unavailable replicas."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Top pods by memory (working set)",
+      "title": "Top 20 pods by active memory",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -691,7 +715,7 @@
         "h": 9,
         "w": 12,
         "x": 0,
-        "y": 20
+        "y": 29
       },
       "targets": [
         {
@@ -747,12 +771,13 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Latest memory working-set sample in the selected range for the 20 highest-usage pods. Working set approximates actively used, non-easily-reclaimable memory."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Container restarts in range (by pod)",
+      "title": "Containers with restarts during selected range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -761,7 +786,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 20
+        "y": 29
       },
       "targets": [
         {
@@ -827,6 +852,22 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Restarts"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
           }
         ]
       },
@@ -836,25 +877,26 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Top 20 containers with one or more restart-counter increases during the selected time range."
     },
     {
       "id": null,
       "type": "row",
-      "title": "Container utilization vs limits",
+      "title": "Container resource use versus configured limits",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 29
+        "y": 38
       },
       "panels": []
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Top 10 containers by CPU vs limit (%)",
+      "title": "Top 10 containers by CPU limit utilization",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -863,7 +905,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 30
+        "y": 39
       },
       "targets": [
         {
@@ -923,12 +965,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "CPU usage as a percentage of each container's configured CPU limit. Sustained values near or above 100% indicate throttling risk. Containers without limits do not appear."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Top 10 containers by memory vs limit (%)",
+      "title": "Top 10 containers by memory limit utilization",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -937,7 +980,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 30
+        "y": 39
       },
       "targets": [
         {
@@ -997,12 +1040,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Memory usage as a percentage of each container's configured memory limit. Values approaching 100% indicate out-of-memory termination risk."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Container utilization vs limits (latest)",
+      "title": "Latest container resource-limit utilization",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1011,7 +1055,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 47
       },
       "targets": [
         {
@@ -1074,6 +1118,74 @@
                 "value": 1
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU vs limit %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 100
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mem vs limit %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 95
+                    }
+                  ]
+                }
+              }
+            ]
           }
         ]
       },
@@ -1083,25 +1195,26 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Latest CPU- and memory-limit utilization samples in the selected range, sorted by CPU utilization. Containers without limits may be absent."
     },
     {
       "id": null,
       "type": "row",
-      "title": "Cluster events (k8s events.k8s.io)",
+      "title": "Kubernetes events",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 56
       },
       "panels": []
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Warning events (in range)",
+      "title": "Warning events during selected range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1110,7 +1223,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 48
+        "y": 57
       },
       "targets": [
         {
@@ -1152,7 +1265,7 @@
               },
               {
                 "color": "red",
-                "value": 25
+                "value": 10
               }
             ]
           },
@@ -1173,12 +1286,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Number of Kubernetes events classified as Warning during the selected time range. Repeated warnings usually indicate scheduling, image, storage, or health-check problems."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Top event reasons",
+      "title": "Most frequent Kubernetes event reasons",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1187,7 +1301,7 @@
         "h": 8,
         "w": 18,
         "x": 6,
-        "y": 48
+        "y": 57
       },
       "targets": [
         {
@@ -1250,6 +1364,22 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Count"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
           }
         ]
       },
@@ -1259,12 +1389,13 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "The 15 most frequent Kubernetes event reasons during the selected time range, grouped by event type and affected object kind."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Recent events",
+      "title": "Most recent Kubernetes events",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1273,7 +1404,7 @@
         "h": 10,
         "w": 24,
         "x": 0,
-        "y": 56
+        "y": 65
       },
       "targets": [
         {
@@ -1361,7 +1492,47 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "The 100 newest Kubernetes events in the selected time range. Warning events are shown in red and Normal events in green."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Cluster & workload health",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Node & workload resource usage",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 11
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Workload details",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 28
+      },
+      "panels": []
     }
   ]
 }

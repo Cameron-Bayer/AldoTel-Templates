@@ -60,21 +60,37 @@
   "panels": [
     {
       "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Executive summary\nTop signals for **application requests, Kubernetes health, and logs**, collected by the OpenTelemetry Collector and queried from ClickHouse. All panels honor the selected time range: **rates and percentiles cover the full range**, Kubernetes status uses the **latest sample**, and time-series counts are **per chart interval**. No data usually means telemetry isn't being collected — check the OTel Collector and the ClickHouse datasource."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
       "type": "row",
-      "title": "Services (traces)",
+      "title": "Application request health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 0
+        "y": 5
       },
       "panels": []
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Requests / sec",
+      "title": "Average server request rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -83,7 +99,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 1
+        "y": 6
       },
       "targets": [
         {
@@ -138,12 +154,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average server requests per second over the selected time range. Each OpenTelemetry server span is counted as one request."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Error rate",
+      "title": "Server request error rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -152,7 +169,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 1
+        "y": 6
       },
       "targets": [
         {
@@ -215,12 +232,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Percentage of server requests marked Error over the selected time range. Green below 1%, yellow 1–4.99%, red 5% or higher."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Latency p95",
+      "title": "95th-percentile server latency",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -229,7 +247,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 1
+        "y": 6
       },
       "targets": [
         {
@@ -255,15 +273,22 @@
           "unit": "ms",
           "decimals": 1,
           "color": {
-            "mode": "fixed",
-            "fixedColor": "text"
+            "mode": "thresholds"
           },
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 500
+              },
+              {
+                "color": "red",
+                "value": 1000
               }
             ]
           },
@@ -281,15 +306,16 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "none",
+        "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "95% of server requests completed within this duration during the selected time range."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Services seen",
+      "title": "Services receiving requests",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -298,7 +324,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 1
+        "y": 6
       },
       "targets": [
         {
@@ -353,12 +379,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Distinct service names that reported at least one server request during the selected time range."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Request volume",
+      "title": "Server requests per chart interval",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -367,7 +394,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 6
+        "y": 11
       },
       "targets": [
         {
@@ -423,12 +450,13 @@
           "sort": "desc"
         }
       },
-      "interval": "5m"
+      "interval": "5m",
+      "description": "Number of server requests in each automatic Grafana chart interval. Interval width changes when the time range changes."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Overall error rate (%)",
+      "title": "Server request error rate over time",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -437,7 +465,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 6
+        "y": 11
       },
       "targets": [
         {
@@ -493,25 +521,26 @@
           "sort": "desc"
         }
       },
-      "interval": "5m"
+      "interval": "5m",
+      "description": "Percentage of server requests marked Error in each chart interval; lower is better."
     },
     {
       "id": null,
       "type": "row",
-      "title": "Kubernetes (metrics)",
+      "title": "Kubernetes workload health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 12
+        "y": 17
       },
       "panels": []
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Nodes Ready",
+      "title": "Ready nodes (latest in range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -520,7 +549,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 13
+        "y": 18
       },
       "targets": [
         {
@@ -575,12 +604,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Nodes whose latest Ready condition in the selected range is true. Compare with the expected cluster node count; any decrease requires investigation."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Pods Running",
+      "title": "Running pods (latest in range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -589,7 +619,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 13
+        "y": 18
       },
       "targets": [
         {
@@ -644,12 +674,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Pods whose latest phase in the selected range is Running. Successfully completed pods are not included."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Pods Not Running",
+      "title": "Pods pending, failed, or unknown",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -658,7 +689,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 13
+        "y": 18
       },
       "targets": [
         {
@@ -717,12 +748,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Pods whose latest phase is neither Running nor Succeeded. Any non-zero result should be investigated."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Container restarts (in range)",
+      "title": "Container restarts during selected range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -731,7 +763,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 13
+        "y": 18
       },
       "targets": [
         {
@@ -794,25 +826,26 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Increase in container restart counters during the selected time range, summed across the cluster. Longer ranges may naturally produce larger totals."
     },
     {
       "id": null,
       "type": "row",
-      "title": "Logs",
+      "title": "Application logs",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 23
       },
       "panels": []
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Logs / sec",
+      "title": "Average log record rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -821,7 +854,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 19
+        "y": 24
       },
       "targets": [
         {
@@ -844,7 +877,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "decimals": 1,
           "color": {
             "mode": "fixed",
@@ -876,12 +909,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average number of log records ingested per second over the selected time range."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Error+ logs / sec",
+      "title": "Average error and fatal log rate",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -890,7 +924,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 19
+        "y": 24
       },
       "targets": [
         {
@@ -913,7 +947,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "decimals": 2,
           "color": {
             "mode": "thresholds",
@@ -953,12 +987,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average error-or-higher log records per second (OpenTelemetry severity 17+ or Error/Fatal severity text)."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Error log %",
+      "title": "Error and fatal share of logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -967,7 +1002,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 19
+        "y": 24
       },
       "targets": [
         {
@@ -1030,12 +1065,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Percentage of all log records classified as Error or Fatal. Green below 2%, yellow 2–9.99%, red 10% or higher."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Fatal logs",
+      "title": "Fatal logs in selected range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1044,7 +1080,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 19
+        "y": 24
       },
       "targets": [
         {
@@ -1103,12 +1139,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Total Fatal log records during the selected time range. Any non-zero value is red."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Log volume by severity",
+      "title": "Log records per interval by severity",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1117,7 +1154,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 29
       },
       "targets": [
         {
@@ -1177,12 +1214,13 @@
           "sort": "desc"
         }
       },
-      "interval": "5m"
+      "interval": "5m",
+      "description": "Log record count in each chart interval, stacked by OpenTelemetry severity. Interval width changes with the selected time range."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Error+ logs by service",
+      "title": "Error and fatal logs per interval by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1191,7 +1229,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 29
       },
       "targets": [
         {
@@ -1251,25 +1289,26 @@
           "sort": "desc"
         }
       },
-      "interval": "5m"
+      "interval": "5m",
+      "description": "Error-or-higher log record count per chart interval, grouped by reporting service."
     },
     {
       "id": null,
       "type": "row",
-      "title": "Needs attention",
+      "title": "Service health details",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 30
+        "y": 35
       },
       "panels": []
     },
     {
       "id": null,
       "type": "table",
-      "title": "Services by error rate",
+      "title": "Service request health",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -1278,7 +1317,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 31
+        "y": 36
       },
       "targets": [
         {
@@ -1392,6 +1431,56 @@
                 }
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Errors"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 500
+                    },
+                    {
+                      "color": "red",
+                      "value": 1000
+                    }
+                  ]
+                }
+              }
+            ]
           }
         ]
       },
@@ -1401,7 +1490,8 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Per-service request rate, error count, error percentage, and 95th-percentile latency over the selected time range, sorted by highest error percentage."
     }
   ]
 }

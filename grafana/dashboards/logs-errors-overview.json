@@ -97,8 +97,24 @@
   "panels": [
     {
       "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 5,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Logs & errors\nOpenTelemetry logs stored in ClickHouse for the selected services and time range. **Error** counts include both *Error* and *Fatal* severities. The `/sec` cards are **averages over the selected range**; trend charts show **counts per time bucket**. If nothing appears, widen the time range and check the **Service** filter and datasource above."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
       "type": "stat",
-      "title": "Logs / sec",
+      "title": "Average logs/sec (selected range)",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -107,7 +123,7 @@
         "h": 4,
         "w": 6,
         "x": 0,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -130,7 +146,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "decimals": 1,
           "color": {
             "mode": "fixed",
@@ -162,12 +178,13 @@
         "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average log records ingested per second across the selected time range. High or low values are not inherently unhealthy; compare with the normal traffic baseline."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Error+ logs / sec",
+      "title": "Average error and fatal logs/sec",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -176,7 +193,7 @@
         "h": 4,
         "w": 6,
         "x": 6,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -199,7 +216,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "short",
+          "unit": "cps",
           "decimals": 2,
           "color": {
             "mode": "thresholds",
@@ -236,15 +253,16 @@
         },
         "orientation": "auto",
         "textMode": "auto",
-        "colorMode": "value",
+        "colorMode": "none",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Average Error- and Fatal-severity log records per second across the selected time range."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Error log %",
+      "title": "Error and fatal share of logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -253,7 +271,7 @@
         "h": 4,
         "w": 6,
         "x": 12,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -316,12 +334,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Percentage of all matching logs classified as Error or Fatal. Green is below 2%, yellow 2–9.99%, red 10% or higher; tune these defaults to the workload."
     },
     {
       "id": null,
       "type": "stat",
-      "title": "Fatal logs",
+      "title": "Fatal logs in selected range",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -330,7 +349,7 @@
         "h": 4,
         "w": 6,
         "x": 18,
-        "y": 0
+        "y": 6
       },
       "targets": [
         {
@@ -389,12 +408,13 @@
         "colorMode": "value",
         "graphMode": "area",
         "justifyMode": "auto"
-      }
+      },
+      "description": "Total Fatal-severity log records in the selected time range. Any value above zero is shown in red."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Log volume by severity",
+      "title": "Log count per time bucket by severity",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -403,7 +423,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 4
+        "y": 11
       },
       "targets": [
         {
@@ -445,7 +465,113 @@
             "mode": "palette-classic"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "fatal"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "orange"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "warn"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "yellow"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "info"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "debug"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "purple"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#808080"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "unspecified"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#808080"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
@@ -463,12 +589,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Number of log records in each Grafana time bucket, stacked by severity."
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Error+ logs by service",
+      "title": "Error and fatal logs per interval by service",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -477,7 +604,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 4
+        "y": 11
       },
       "targets": [
         {
@@ -537,12 +664,13 @@
           "sort": "desc"
         }
       },
-      "interval": "1m"
+      "interval": "1m",
+      "description": "Error- and Fatal-severity log records per time bucket for each selected service. Values are counts, not events per second."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Top services by error+ logs",
+      "title": "Services generating the most error and fatal logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -551,7 +679,7 @@
         "h": 9,
         "w": 8,
         "x": 0,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -596,6 +724,26 @@
               {
                 "id": "decimals",
                 "value": 1
+              },
+              {
+                "id": "displayName",
+                "value": "Share of all error logs"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Error logs"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "decimals",
+                "value": 0
               }
             ]
           }
@@ -607,12 +755,13 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "Ranks services by Error- and Fatal-severity log count. 'Share of all error logs' is the service's portion of matching error logs, not its request error rate."
     },
     {
       "id": null,
       "type": "table",
-      "title": "Recent errors",
+      "title": "100 most recent error and fatal logs",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -621,7 +770,7 @@
         "h": 9,
         "w": 16,
         "x": 8,
-        "y": 12
+        "y": 20
       },
       "targets": [
         {
@@ -676,6 +825,38 @@
                 "value": 90
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Severity"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "fatal": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "error": {
+                        "color": "orange",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
           }
         ]
       },
@@ -685,7 +866,47 @@
         "footer": {
           "show": false
         }
-      }
+      },
+      "description": "The 100 newest Error- or Fatal-severity log records matching the current filters. Messages are truncated to 200 characters."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "At a glance",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Log trends",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 10
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Error details",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 19
+      },
+      "panels": []
     }
   ]
 }
