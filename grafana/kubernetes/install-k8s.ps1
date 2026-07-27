@@ -103,8 +103,11 @@ Invoke-Kubectl @('get', 'deployment', $Deployment, '-n', $Namespace, '-o', 'name
 # didn't ask to provision, fall back to reusing Grafana's existing data source.
 $dsUidExplicit = $PSBoundParameters.ContainsKey('DatasourceUid')
 if (-not $ReuseDatasource) {
-    & kubectl get configmap $DatasourcesConfigMap -n $Namespace -o name > $null 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    # --ignore-not-found makes kubectl exit 0 with no stderr when the CM is absent, so this
+    # probe stays silent under $ErrorActionPreference='Stop' (Windows PowerShell turns a
+    # native command's stderr into a terminating NativeCommandError even when redirected).
+    $dsCm = & kubectl get configmap $DatasourcesConfigMap -n $Namespace --ignore-not-found -o name 2>$null
+    if (-not $dsCm) {
         $ReuseDatasource = $true
         Write-Step "No '$DatasourcesConfigMap' ConfigMap found - appliance layout detected; reusing Grafana's existing data source"
     }
@@ -112,9 +115,9 @@ if (-not $ReuseDatasource) {
 if ($ReuseDatasource -and -not $dsUidExplicit) {
     # Detect the existing data source UID from Grafana's config ConfigMap (falls back to
     # `clickhouse`, the appliance's built-in ClickHouse data source).
-    $cfg = & kubectl get configmap $Deployment -n $Namespace -o 'jsonpath={.data.datasources\.yaml}' 2>$null
+    $cfg = & kubectl get configmap $Deployment -n $Namespace --ignore-not-found -o 'jsonpath={.data.datasources\.yaml}' 2>$null
     $detected = $null
-    if ($LASTEXITCODE -eq 0 -and $cfg) {
+    if ($cfg) {
         $m = [regex]::Match($cfg, '(?m)^\s*uid:\s*(\S+)')
         if ($m.Success) { $detected = $m.Groups[1].Value }
     }
