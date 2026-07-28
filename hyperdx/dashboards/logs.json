@@ -119,7 +119,7 @@
       }
     },
     {
-      "name": "New log patterns in last 24h (vs prior 7d) - click a row to open Logs",
+      "name": "Errors & fatals by service (last 24h) - click a row to open Logs",
       "x": 0,
       "y": 32,
       "w": 24,
@@ -129,7 +129,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         substring(replaceRegexpAll(replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F]{8}-[0-9a-fA-F-]{4,}', '<id>'), '[0-9a-fA-F]{16,}', '<id>'), '[0-9]+', '<n>'), 1, 160) AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName AS \"Service\", any(pattern) AS \"Error signature\",\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS \"Last 24h\",\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS \"Prior 7d\"\nFROM normalized\nGROUP BY ServiceName, cityHash64(pattern)\nHAVING \"Prior 7d\" = 0 AND \"Last 24h\" > 0\nORDER BY \"Last 24h\" DESC\nLIMIT 50",
+        "sqlTemplate": "SELECT ServiceName AS \"Service\",\n       countIf(SeverityNumber = 17 OR lower(SeverityText) = 'error') AS \"Errors\",\n       countIf(SeverityNumber = 21 OR lower(SeverityText) = 'fatal') AS \"Fatal\",\n       max(Timestamp) AS \"Last seen\"\nFROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\nWHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))\n  AND Timestamp > now() - INTERVAL 24 HOUR AND $__filters\nGROUP BY ServiceName\nORDER BY \"Errors\" + \"Fatal\" DESC\nLIMIT 50",
         "onClick": {
           "type": "search",
           "target": {

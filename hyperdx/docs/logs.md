@@ -63,7 +63,7 @@ LIMIT 50
 
 </details>
 
-### New log patterns in last 24h (vs prior 7d) - click a row to open Logs — table · Raw SQL
+### Errors & fatals by service (last 24h) - click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
 - **Drill-down:** click a row → opens search
@@ -71,20 +71,15 @@ LIMIT 50
 <details><summary>SQL query</summary>
 
 ```sql
-WITH normalized AS (
-  SELECT ServiceName,
-         substring(replaceRegexpAll(replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F]{8}-[0-9a-fA-F-]{4,}', '<id>'), '[0-9a-fA-F]{16,}', '<id>'), '[0-9]+', '<n>'), 1, 160) AS pattern,
-         Timestamp
-  FROM default.otel_logs
-  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
-)
-SELECT ServiceName AS "Service", any(pattern) AS "Error signature",
-       countIf(Timestamp > now() - INTERVAL 1 DAY) AS "Last 24h",
-       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS "Prior 7d"
-FROM normalized
-GROUP BY ServiceName, cityHash64(pattern)
-HAVING "Prior 7d" = 0 AND "Last 24h" > 0
-ORDER BY "Last 24h" DESC
+SELECT ServiceName AS "Service",
+       countIf(SeverityNumber = 17 OR lower(SeverityText) = 'error') AS "Errors",
+       countIf(SeverityNumber = 21 OR lower(SeverityText) = 'fatal') AS "Fatal",
+       max(Timestamp) AS "Last seen"
+FROM default.otel_logs
+WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))
+  AND Timestamp > now() - INTERVAL 24 HOUR AND $__filters
+GROUP BY ServiceName
+ORDER BY "Errors" + "Fatal" DESC
 LIMIT 50
 ```
 
