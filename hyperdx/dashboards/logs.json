@@ -41,7 +41,7 @@
       "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Volume & error rate"
+        "markdown": "#### Volume & error rate\nLog throughput by severity and the error/fatal rate over time — the first place a problem shows up."
       }
     },
     {
@@ -129,7 +129,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName AS \"Service\", pattern AS \"Error signature\",\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS \"Last 24h\",\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS \"Prior 7d\"\nFROM normalized\nGROUP BY ServiceName, pattern\nHAVING \"Prior 7d\" = 0 AND \"Last 24h\" > 0\nORDER BY \"Last 24h\" DESC\nLIMIT 50",
+        "sqlTemplate": "WITH normalized AS (\n  SELECT ServiceName,\n         substring(replaceRegexpAll(replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F]{8}-[0-9a-fA-F-]{4,}', '<id>'), '[0-9a-fA-F]{16,}', '<id>'), '[0-9]+', '<n>'), 1, 160) AS pattern,\n         Timestamp\n  FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n)\nSELECT ServiceName AS \"Service\", any(pattern) AS \"Error signature\",\n       countIf(Timestamp > now() - INTERVAL 1 DAY) AS \"Last 24h\",\n       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS \"Prior 7d\"\nFROM normalized\nGROUP BY ServiceName, cityHash64(pattern)\nHAVING \"Prior 7d\" = 0 AND \"Last 24h\" > 0\nORDER BY \"Last 24h\" DESC\nLIMIT 50",
         "onClick": {
           "type": "search",
           "target": {

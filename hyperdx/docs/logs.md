@@ -20,6 +20,7 @@ These apply to every compatible tile on the dashboard.
 Application and infrastructure logs ingested into ClickStack via OpenTelemetry. Filter by **Service** or **Severity** and adjust the time range. Look for error/fatal spikes, newly appearing error signatures, and failures concentrated on specific services or pods; click any row to open the matching logs.
 
 ## Volume & error rate
+Log throughput by severity and the error/fatal rate over time — the first place a problem shows up.
 
 ### Log volume by severity — stacked_bar
 
@@ -72,16 +73,16 @@ LIMIT 50
 ```sql
 WITH normalized AS (
   SELECT ServiceName,
-         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,
+         substring(replaceRegexpAll(replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F]{8}-[0-9a-fA-F-]{4,}', '<id>'), '[0-9a-fA-F]{16,}', '<id>'), '[0-9]+', '<n>'), 1, 160) AS pattern,
          Timestamp
   FROM default.otel_logs
   WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
 )
-SELECT ServiceName AS "Service", pattern AS "Error signature",
+SELECT ServiceName AS "Service", any(pattern) AS "Error signature",
        countIf(Timestamp > now() - INTERVAL 1 DAY) AS "Last 24h",
        countIf(Timestamp <= now() - INTERVAL 1 DAY) AS "Prior 7d"
 FROM normalized
-GROUP BY ServiceName, pattern
+GROUP BY ServiceName, cityHash64(pattern)
 HAVING "Prior 7d" = 0 AND "Last 24h" > 0
 ORDER BY "Last 24h" DESC
 LIMIT 50

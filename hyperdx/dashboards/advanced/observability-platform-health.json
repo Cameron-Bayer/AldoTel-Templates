@@ -162,7 +162,7 @@
       "x": 0,
       "y": 30,
       "w": 8,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -441,7 +441,7 @@
       "x": 14,
       "y": 74,
       "w": 10,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "number",
         "configType": "sql",
