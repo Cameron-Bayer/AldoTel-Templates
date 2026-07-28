@@ -35,7 +35,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 6,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "### Supportability\nFor CSS, support, and operations: recomputed alert conditions, failure tracking (crashes, exhaustion, warning events), and troubleshooting (top errors, new log patterns, error sources, live stream). Use with the Logs and Services dashboards for drill-down."
@@ -44,9 +44,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 6,
+      "y": 5,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Alert conditions (recomputed live)\nThe same conditions that drive alerts, evaluated over the selected range: server/log error rates and unhealthy pods."
@@ -55,8 +55,8 @@
     {
       "name": "Server error rate (%)",
       "x": 0,
-      "y": 11,
-      "w": 6,
+      "y": 9,
+      "w": 7,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -91,9 +91,9 @@
     },
     {
       "name": "Log error rate (%)",
-      "x": 6,
-      "y": 11,
-      "w": 6,
+      "x": 7,
+      "y": 9,
+      "w": 7,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -128,9 +128,9 @@
     },
     {
       "name": "Pods not Running",
-      "x": 12,
-      "y": 11,
-      "w": 8,
+      "x": 14,
+      "y": 9,
+      "w": 10,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -151,8 +151,8 @@
     {
       "name": "Container restarts (selected range)",
       "x": 0,
-      "y": 16,
-      "w": 8,
+      "y": 14,
+      "w": 24,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -173,9 +173,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 21,
+      "y": 19,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Failure tracking\nCrash loops, resource exhaustion, and warning-level Kubernetes events."
@@ -184,7 +184,7 @@
     {
       "name": "Top pods by restarts",
       "x": 0,
-      "y": 26,
+      "y": 23,
       "w": 24,
       "h": 6,
       "config": {
@@ -198,7 +198,7 @@
     {
       "name": "Warning events (in range)",
       "x": 0,
-      "y": 32,
+      "y": 29,
       "w": 8,
       "h": 6,
       "config": {
@@ -220,7 +220,7 @@
     {
       "name": "Top event reasons",
       "x": 8,
-      "y": 32,
+      "y": 29,
       "w": 16,
       "h": 6,
       "config": {
@@ -234,9 +234,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 38,
+      "y": 35,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Troubleshooting\nTop error signatures, newly-appearing log patterns, error sources by namespace/pod, and a live error stream. Click a row to open Logs."
@@ -245,7 +245,7 @@
     {
       "name": "Top error signatures (normalized) - click a row to open Logs",
       "x": 0,
-      "y": 43,
+      "y": 39,
       "w": 24,
       "h": 6,
       "config": {
@@ -268,7 +268,7 @@
     {
       "name": "New log patterns in last 24h (vs prior 7d) - click a row to open Logs",
       "x": 0,
-      "y": 49,
+      "y": 45,
       "w": 24,
       "h": 6,
       "config": {
@@ -291,7 +291,7 @@
     {
       "name": "Top Kubernetes error sources (namespace / pod) - click a row to open Logs",
       "x": 0,
-      "y": 55,
+      "y": 51,
       "w": 24,
       "h": 6,
       "config": {
@@ -314,7 +314,7 @@
     {
       "name": "Live error stream - click a row for full log detail",
       "x": 0,
-      "y": 61,
+      "y": 57,
       "w": 24,
       "h": 7,
       "config": {

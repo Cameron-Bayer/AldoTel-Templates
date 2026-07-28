@@ -21,7 +21,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 6,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "### Observability Platform Health\nHealth of the telemetry pipeline itself: OpenTelemetry collector ingestion & queues, and ClickHouse storage / query performance. **Advanced tier** — needs the metrics-scraper add-on (collector self-metrics + ClickHouse metrics). Empty here means that optional scraping is not enabled."
@@ -30,9 +30,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 6,
+      "y": 5,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Telemetry ingestion\nAccepted vs. refused spans, logs, and metric points at the collector. Refusals mean data is being dropped."
@@ -41,8 +41,8 @@
     {
       "name": "Refused spans (window)",
       "x": 0,
-      "y": 11,
-      "w": 6,
+      "y": 9,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -62,9 +62,9 @@
     },
     {
       "name": "Refused log records (window)",
-      "x": 6,
-      "y": 11,
-      "w": 6,
+      "x": 8,
+      "y": 9,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -84,9 +84,9 @@
     },
     {
       "name": "Refused metric points (window)",
-      "x": 12,
-      "y": 11,
-      "w": 6,
+      "x": 16,
+      "y": 9,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -107,7 +107,7 @@
     {
       "name": "Spans: accepted vs refused vs failed (per interval)",
       "x": 0,
-      "y": 16,
+      "y": 14,
       "w": 12,
       "h": 6,
       "config": {
@@ -121,7 +121,7 @@
     {
       "name": "Logs: accepted vs refused vs send-failed (per interval)",
       "x": 12,
-      "y": 16,
+      "y": 14,
       "w": 12,
       "h": 6,
       "config": {
@@ -135,8 +135,8 @@
     {
       "name": "Metric points: accepted vs refused (per interval)",
       "x": 0,
-      "y": 22,
-      "w": 12,
+      "y": 20,
+      "w": 24,
       "h": 6,
       "config": {
         "displayType": "line",
@@ -149,9 +149,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 28,
+      "y": 26,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Pipeline health\nExporter queue utilization, throughput, and collector CPU/memory. A full queue signals backpressure."
@@ -160,8 +160,8 @@
     {
       "name": "Exporter queue utilization %",
       "x": 0,
-      "y": 33,
-      "w": 6,
+      "y": 30,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -191,9 +191,9 @@
     },
     {
       "name": "Exporter queue size vs capacity",
-      "x": 6,
-      "y": 33,
-      "w": 12,
+      "x": 8,
+      "y": 30,
+      "w": 16,
       "h": 6,
       "config": {
         "displayType": "line",
@@ -223,7 +223,7 @@
     {
       "name": "Exporter sent spans (per interval)",
       "x": 0,
-      "y": 39,
+      "y": 36,
       "w": 12,
       "h": 6,
       "config": {
@@ -237,7 +237,7 @@
     {
       "name": "Collector CPU (cores)",
       "x": 12,
-      "y": 39,
+      "y": 36,
       "w": 12,
       "h": 6,
       "config": {
@@ -251,8 +251,8 @@
     {
       "name": "Collector memory (RSS / heap)",
       "x": 0,
-      "y": 45,
-      "w": 12,
+      "y": 42,
+      "w": 24,
       "h": 6,
       "config": {
         "displayType": "line",
@@ -286,9 +286,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 51,
+      "y": 48,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### ClickHouse storage & availability\nBackend database health: running/failed queries, free disk, memory, and retention."
@@ -297,7 +297,7 @@
     {
       "name": "Running queries",
       "x": 0,
-      "y": 56,
+      "y": 52,
       "w": 6,
       "h": 5,
       "config": {
@@ -311,7 +311,7 @@
     {
       "name": "Failed queries (window)",
       "x": 6,
-      "y": 56,
+      "y": 52,
       "w": 6,
       "h": 5,
       "config": {
@@ -333,7 +333,7 @@
     {
       "name": "Disk free %",
       "x": 12,
-      "y": 56,
+      "y": 52,
       "w": 6,
       "h": 5,
       "config": {
@@ -365,7 +365,7 @@
     {
       "name": "Current tracked memory",
       "x": 18,
-      "y": 56,
+      "y": 52,
       "w": 6,
       "h": 5,
       "config": {
@@ -383,8 +383,8 @@
     {
       "name": "Queries (per interval)",
       "x": 0,
-      "y": 61,
-      "w": 12,
+      "y": 57,
+      "w": 24,
       "h": 6,
       "config": {
         "displayType": "line",
@@ -397,7 +397,7 @@
     {
       "name": "Data retention & size by table (system.parts)",
       "x": 0,
-      "y": 67,
+      "y": 63,
       "w": 24,
       "h": 7,
       "config": {
@@ -411,9 +411,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 74,
+      "y": 70,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Dashboard query performance\nHow fast dashboard queries run: p95/p99 duration, failures, and top errors from the query log."
@@ -422,8 +422,8 @@
     {
       "name": "Query duration - p95 / p99",
       "x": 0,
-      "y": 79,
-      "w": 12,
+      "y": 74,
+      "w": 14,
       "h": 6,
       "config": {
         "displayType": "line",
@@ -438,9 +438,9 @@
     },
     {
       "name": "Failed queries (selected window)",
-      "x": 12,
-      "y": 79,
-      "w": 8,
+      "x": 14,
+      "y": 74,
+      "w": 10,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -461,7 +461,7 @@
     {
       "name": "Top errors (from query_log)",
       "x": 0,
-      "y": 85,
+      "y": 80,
       "w": 24,
       "h": 6,
       "config": {

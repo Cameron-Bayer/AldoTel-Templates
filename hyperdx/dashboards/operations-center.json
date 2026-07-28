@@ -28,7 +28,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 6,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "### Operations Center\nSingle-pane health for the AldoTel appliance: cluster health, resource utilization, service & platform status, and recent cluster events. Sourced from OpenTelemetry metrics, traces, and logs. Amber/red stats mean elevated errors, saturation, or unready nodes."
@@ -37,9 +37,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 6,
+      "y": 5,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Cluster health\nNode readiness, pod health, and restarts — the fastest signal that the appliance is up and serving."
@@ -48,7 +48,7 @@
     {
       "name": "Cluster health score",
       "x": 0,
-      "y": 11,
+      "y": 9,
       "w": 6,
       "h": 5,
       "config": {
@@ -76,7 +76,7 @@
     {
       "name": "Kubernetes nodes ready %",
       "x": 6,
-      "y": 11,
+      "y": 9,
       "w": 6,
       "h": 5,
       "config": {
@@ -108,7 +108,7 @@
     {
       "name": "Healthy nodes",
       "x": 12,
-      "y": 11,
+      "y": 9,
       "w": 6,
       "h": 5,
       "config": {
@@ -122,7 +122,7 @@
     {
       "name": "Unhealthy nodes (NotReady)",
       "x": 18,
-      "y": 11,
+      "y": 9,
       "w": 6,
       "h": 5,
       "config": {
@@ -150,8 +150,8 @@
     {
       "name": "Pods not Running",
       "x": 0,
-      "y": 16,
-      "w": 8,
+      "y": 14,
+      "w": 12,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -171,9 +171,9 @@
     },
     {
       "name": "Container restarts (selected range)",
-      "x": 8,
-      "y": 16,
-      "w": 8,
+      "x": 12,
+      "y": 14,
+      "w": 12,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -194,9 +194,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 21,
+      "y": 19,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Resource utilization\nCluster-wide CPU, memory, and disk usage, shown as current values and short-term trends."
@@ -205,8 +205,8 @@
     {
       "name": "Cluster CPU busy % (avg of hosts)",
       "x": 0,
-      "y": 26,
-      "w": 6,
+      "y": 23,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -236,9 +236,9 @@
     },
     {
       "name": "Cluster memory used % (avg of hosts)",
-      "x": 6,
-      "y": 26,
-      "w": 6,
+      "x": 8,
+      "y": 23,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -268,9 +268,9 @@
     },
     {
       "name": "Cluster disk used % (nodes)",
-      "x": 12,
-      "y": 26,
-      "w": 6,
+      "x": 16,
+      "y": 23,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -301,7 +301,7 @@
     {
       "name": "Cluster CPU busy % over time",
       "x": 0,
-      "y": 31,
+      "y": 28,
       "w": 12,
       "h": 6,
       "config": {
@@ -319,7 +319,7 @@
     {
       "name": "Cluster memory used % over time",
       "x": 12,
-      "y": 31,
+      "y": 28,
       "w": 12,
       "h": 6,
       "config": {
@@ -337,9 +337,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 37,
+      "y": 34,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Service & platform status\nApplication request errors, latency, and log error rate from traces and logs."
@@ -348,8 +348,8 @@
     {
       "name": "Server error rate (%)",
       "x": 0,
-      "y": 42,
-      "w": 6,
+      "y": 38,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -384,9 +384,9 @@
     },
     {
       "name": "95th-percentile server latency (p95)",
-      "x": 6,
-      "y": 42,
-      "w": 6,
+      "x": 8,
+      "y": 38,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -407,9 +407,9 @@
     },
     {
       "name": "Log error rate (%)",
-      "x": 12,
-      "y": 42,
-      "w": 6,
+      "x": 16,
+      "y": 38,
+      "w": 8,
       "h": 5,
       "config": {
         "displayType": "number",
@@ -445,7 +445,7 @@
     {
       "name": "Request & error counts over time (traces)",
       "x": 0,
-      "y": 47,
+      "y": 43,
       "w": 24,
       "h": 6,
       "config": {
@@ -471,9 +471,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 53,
+      "y": 49,
       "w": 24,
-      "h": 5,
+      "h": 4,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Recent activity (cluster events)\nRecent Kubernetes warning events — what changed or started failing lately."
@@ -482,7 +482,7 @@
     {
       "name": "Warning events (in range)",
       "x": 0,
-      "y": 58,
+      "y": 53,
       "w": 8,
       "h": 6,
       "config": {
@@ -504,7 +504,7 @@
     {
       "name": "Top event reasons",
       "x": 8,
-      "y": 58,
+      "y": 53,
       "w": 16,
       "h": 6,
       "config": {
@@ -518,7 +518,7 @@
     {
       "name": "Recent events",
       "x": 0,
-      "y": 64,
+      "y": 59,
       "w": 24,
       "h": 8,
       "config": {
