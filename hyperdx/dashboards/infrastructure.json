@@ -21,7 +21,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
         "markdown": "### Infrastructure Health\nThe physical/virtual foundation under the appliance: cluster & node health, node/host compute and memory, storage (filesystem, IOPS, latency), network (throughput, drops, errors), and capacity headroom. Compute values are absolute usage vs each node/host capacity."
@@ -30,20 +30,20 @@
     {
       "name": "",
       "x": 0,
-      "y": 4,
+      "y": 6,
       "w": 24,
-      "h": 2,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Cluster health"
+        "markdown": "#### Cluster health\nAre all nodes Ready? Healthy vs. NotReady counts and per-node status, CPU, memory, and uptime."
       }
     },
     {
       "name": "Kubernetes nodes ready %",
       "x": 0,
-      "y": 6,
+      "y": 11,
       "w": 6,
-      "h": 4,
+      "h": 5,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -73,9 +73,9 @@
     {
       "name": "Healthy nodes",
       "x": 6,
-      "y": 6,
+      "y": 11,
       "w": 6,
-      "h": 4,
+      "h": 5,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -87,9 +87,9 @@
     {
       "name": "Unhealthy nodes (NotReady)",
       "x": 12,
-      "y": 6,
+      "y": 11,
       "w": 6,
-      "h": 4,
+      "h": 5,
       "config": {
         "displayType": "number",
         "configType": "sql",
@@ -115,7 +115,7 @@
     {
       "name": "Nodes - status, CPU, memory, uptime",
       "x": 0,
-      "y": 10,
+      "y": 16,
       "w": 14,
       "h": 6,
       "config": {
@@ -129,18 +129,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 16,
+      "y": 22,
       "w": 24,
-      "h": 2,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Node health (hosts)"
+        "markdown": "#### Node health (hosts)\nPer-host CPU, load average, memory, and swap for the machines running the cluster."
       }
     },
     {
       "name": "Host CPU busy %",
       "x": 0,
-      "y": 18,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
@@ -158,7 +158,7 @@
     {
       "name": "1-minute load average (vs CPU cores)",
       "x": 12,
-      "y": 18,
+      "y": 27,
       "w": 12,
       "h": 6,
       "config": {
@@ -172,7 +172,7 @@
     {
       "name": "Host memory used %",
       "x": 0,
-      "y": 24,
+      "y": 33,
       "w": 12,
       "h": 6,
       "config": {
@@ -190,7 +190,7 @@
     {
       "name": "Host swap used %",
       "x": 12,
-      "y": 24,
+      "y": 33,
       "w": 12,
       "h": 6,
       "config": {
@@ -208,7 +208,7 @@
     {
       "name": "Hosts - CPU, memory, load",
       "x": 0,
-      "y": 30,
+      "y": 39,
       "w": 24,
       "h": 7,
       "config": {
@@ -222,18 +222,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 37,
+      "y": 46,
       "w": 24,
-      "h": 2,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Storage health"
+        "markdown": "#### Storage health\nFilesystem usage and free capacity, disk IOPS, read/write latency, and throughput per node."
       }
     },
     {
       "name": "Node filesystem usage %",
       "x": 0,
-      "y": 39,
+      "y": 51,
       "w": 24,
       "h": 6,
       "config": {
@@ -251,7 +251,7 @@
     {
       "name": "Free filesystem capacity per node (GB)",
       "x": 0,
-      "y": 45,
+      "y": 57,
       "w": 12,
       "h": 6,
       "config": {
@@ -265,7 +265,7 @@
     {
       "name": "Disk IOPS (read / write, per host)",
       "x": 12,
-      "y": 45,
+      "y": 57,
       "w": 12,
       "h": 6,
       "config": {
@@ -279,7 +279,7 @@
     {
       "name": "Disk latency (ms, per host · direction)",
       "x": 0,
-      "y": 51,
+      "y": 63,
       "w": 12,
       "h": 6,
       "config": {
@@ -293,7 +293,7 @@
     {
       "name": "Disk I/O (bytes/sec)",
       "x": 12,
-      "y": 51,
+      "y": 63,
       "w": 12,
       "h": 6,
       "config": {
@@ -310,18 +310,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 57,
+      "y": 69,
       "w": 24,
-      "h": 2,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Network health"
+        "markdown": "#### Network health\nPer-host network throughput, dropped packets, and interface errors."
       }
     },
     {
       "name": "Network I/O (bytes/sec)",
       "x": 0,
-      "y": 59,
+      "y": 74,
       "w": 12,
       "h": 6,
       "config": {
@@ -338,7 +338,7 @@
     {
       "name": "Network packets dropped / sec (per host)",
       "x": 12,
-      "y": 59,
+      "y": 74,
       "w": 12,
       "h": 6,
       "config": {
@@ -352,7 +352,7 @@
     {
       "name": "Network interface errors / sec (per host)",
       "x": 0,
-      "y": 65,
+      "y": 80,
       "w": 12,
       "h": 6,
       "config": {
@@ -366,18 +366,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 71,
+      "y": 86,
       "w": 24,
-      "h": 2,
+      "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Capacity planning"
+        "markdown": "#### Capacity planning\nRemaining headroom — how much CPU, memory, and disk is still free before saturation."
       }
     },
     {
       "name": "CPU headroom % (100 - cluster busy)",
       "x": 0,
-      "y": 73,
+      "y": 91,
       "w": 12,
       "h": 6,
       "config": {
@@ -395,7 +395,7 @@
     {
       "name": "Memory headroom % (100 - used)",
       "x": 12,
-      "y": 73,
+      "y": 91,
       "w": 12,
       "h": 6,
       "config": {
@@ -413,7 +413,7 @@
     {
       "name": "Available memory per node (GB)",
       "x": 0,
-      "y": 79,
+      "y": 97,
       "w": 12,
       "h": 6,
       "config": {
@@ -427,7 +427,7 @@
     {
       "name": "Disk free % per node over time",
       "x": 12,
-      "y": 79,
+      "y": 97,
       "w": 12,
       "h": 6,
       "config": {

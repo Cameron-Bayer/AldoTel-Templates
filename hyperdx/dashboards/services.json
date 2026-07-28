@@ -20,7 +20,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
         "markdown": "### Service request health (RED)\n**RED** summarizes each service's request **R**ate, **E**rror rate, and **D**uration (latency), from OpenTelemetry **server spans**. Filter by **Service** and adjust the time range. Watch for rising error rates, latency above your service target, and an SLO burn rate above 1."
@@ -29,9 +29,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 4,
+      "y": 6,
       "w": 24,
-      "h": 4,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Rate & errors\nServer request throughput and error percentage per service, from OpenTelemetry server spans."
@@ -40,7 +40,7 @@
     {
       "name": "Server request count over time, by service",
       "x": 0,
-      "y": 8,
+      "y": 11,
       "w": 12,
       "h": 6,
       "config": {
@@ -60,7 +60,7 @@
     {
       "name": "Error rate %",
       "x": 12,
-      "y": 8,
+      "y": 11,
       "w": 12,
       "h": 6,
       "config": {
@@ -91,9 +91,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 14,
+      "y": 17,
       "w": 24,
-      "h": 4,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Latency & error breakdown\n**p50 / p95 / p99** are latency percentiles: 50%, 95%, and 99% of requests complete within that time. A widening gap between p50 and p99 indicates worsening tail latency."
@@ -102,7 +102,7 @@
     {
       "name": "Server latency percentiles (p50 / p95 / p99)",
       "x": 0,
-      "y": 18,
+      "y": 22,
       "w": 12,
       "h": 6,
       "config": {
@@ -142,7 +142,7 @@
     {
       "name": "Errors by status message",
       "x": 12,
-      "y": 18,
+      "y": 22,
       "w": 12,
       "h": 6,
       "config": {
@@ -162,7 +162,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 24,
+      "y": 28,
       "w": 24,
       "h": 6,
       "config": {
@@ -173,7 +173,7 @@
     {
       "name": "Slowest routes (p95) - min 20 requests",
       "x": 0,
-      "y": 30,
+      "y": 34,
       "w": 24,
       "h": 6,
       "config": {
@@ -187,7 +187,7 @@
     {
       "name": "P95 latency anomaly — last 24h vs 8-day baseline (±3σ band)",
       "x": 0,
-      "y": 36,
+      "y": 40,
       "w": 24,
       "h": 7,
       "config": {
@@ -201,7 +201,7 @@
     {
       "name": "Server latency distribution (heatmap, seconds)",
       "x": 0,
-      "y": 43,
+      "y": 47,
       "w": 24,
       "h": 7,
       "config": {
@@ -226,7 +226,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 50,
+      "y": 54,
       "w": 24,
       "h": 6,
       "config": {
@@ -237,7 +237,7 @@
     {
       "name": "Availability (SLI = success rate)",
       "x": 0,
-      "y": 56,
+      "y": 60,
       "w": 12,
       "h": 4,
       "config": {
@@ -275,7 +275,7 @@
     {
       "name": "Error budget remaining (window, SLO 99.9%)",
       "x": 12,
-      "y": 56,
+      "y": 60,
       "w": 12,
       "h": 4,
       "config": {
@@ -307,7 +307,7 @@
     {
       "name": "Multi-window burn rate (SLO 99.9%)",
       "x": 0,
-      "y": 60,
+      "y": 64,
       "w": 12,
       "h": 6,
       "config": {
@@ -321,7 +321,7 @@
     {
       "name": "Availability over time (target 99.9%)",
       "x": 12,
-      "y": 60,
+      "y": 64,
       "w": 12,
       "h": 6,
       "config": {

@@ -19,6 +19,7 @@ These apply to every compatible tile on the dashboard.
 Cluster overview, per-namespace resource usage, workload health (deployments/pods/restarts/events), and utilization against limits. Filter by **Namespace**. Investigate pods stuck out of Running, rising restarts, and containers pinned near their limits.
 
 ## Cluster overview
+Node readiness and per-node CPU, memory, and filesystem usage against capacity.
 
 ### Kubernetes nodes ready % — number · Raw SQL
 
@@ -140,6 +141,7 @@ ORDER BY g.cpu DESC
 </details>
 
 ## Namespace overview
+Resource consumption broken down by namespace.
 
 ### Namespace CPU usage (cores) — line · Raw SQL
 
@@ -225,6 +227,7 @@ ORDER BY agg.cpu DESC
 </details>
 
 ## Workload health
+Deployment availability, pod phases, restarts, and the pods using the most resources.
 
 ### Deployment availability (ready / desired) — line
 
@@ -360,6 +363,7 @@ LIMIT 50
 </details>
 
 ## Cluster utilization (vs limits)
+How close pods and containers are running to their configured CPU and memory limits.
 
 ### Pod CPU vs limit % — line
 

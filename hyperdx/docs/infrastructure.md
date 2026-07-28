@@ -19,6 +19,7 @@ These apply to every compatible tile on the dashboard.
 The physical/virtual foundation under the appliance: cluster & node health, node/host compute and memory, storage (filesystem, IOPS, latency), network (throughput, drops, errors), and capacity headroom. Compute values are absolute usage vs each node/host capacity.
 
 ## Cluster health
+Are all nodes Ready? Healthy vs. NotReady counts and per-node status, CPU, memory, and uptime.
 
 ### Kubernetes nodes ready % — number · Raw SQL
 
@@ -112,6 +113,7 @@ ORDER BY g.cpu DESC
 </details>
 
 ## Node health (hosts)
+Per-host CPU, load average, memory, and swap for the machines running the cluster.
 
 ### Host CPU busy % — line · Raw SQL
 
@@ -243,6 +245,7 @@ ORDER BY c.cpu DESC
 </details>
 
 ## Storage health
+Filesystem usage and free capacity, disk IOPS, read/write latency, and throughput per node.
 
 ### Node filesystem usage % — line · Raw SQL
 
@@ -375,6 +378,7 @@ ORDER BY ts
 </details>
 
 ## Network health
+Per-host network throughput, dropped packets, and interface errors.
 
 ### Network I/O (bytes/sec) — line · Raw SQL
 
@@ -449,6 +453,7 @@ ORDER BY ts
 </details>
 
 ## Capacity planning
+Remaining headroom — how much CPU, memory, and disk is still free before saturation.
 
 ### CPU headroom % (100 - cluster busy) — line · Raw SQL
 

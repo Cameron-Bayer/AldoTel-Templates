@@ -21,6 +21,7 @@ These apply to every compatible tile on the dashboard.
 For CSS, support, and operations: recomputed alert conditions, failure tracking (crashes, exhaustion, warning events), and troubleshooting (top errors, new log patterns, error sources, live stream). Use with the Logs and Services dashboards for drill-down.
 
 ## Alert conditions (recomputed live)
+The same conditions that drive alerts, evaluated over the selected range: server/log error rates and unhealthy pods.
 
 ### Server error rate (%) — number
 
@@ -73,6 +74,7 @@ SELECT sum(d) AS "New restarts" FROM (
 </details>
 
 ## Failure tracking
+Crash loops, resource exhaustion, and warning-level Kubernetes events.
 
 ### Top pods by restarts — table · Raw SQL
 
@@ -136,6 +138,7 @@ LIMIT 50
 </details>
 
 ## Troubleshooting
+Top error signatures, newly-appearing log patterns, error sources by namespace/pod, and a live error stream. Click a row to open Logs.
 
 ### Top error signatures (normalized) - click a row to open Logs — table · Raw SQL
 

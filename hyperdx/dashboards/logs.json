@@ -27,7 +27,7 @@
       "x": 0,
       "y": 0,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
         "markdown": "### Log health & investigation\nApplication and infrastructure logs ingested into ClickStack via OpenTelemetry. Filter by **Service** or **Severity** and adjust the time range. Look for error/fatal spikes, newly appearing error signatures, and failures concentrated on specific services or pods; click any row to open the matching logs."
@@ -36,9 +36,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 4,
+      "y": 6,
       "w": 24,
-      "h": 3,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Volume & error rate"
@@ -47,7 +47,7 @@
     {
       "name": "Log volume by severity",
       "x": 0,
-      "y": 11,
+      "y": 15,
       "w": 12,
       "h": 6,
       "config": {
@@ -67,7 +67,7 @@
     {
       "name": "Error & fatal log count over time, by service",
       "x": 12,
-      "y": 11,
+      "y": 15,
       "w": 12,
       "h": 6,
       "config": {
@@ -87,7 +87,7 @@
     {
       "name": "",
       "x": 0,
-      "y": 17,
+      "y": 21,
       "w": 24,
       "h": 5,
       "config": {
@@ -98,7 +98,7 @@
     {
       "name": "Top error signatures (normalized) - click a row to open Logs",
       "x": 0,
-      "y": 22,
+      "y": 26,
       "w": 24,
       "h": 6,
       "config": {
@@ -121,7 +121,7 @@
     {
       "name": "New log patterns in last 24h (vs prior 7d) - click a row to open Logs",
       "x": 0,
-      "y": 28,
+      "y": 32,
       "w": 24,
       "h": 6,
       "config": {
@@ -144,9 +144,9 @@
     {
       "name": "",
       "x": 0,
-      "y": 34,
+      "y": 38,
       "w": 24,
-      "h": 4,
+      "h": 5,
       "config": {
         "displayType": "markdown",
         "markdown": "#### Live stream\nMost recent error/fatal logs. The Namespace and Pod columns are populated only for Kubernetes workloads and may be blank for other log sources."
@@ -155,7 +155,7 @@
     {
       "name": "Live error stream - click a row for full log detail",
       "x": 0,
-      "y": 38,
+      "y": 43,
       "w": 24,
       "h": 7,
       "config": {
@@ -169,7 +169,7 @@
     {
       "name": "Top Kubernetes error sources (namespace / pod) - click a row to open Logs",
       "x": 0,
-      "y": 45,
+      "y": 50,
       "w": 24,
       "h": 6,
       "config": {
@@ -224,7 +224,7 @@
           }
         ]
       },
-      "y": 7
+      "y": 11
     },
     {
       "name": "Total logs (selected range)",
@@ -242,7 +242,7 @@
           }
         ]
       },
-      "y": 7
+      "y": 11
     },
     {
       "name": "Error + fatal logs (selected range)",
@@ -269,7 +269,7 @@
           }
         ]
       },
-      "y": 7
+      "y": 11
     }
   ]
 }

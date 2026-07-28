@@ -20,6 +20,7 @@ These apply to every compatible tile on the dashboard.
 Single-pane health for the AldoTel appliance: cluster health, resource utilization, service & platform status, and recent cluster events. Sourced from OpenTelemetry metrics, traces, and logs. Amber/red stats mean elevated errors, saturation, or unready nodes.
 
 ## Cluster health
+Node readiness, pod health, and restarts — the fastest signal that the appliance is up and serving.
 
 ### Cluster health score — number · Raw SQL
 
@@ -143,6 +144,7 @@ SELECT sum(d) AS "New restarts" FROM (
 </details>
 
 ## Resource utilization
+Cluster-wide CPU, memory, and disk usage, shown as current values and short-term trends.
 
 ### Cluster CPU busy % (avg of hosts) — number · Raw SQL
 
@@ -240,6 +242,7 @@ GROUP BY ts ORDER BY ts
 </details>
 
 ## Service & platform status
+Application request errors, latency, and log error rate from traces and logs.
 
 ### Server error rate (%) — number
 
@@ -266,6 +269,7 @@ GROUP BY ts ORDER BY ts
 - **Columns used:** `StatusCode`, `SpanKind`
 
 ## Recent activity (cluster events)
+Recent Kubernetes warning events — what changed or started failing lately.
 
 ### Warning events (in range) — number · Raw SQL
 

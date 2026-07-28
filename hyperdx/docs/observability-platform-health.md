@@ -19,6 +19,7 @@ These apply to every compatible tile on the dashboard.
 Health of the telemetry pipeline itself: OpenTelemetry collector ingestion & queues, and ClickHouse storage / query performance. **Advanced tier** — needs the metrics-scraper add-on (collector self-metrics + ClickHouse metrics). Empty here means that optional scraping is not enabled.
 
 ## Telemetry ingestion
+Accepted vs. refused spans, logs, and metric points at the collector. Refusals mean data is being dropped.
 
 ### Refused spans (window) — number · Raw SQL
 
@@ -159,6 +160,7 @@ ORDER BY ts
 </details>
 
 ## Pipeline health
+Exporter queue utilization, throughput, and collector CPU/memory. A full queue signals backpressure.
 
 ### Exporter queue utilization % — number · Raw SQL
 
@@ -248,6 +250,7 @@ ORDER BY ts
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
 ## ClickHouse storage & availability
+Backend database health: running/failed queries, free disk, memory, and retention.
 
 ### Running queries — number · Raw SQL
 
@@ -366,6 +369,7 @@ ORDER BY sum(bytes_on_disk) DESC
 </details>
 
 ## Dashboard query performance
+How fast dashboard queries run: p95/p99 duration, failures, and top errors from the query log.
 
 ### Query duration - p95 / p99 — line · Raw SQL
 
