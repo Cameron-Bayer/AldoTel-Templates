@@ -1,0 +1,446 @@
+{
+  "name": "ClickStack - Infrastructure",
+  "tags": [
+    "clickstack-templates",
+    "infrastructure",
+    "tmpl:infrastructure"
+  ],
+  "filters": [
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Host",
+      "expression": "ResourceAttributes['host.name']",
+      "sourceId": "{{METRICS_SOURCE_ID}}",
+      "sourceMetricType": "gauge",
+      "whereLanguage": "sql"
+    }
+  ],
+  "tiles": [
+    {
+      "name": "",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 4,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Infrastructure Health\nThe physical/virtual foundation under the appliance: cluster & node health, node/host compute and memory, storage (filesystem, IOPS, latency), network (throughput, drops, errors), and capacity headroom. Compute values are absolute usage vs each node/host capacity."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 4,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Cluster health"
+      }
+    },
+    {
+      "name": "Kubernetes nodes ready %",
+      "x": 0,
+      "y": 6,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT if(total = 0, 0, ready / total) AS \"Nodes ready\" FROM (\n  SELECT countIf(ready = 1) AS ready, count() AS total FROM (\n    SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'k8s.node.condition_ready'\n    GROUP BY node\n  )\n)",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 0
+        },
+        "colorRules": [
+          {
+            "operator": "lt",
+            "value": 1,
+            "color": "chart-warning",
+            "label": "Node(s) not ready"
+          },
+          {
+            "operator": "lt",
+            "value": 0.8,
+            "color": "chart-error",
+            "label": "Multiple nodes down"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Healthy nodes",
+      "x": 6,
+      "y": 6,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT countIf(ready = 1) AS \"Healthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)"
+      }
+    },
+    {
+      "name": "Unhealthy nodes (NotReady)",
+      "x": 12,
+      "y": 6,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT countIf(ready != 1) AS \"Unhealthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-warning",
+            "label": "Elevated"
+          },
+          {
+            "operator": "gt",
+            "value": 1,
+            "color": "chart-error",
+            "label": "High"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Nodes - status, CPU, memory, uptime",
+      "x": 0,
+      "y": 10,
+      "w": 14,
+      "h": 6,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH g AS (\n  SELECT ResourceAttributes['k8s.node.name'] AS node,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.condition_ready') AS ready,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.cpu.usage') AS cpu,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') AS mem\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR\n    AND MetricName IN ('k8s.node.condition_ready', 'k8s.node.cpu.usage', 'k8s.node.memory.usage')\n  GROUP BY node\n),\ns AS (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS uptime\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.uptime'\n  GROUP BY node\n)\nSELECT g.node AS Node,\n  if(g.ready = 1, 'Ready', 'Not Ready') AS Status,\n  round(g.cpu, 2) AS \"CPU (cores)\",\n  formatReadableSize(g.mem) AS Memory,\n  formatReadableTimeDelta(toUInt64(s.uptime)) AS Uptime\nFROM g LEFT JOIN s USING (node)\nORDER BY g.cpu DESC"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 16,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Node health (hosts)"
+      }
+    },
+    {
+      "name": "Host CPU busy %",
+      "x": 0,
+      "y": 18,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        },
+        "sqlTemplate": "SELECT ts, host, avg(cpu_busy) AS \"CPU busy\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['cpu'] AS cpu,\n         TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS cpu_busy\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.utilization' AND $__filters\n  GROUP BY ts, host, cpu, TimeUnix\n)\nGROUP BY ts, host\nORDER BY ts"
+      }
+    },
+    {
+      "name": "1-minute load average (vs CPU cores)",
+      "x": 12,
+      "y": 18,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avg(Value) AS \"Load (1m)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.load_average.1m' AND $__filters\nGROUP BY ts, host\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Host memory used %",
+      "x": 0,
+      "y": 24,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        },
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avgIf(Value, Attributes['state'] = 'used') AS \"Memory used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.utilization' AND $__filters\nGROUP BY ts, host\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Host swap used %",
+      "x": 12,
+      "y": 24,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        },
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avgIf(Value, Attributes['state'] = 'used') AS \"Swap used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.swap.utilization' AND $__filters\nGROUP BY ts, host\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Hosts - CPU, memory, load",
+      "x": 0,
+      "y": 30,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH c AS (\n  SELECT host, avg(b) AS cpu FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n           sumIf(Value, Attributes['state'] != 'idle') AS b\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'system.cpu.utilization' AND $__filters\n    GROUP BY host, cpu, TimeUnix\n  ) GROUP BY host\n),\nm AS (\n  SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS mem\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.utilization' AND $__filters\n  GROUP BY host\n),\nl AS (\n  SELECT ResourceAttributes['host.name'] AS host, avg(Value) AS load1\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.load_average.1m' AND $__filters\n  GROUP BY host\n)\nSELECT c.host AS Host,\n  concat(toString(round(c.cpu * 100, 1)), '%') AS \"CPU busy\",\n  concat(toString(round(m.mem * 100, 1)), '%') AS \"Mem used\",\n  round(l.load1, 2) AS \"Load (1m)\"\nFROM c LEFT JOIN m USING (host) LEFT JOIN l USING (host)\nORDER BY c.cpu DESC"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 37,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Storage health"
+      }
+    },
+    {
+      "name": "Node filesystem usage %",
+      "x": 0,
+      "y": 39,
+      "w": 24,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 3
+        },
+        "sqlTemplate": "SELECT ts, node, usage / capacity AS \"Filesystem\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n    ResourceAttributes['k8s.node.name'] AS node,\n    avgIf(Value, MetricName = 'k8s.node.filesystem.usage') AS usage,\n    avgIf(Value, MetricName = 'k8s.node.filesystem.capacity') AS capacity\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName IN ('k8s.node.filesystem.usage', 'k8s.node.filesystem.capacity')\n  GROUP BY ts, node\n) WHERE capacity > 0 ORDER BY ts"
+      }
+    },
+    {
+      "name": "Free filesystem capacity per node (GB)",
+      "x": 0,
+      "y": 45,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH u AS (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS used\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.usage' GROUP BY ts, node\n),\nc AS (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cap\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.capacity' GROUP BY ts, node\n)\nSELECT u.ts AS ts, u.node AS node, greatest(c.cap - u.used, 0) / 1e9 AS \"Free (GB)\"\nFROM u JOIN c ON u.ts = c.ts AND u.node = c.node ORDER BY ts"
+      }
+    },
+    {
+      "name": "Disk IOPS (read / write, per host)",
+      "x": 12,
+      "y": 45,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"IOPS\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.disk.operations' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Disk latency (ms, per host · direction)",
+      "x": 0,
+      "y": 51,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH t AS (\n  SELECT ts, host, direction, sum(d) AS tsec FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,\n           greatest(Value - lagInFrame(Value, 1, Value) OVER (\n             PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.disk.operation_time' AND $__filters\n  ) GROUP BY ts, host, direction\n),\no AS (\n  SELECT ts, host, direction, sum(d) AS ops FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,\n           greatest(Value - lagInFrame(Value, 1, Value) OVER (\n             PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.disk.operations' AND $__filters\n  ) GROUP BY ts, host, direction\n)\nSELECT t.ts AS ts, concat(t.host, ' · ', t.direction) AS series,\n       if(o.ops = 0, 0, t.tsec / o.ops * 1000) AS \"Latency (ms)\"\nFROM t JOIN o ON t.ts = o.ts AND t.host = o.host AND t.direction = o.direction\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Disk I/O (bytes/sec)",
+      "x": 12,
+      "y": 51,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "byte"
+        },
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Bytes/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.disk.io' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 57,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Network health"
+      }
+    },
+    {
+      "name": "Network I/O (bytes/sec)",
+      "x": 0,
+      "y": 59,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "byte"
+        },
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Bytes/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.io' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Network packets dropped / sec (per host)",
+      "x": 12,
+      "y": 59,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Dropped/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.dropped' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Network interface errors / sec (per host)",
+      "x": 0,
+      "y": 65,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Errors/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.errors' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 71,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Capacity planning"
+      }
+    },
+    {
+      "name": "CPU headroom % (100 - cluster busy)",
+      "x": 0,
+      "y": 73,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, 1 - avg(b) AS \"CPU headroom\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS b\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters\n  GROUP BY ts, host, cpu, TimeUnix\n) GROUP BY ts ORDER BY ts",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        }
+      }
+    },
+    {
+      "name": "Memory headroom % (100 - used)",
+      "x": 12,
+      "y": 73,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, 1 - avgIf(Value, Attributes['state'] = 'used') AS \"Memory headroom\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters\nGROUP BY ts ORDER BY ts",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        }
+      }
+    },
+    {
+      "name": "Available memory per node (GB)",
+      "x": 0,
+      "y": 79,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['k8s.node.name'] AS node,\n       avg(Value) / 1e9 AS \"Available (GB)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.memory.available'\nGROUP BY ts, node ORDER BY ts"
+      }
+    },
+    {
+      "name": "Disk free % per node over time",
+      "x": 12,
+      "y": 79,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH u AS (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS used\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.usage' GROUP BY ts, node\n),\nc AS (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cap\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.capacity' GROUP BY ts, node\n)\nSELECT u.ts AS ts, u.node AS node, if(c.cap = 0, 0, 1 - u.used / c.cap) AS \"Disk free\"\nFROM u JOIN c ON u.ts = c.ts AND u.node = c.node ORDER BY ts",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 0
+        }
+      }
+    }
+  ]
+}

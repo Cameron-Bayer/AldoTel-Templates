@@ -1,17 +1,11 @@
-# ClickStack - Logs - Overview
+# ClickStack - Logs
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
-- **Template:** `dashboards/logs-overview.json` · tag `tmpl:logs-overview`
+- **Template:** `dashboards/logs.json` · tag `tmpl:logs`
 - **Data required:** Application/container logs (filelog or OTLP)
-
-## Preview
-
-![ClickStack - Logs - Overview](images/logs-overview.png)
-
-_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
 ## Dashboard filters
 

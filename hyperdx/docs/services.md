@@ -1,17 +1,11 @@
-# ClickStack - Services - RED (Rate / Errors / Duration)
+# ClickStack - Services (RED)
 
 > This page lists the ClickHouse tables and columns behind every visual on the dashboard.
 
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
-- **Template:** `dashboards/services-red.json` · tag `tmpl:services-red`
+- **Template:** `dashboards/services.json` · tag `tmpl:services`
 - **Data required:** Application traces (OTLP)
-
-## Preview
-
-![ClickStack - Services - RED (Rate / Errors / Duration)](images/services-red.png)
-
-_Live capture from a ClickStack install with the OpenTelemetry demo flowing._
 
 ## Dashboard filters
 

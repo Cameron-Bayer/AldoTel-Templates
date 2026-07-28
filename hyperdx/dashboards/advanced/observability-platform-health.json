@@ -1,0 +1,476 @@
+{
+  "name": "ClickStack - Observability Platform Health",
+  "tags": [
+    "clickstack-templates",
+    "advanced",
+    "tmpl:observability-platform"
+  ],
+  "filters": [
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Collector",
+      "expression": "ResourceAttributes['service.instance.id']",
+      "sourceId": "{{METRICS_SOURCE_ID}}",
+      "sourceMetricType": "gauge",
+      "whereLanguage": "sql"
+    }
+  ],
+  "tiles": [
+    {
+      "name": "",
+      "x": 0,
+      "y": 0,
+      "w": 24,
+      "h": 4,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "### Observability Platform Health\nHealth of the telemetry pipeline itself: OpenTelemetry collector ingestion & queues, and ClickHouse storage / query performance. **Advanced tier** — needs the metrics-scraper add-on (collector self-metrics + ClickHouse metrics). Empty here means that optional scraping is not enabled."
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 4,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Telemetry ingestion"
+      }
+    },
+    {
+      "name": "Refused spans (window)",
+      "x": 0,
+      "y": 6,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(d) AS \"Refused spans\" FROM (\n  SELECT max(Value) - min(Value) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'otelcol_receiver_refused_spans_total' AND $__filters\n  GROUP BY ResourceAttributes['service.instance.id']\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-error",
+            "label": "Dropping data"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Refused log records (window)",
+      "x": 6,
+      "y": 6,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(d) AS \"Refused logs\" FROM (\n  SELECT max(Value) - min(Value) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'otelcol_receiver_refused_log_records_total' AND $__filters\n  GROUP BY ResourceAttributes['service.instance.id']\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-error",
+            "label": "Dropping data"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Refused metric points (window)",
+      "x": 12,
+      "y": 6,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(d) AS \"Refused metrics\" FROM (\n  SELECT max(Value) - min(Value) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'otelcol_receiver_refused_metric_points_total' AND $__filters\n  GROUP BY ResourceAttributes['service.instance.id']\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-error",
+            "label": "Dropping data"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Spans: accepted vs refused vs failed (per interval)",
+      "x": 0,
+      "y": 10,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (\n  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           multiIf(MetricName = 'otelcol_receiver_accepted_spans_total', 'accepted', MetricName = 'otelcol_receiver_refused_spans_total', 'refused', 'failed') AS kind,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName IN ('otelcol_receiver_accepted_spans_total', 'otelcol_receiver_refused_spans_total', 'otelcol_receiver_failed_spans_total') AND $__filters\n    GROUP BY ts, inst, kind\n  )\n)\nGROUP BY ts, kind\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Logs: accepted vs refused vs send-failed (per interval)",
+      "x": 12,
+      "y": 10,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (\n  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           multiIf(MetricName = 'otelcol_receiver_accepted_log_records_total', 'accepted', MetricName = 'otelcol_receiver_refused_log_records_total', 'refused', 'send-failed') AS kind,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName IN ('otelcol_receiver_accepted_log_records_total', 'otelcol_receiver_refused_log_records_total', 'otelcol_exporter_send_failed_log_records_total') AND $__filters\n    GROUP BY ts, inst, kind\n  )\n)\nGROUP BY ts, kind\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Metric points: accepted vs refused (per interval)",
+      "x": 0,
+      "y": 16,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (\n  SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           if(MetricName = 'otelcol_receiver_accepted_metric_points_total', 'accepted', 'refused') AS kind,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName IN ('otelcol_receiver_accepted_metric_points_total', 'otelcol_receiver_refused_metric_points_total') AND $__filters\n    GROUP BY ts, inst, kind\n  )\n)\nGROUP BY ts, kind\nORDER BY ts"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 22,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Pipeline health"
+      }
+    },
+    {
+      "name": "Exporter queue utilization %",
+      "x": 0,
+      "y": 24,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 2
+        },
+        "sqlTemplate": "SELECT max(util) AS \"Queue utilization\" FROM (\n  SELECT ResourceAttributes['service.instance.id'] AS inst,\n         argMaxIf(Value, TimeUnix, MetricName = 'otelcol_exporter_queue_size') /\n         nullIf(argMaxIf(Value, TimeUnix, MetricName = 'otelcol_exporter_queue_capacity'), 0) AS util\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName IN ('otelcol_exporter_queue_size', 'otelcol_exporter_queue_capacity') AND $__filters\n  GROUP BY inst\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0.5,
+            "color": "chart-warning",
+            "label": "Queue building"
+          },
+          {
+            "operator": "gt",
+            "value": 0.8,
+            "color": "chart-error",
+            "label": "Near capacity"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Exporter queue size vs capacity",
+      "x": 6,
+      "y": 24,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "select": [
+          {
+            "aggFn": "max",
+            "valueExpression": "Value",
+            "alias": "queue size",
+            "metricName": "otelcol_exporter_queue_size",
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
+          },
+          {
+            "aggFn": "max",
+            "valueExpression": "Value",
+            "alias": "capacity",
+            "metricName": "otelcol_exporter_queue_capacity",
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Exporter sent spans (per interval)",
+      "x": 0,
+      "y": 30,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) AS \"sent spans\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'otelcol_exporter_sent_spans_total' AND $__filters\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Collector CPU (cores)",
+      "x": 12,
+      "y": 30,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) / {intervalSeconds:Int64} AS \"cores\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'otelcol_process_cpu_seconds_total' AND $__filters\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Collector memory (RSS / heap)",
+      "x": 0,
+      "y": 36,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "byte",
+          "numericUnit": "bytes_iec"
+        },
+        "select": [
+          {
+            "aggFn": "max",
+            "valueExpression": "Value",
+            "alias": "rss",
+            "metricName": "otelcol_process_memory_rss_bytes",
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
+          },
+          {
+            "aggFn": "max",
+            "valueExpression": "Value",
+            "alias": "heap alloc",
+            "metricName": "otelcol_process_runtime_heap_alloc_bytes",
+            "metricType": "gauge",
+            "where": "",
+            "whereLanguage": "sql"
+          }
+        ]
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 42,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### ClickHouse storage & availability"
+      }
+    },
+    {
+      "name": "Running queries",
+      "x": 0,
+      "y": 44,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(v) AS \"Running queries\" FROM (\n  SELECT argMax(Value, TimeUnix) AS v\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseMetrics_Query'\n  GROUP BY ResourceAttributes['service.instance.id']\n)"
+      }
+    },
+    {
+      "name": "Failed queries (window)",
+      "x": 6,
+      "y": 44,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(d) AS \"Failed queries\" FROM (\n  SELECT max(Value) - min(Value) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseProfileEvents_FailedQuery'\n  GROUP BY ResourceAttributes['service.instance.id']\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-warning",
+            "label": "Failures"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Disk free %",
+      "x": 12,
+      "y": 44,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 1
+        },
+        "sqlTemplate": "SELECT min(free_space / total_space) AS \"Disk free\" FROM system.disks WHERE total_space > 0",
+        "colorRules": [
+          {
+            "operator": "lt",
+            "value": 0.15,
+            "color": "chart-warning",
+            "label": "Low"
+          },
+          {
+            "operator": "lt",
+            "value": 0.05,
+            "color": "chart-error",
+            "label": "Critical"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Current tracked memory",
+      "x": 18,
+      "y": 44,
+      "w": 6,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "byte",
+          "numericUnit": "bytes_iec"
+        },
+        "sqlTemplate": "SELECT sum(v) AS \"Memory tracked\" FROM (\n  SELECT argMax(Value, TimeUnix) AS v\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseMetrics_MemoryTracking'\n  GROUP BY ResourceAttributes['service.instance.id']\n)"
+      }
+    },
+    {
+      "name": "Queries (per interval)",
+      "x": 0,
+      "y": 48,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ts, sum(greatest(cum - prev, 0)) AS \"queries\" FROM (\n  SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev\n  FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n           ResourceAttributes['service.instance.id'] AS inst,\n           max(Value) AS cum\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'ClickHouseProfileEvents_Query'\n    GROUP BY ts, inst\n  )\n)\nGROUP BY ts\nORDER BY ts"
+      }
+    },
+    {
+      "name": "Data retention & size by table (system.parts)",
+      "x": 0,
+      "y": 54,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT table AS \"Table\",\n       formatReadableSize(sum(bytes_on_disk)) AS \"Disk\",\n       sum(rows) AS \"Rows\",\n       toString(min(min_time)) AS \"Oldest data\",\n       toString(max(max_time)) AS \"Newest data\",\n       dateDiff('day', min(min_time), max(max_time)) AS \"Retention span (days)\"\nFROM system.parts\nWHERE active AND database = '{{METRICS_SCHEMA}}' AND table LIKE 'otel_%'\nGROUP BY table\nORDER BY sum(bytes_on_disk) DESC"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 61,
+      "w": 24,
+      "h": 2,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Dashboard query performance"
+      }
+    },
+    {
+      "name": "Query duration - p95 / p99",
+      "x": 0,
+      "y": 63,
+      "w": 12,
+      "h": 6,
+      "config": {
+        "displayType": "line",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "numberFormat": {
+          "output": "duration"
+        },
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,\n       quantile(0.95)(query_duration_ms) / 1000 AS p95,\n       quantile(0.99)(query_duration_ms) / 1000 AS p99\nFROM system.query_log\nWHERE type = 'QueryFinish'\n  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\nGROUP BY t\nORDER BY t"
+      }
+    },
+    {
+      "name": "Failed queries (selected window)",
+      "x": 12,
+      "y": 63,
+      "w": 8,
+      "h": 4,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT sum(d) AS \"Failed queries\" FROM (\n  SELECT greatest(max(Value) - min(Value), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'ClickHouseProfileEvents_FailedQuery'\n  GROUP BY ResourceAttributes['service.instance.id']\n)",
+        "colorRules": [
+          {
+            "operator": "gt",
+            "value": 0,
+            "color": "chart-warning",
+            "label": "Failures present"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Top errors (from query_log)",
+      "x": 0,
+      "y": 69,
+      "w": 24,
+      "h": 6,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT exception_code,\n       count() AS errors,\n       substring(argMax(exception, event_time), 1, 500) AS sample_exception\nFROM system.query_log\nWHERE type >= 2\n  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n  AND exception_code != 0\nGROUP BY exception_code\nORDER BY errors DESC\nLIMIT 20"
+      }
+    }
+  ]
+}
