@@ -19,7 +19,7 @@ dashboards, and alerts all come back automatically on every restart.
 |-----------|-------------------|-------|
 | `clickstack-ch` ClickHouse data source | `clickstack-grafana-datasources` | From [`datasource-clickstack-ch.yaml`](datasource-clickstack-ch.yaml). Defaults to the **native-secure** port `9440` with CA verification (matches a TLS-hardened ClickStack); pass `-Insecure`/`--insecure` for a plaintext ClickStack. The alert rules reference this fixed UID. |
 | 5 default dashboards (`../dashboards/*.json`) | `clickstack-grafana-dashboards` | Each dashboard's datasource variable (`clickhouseDatasource`) is pinned to `clickstack-ch` so panels resolve with no prompt. Pass `-Advanced`/`--advanced` to also install `../dashboards/advanced/` (needs an optional data source). |
-| 8 alert rules + contact point + policy (`../alerting/*.yaml`) | `clickstack-grafana-alerting` | Also ensures the Grafana Deployment mounts it at `/etc/grafana/provisioning/alerting`. |
+| 15 alert rules + contact point + policy (`../alerting/*.yaml`) | `clickstack-grafana-alerting` | Also ensures the Grafana Deployment mounts it at `/etc/grafana/provisioning/alerting`. |
 
 ## Prerequisites
 
@@ -34,17 +34,50 @@ dashboards, and alerts all come back automatically on every restart.
   already mounts into the Grafana pod. On a plaintext (non-TLS) ClickStack, pass
   `-Insecure`/`--insecure`, which strips TLS and defaults the port to `9000`.
 
-## Wire up notifications (do this first)
+## Wire up notifications
 
-The shipped `../alerting/contact-points.yaml` has a **placeholder webhook URL** — rules
-evaluate and fire, but nothing is delivered until you set a real one. Edit it **before**
-you run the installer so Grafana only restarts once:
+**The installer asks you.** On an interactive run it prompts for a destination before it
+touches the cluster, validates what you enter, and writes the contact point for you — so
+there is nothing to edit by hand:
 
-1. Edit the `url` in [`../alerting/contact-points.yaml`](../alerting/contact-points.yaml)
-   (Slack/Teams/PagerDuty/Discord/any HTTP endpoint).
-2. Then run the installer (below) — it applies the alerting ConfigMap and restarts Grafana.
+```
+  Where should alerts be sent?
+    1) Microsoft Teams  (Power Automate Workflows URL)
+    2) Slack            (incoming webhook)
+    3) Email
+    4) PagerDuty        (Events v2 integration key)
+    5) Generic webhook  (any endpoint that accepts a POST)
+    6) Leave contact-points.yaml as-is
+```
 
-(Not deploying alerts? Skip this and pass `-SkipAlerts` / `--skip-alerts`.)
+It then offers to point the Key Vault appliance rule at your actual pod name. The default
+(`moc-kms`) already matches an Azure Local appliance, so press Enter to keep it.
+
+To script it instead, pass the answers as flags and no prompt appears:
+
+```powershell
+./install-k8s.ps1 -AlertDestination Teams -AlertUrl 'https://prod-NN.LOCATION.logic.azure.com:443/workflows/...'
+./install-k8s.ps1 -AlertDestination Email -AlertEmail 'ops@contoso.com,oncall@contoso.com'
+```
+```bash
+./install-k8s.sh --alert-destination slack --alert-url 'https://hooks.slack.com/services/...'
+./install-k8s.sh --non-interactive          # never prompt; ship contact-points.yaml as-is
+```
+
+Notes:
+
+- **Teams needs a Power Automate Workflows URL**, not a legacy Office 365 connector.
+  Right-click the channel → **Workflows** → *"Post to a channel when a webhook request is
+  received"*. Microsoft blocked new O365 connectors in 2024 and retires existing ones in
+  2026; the installer rejects `outlook.office.com` URLs for that reason.
+- Answers are written to **temporary copies** — the files in `../alerting/` are never
+  modified, so the repo stays clean and re-runnable.
+- ⚠️ The webhook URL / PagerDuty key is stored in the **ConfigMap, not a Secret**. Anyone
+  with read access to the namespace can read it. Treat the URL as a shared secret.
+- Prompts are skipped automatically when stdin isn't a TTY (CI), leaving the shipped
+  placeholder in place. Rules still evaluate and fire — they just don't deliver anywhere.
+
+(Not deploying alerts? Pass `-SkipAlerts` / `--skip-alerts`.)
 
 ## Usage
 
@@ -97,6 +130,12 @@ flags are shown; the bash equivalents are the lowercase `--kebab-case` forms
 | `-ReuseDatasource` | auto | Skip provisioning a data source; bind dashboards + alert rules to the existing `-DatasourceUid`. **Auto-enabled** when the datasources ConfigMap is absent (the appliance) — see [Observability Appliance](#observability-appliance) below. |
 | `-Advanced` | off | Also provision `../dashboards/advanced/` (deep dives needing an optional data source). |
 | `-SkipAlerts` | off | Install data source + dashboards only. |
+| `-AlertDestination` | prompt | `Teams`\|`Slack`\|`Email`\|`PagerDuty`\|`Webhook`\|`Keep`. Skips the prompt and writes the contact point for you. |
+| `-AlertUrl` | — | Webhook / Workflows URL for `Teams`, `Slack` or `Webhook`. Validated before anything is applied. |
+| `-AlertEmail` | — | Comma-separated address(es) for `-AlertDestination Email`. |
+| `-PagerDutyKey` | — | PagerDuty Events v2 integration key. |
+| `-KeyVaultWorkload` | `moc-kms` | Pod-name substring the Key Vault appliance rule matches on. |
+| `-NonInteractive` | off | Never prompt; leave `contact-points.yaml` exactly as shipped. |
 | `-NoRestart` | off | Patch the ConfigMaps but don't roll Grafana (do it yourself later). |
 
 The script restarts Grafana at the end so provisioning re-runs. It is **idempotent** — re-run

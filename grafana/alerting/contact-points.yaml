@@ -27,7 +27,39 @@ contactPoints:
         settings:
           url: https://REPLACE-WITH-YOUR-WEBHOOK-URL
 
-  # --- Alternative examples (optional) ------------------------------------
+  # --- MICROSOFT TEAMS ----------------------------------------------------
+  # To send to Teams, DELETE the `webhook` receiver above and uncomment this
+  # one. Keep the name "ClickStack Alerts" so notification-policy.yaml keeps
+  # routing to it without any other change.
+  #
+  # Getting the URL (Teams desktop/web):
+  #   1. Right-click the target channel -> Workflows.
+  #   2. Pick the template "Post to a channel when a webhook request is
+  #      received", click Next, confirm the Team + Channel, click Add workflow.
+  #   3. Copy the generated URL. It looks like:
+  #        https://prod-NN.westus.logic.azure.com:443/workflows/.../triggers/manual/paths/invoke?...&sig=...
+  #
+  # IMPORTANT: do NOT use a classic "Incoming Webhook" connector URL
+  # (outlook.office.com/webhook/...). Microsoft is retiring Office 365
+  # connectors — creation is already blocked and existing ones stop working in
+  # 2026. Power Automate Workflows is the supported replacement.
+  #
+  # The `teams` type below posts an Adaptive Card. The URL is a secret (the
+  # `sig=` query param authorizes the caller) — treat this file accordingly.
+  #
+  # - orgId: 1
+  #   name: ClickStack Alerts
+  #   receivers:
+  #     - uid: clickstack-teams
+  #       type: teams
+  #       disableResolveMessage: false
+  #       settings:
+  #         url: https://prod-NN.LOCATION.logic.azure.com:443/workflows/REPLACE-ME
+  #         title: '{{ template "default.title" . }}'
+  #         sectiontitle: ''
+  #         message: '{{ template "default.message" . }}'
+
+  # --- Other alternatives (optional) --------------------------------------
   # - orgId: 1
   #   name: ClickStack Email
   #   receivers:
