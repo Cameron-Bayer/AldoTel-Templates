@@ -1,0 +1,477 @@
+# ClickStack Grafana alerts — Azure Local appliance rules
+# ============================================================================
+# Seven rules covering the appliance-health signals that are answerable from
+# the telemetry the appliance ALREADY collects today (hostmetrics, kubeletstats,
+# k8s_cluster, k8sobjects events, container logs). They sit alongside the
+# service/K8s/log rules in alert-rules.yaml — same folder, same contact point,
+# same A/B/C rule shape.
+#
+# Every rule here has been checked against the metric inventory an appliance
+# actually emits. Rules that could not be satisfied by any collected signal are
+# deliberately absent rather than shipped in a permanent No Data state — see
+# README.md, "Signals we deliberately do not alert on", for the list and why.
+#
+# ----------------------------------------------------------------------------
+# SCOPE — what these rules can and cannot see
+# ----------------------------------------------------------------------------
+# The observability stack runs INSIDE the appliance VM, so every rule here is
+# scoped to the appliance itself. Signals that originate on the Azure Local
+# HOSTS (node down, S2D/storage pool, physical disk, NIC, cluster quorum, time
+# sync, host-OS logins) are NOT covered — those need an OTel emitter running on
+# each node, enrolled via enroll-emitter.ps1 in the appliance repo.
+#
+# Corollary: "appliance VM down" can never be raised from here. A stack running
+# inside the VM cannot report that the VM stopped. That alert must come from the
+# host cluster or an external watchdog.
+#
+# ----------------------------------------------------------------------------
+# DATASOURCE UID / DATABASE
+# ----------------------------------------------------------------------------
+# Same conventions as alert-rules.yaml: queries reference datasourceUid
+# clickstack-ch and the default database. The Kubernetes installer rewrites the
+# uid automatically; find/replace both only if you import these by hand.
+#
+# ----------------------------------------------------------------------------
+# ONE RULE NEEDS A WORKLOAD NAME BEFORE IT WILL MATCH ANYTHING
+# ----------------------------------------------------------------------------
+# "Key Vault service unavailable" identifies its workload by a pod-name
+# substring, defaulting to 'moc-kms' — the pods that serve the Key Vault / KMS
+# role on an Azure Local appliance. Grep the marker  EDIT-ME-WORKLOAD  below and
+# set it to match your actual pod names, or the rule will simply never fire.
+apiVersion: 1
+
+groups:
+  # ==========================================================================
+  # Appliance capacity (hostmetrics -> otel_metrics_sum / otel_metrics_gauge)
+  # ==========================================================================
+  - orgId: 1
+    name: ClickStack Appliance Capacity
+    folder: ClickStack Alerts
+    interval: 1m
+    rules:
+      # --- 1. Appliance volume critically low (<5% free) -------------------
+      # Mirrors the "Lowest volume free %" panel on the Infrastructure
+      # dashboard. Evaluated per (host, mountpoint) from system.filesystem.usage
+      # so a single full data disk is never averaged away by healthy volumes on
+      # the same host.
+      - uid: aldotel-appliance-volume-critical
+        title: Appliance volume critically low
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: Appliance volume {{ $labels.volume }} is critically low
+          description: >-
+            {{ $labels.volume }} has {{ printf "%.1f" $values.B.Value }}% free
+            space (critical below 5%). Expand the volume or clean up logs and
+            container images now — below ~5% the kubelet evicts pods and image
+            pulls start failing.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT volume,
+                       100 * avail / nullIf(cap, 0) AS value
+                FROM (
+                  SELECT volume,
+                         sumIf(v, st = 'free') AS avail,
+                         sum(v) AS cap
+                  FROM (
+                    SELECT concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+                           Attributes['state'] AS st,
+                           argMax(Value, TimeUnix) AS v
+                    FROM default.otel_metrics_sum
+                    WHERE MetricName = 'system.filesystem.usage'
+                      AND $__timeFilter(TimeUnix)
+                    GROUP BY volume, st
+                  )
+                  GROUP BY volume
+                )
+                WHERE cap > 0
+                ORDER BY value ASC
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [5] }
+
+      # --- 2. Appliance volume low (<15% free) -----------------------------
+      - uid: aldotel-appliance-volume-low
+        title: Appliance volume low
+        condition: C
+        for: 15m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: Appliance volume {{ $labels.volume }} is running low
+          description: >-
+            {{ $labels.volume }} has {{ printf "%.1f" $values.B.Value }}% free
+            space (warns below 15%). Plan cleanup and review container image
+            retention before this reaches the 5% critical threshold.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT volume,
+                       100 * avail / nullIf(cap, 0) AS value
+                FROM (
+                  SELECT volume,
+                         sumIf(v, st = 'free') AS avail,
+                         sum(v) AS cap
+                  FROM (
+                    SELECT concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+                           Attributes['state'] AS st,
+                           argMax(Value, TimeUnix) AS v
+                    FROM default.otel_metrics_sum
+                    WHERE MetricName = 'system.filesystem.usage'
+                      AND $__timeFilter(TimeUnix)
+                    GROUP BY volume, st
+                  )
+                  GROUP BY volume
+                )
+                WHERE cap > 0
+                ORDER BY value ASC
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [15] }
+
+      # --- 3. Appliance CPU sustained high (>90% for 15m) ------------------
+      # Non-idle CPU, summed per (host, cpu, scrape) then averaged, so multiple
+      # state rows and multi-core hosts are not double-counted. The 15-minute
+      # query window IS the "sustained" part of the condition; `for: 1m` is only
+      # a debounce so a single boundary evaluation cannot page.
+      - uid: aldotel-appliance-cpu-high
+        title: Appliance CPU sustained high
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: Appliance CPU sustained high on {{ $labels.host }}
+          description: >-
+            {{ $labels.host }} averaged {{ printf "%.1f" $values.B.Value }}%
+            non-idle CPU over the last 15m (warns above 90%). Identify the top
+            processes and check for a runaway container.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT host, 100 * avg(busy) AS value
+                FROM (
+                  SELECT ResourceAttributes['host.name'] AS host,
+                         Attributes['cpu'] AS cpu,
+                         TimeUnix,
+                         sumIf(Value, Attributes['state'] != 'idle') AS busy
+                  FROM default.otel_metrics_gauge
+                  WHERE MetricName = 'system.cpu.utilization'
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY host, cpu, TimeUnix
+                )
+                GROUP BY host
+                ORDER BY value DESC
+          - refId: B
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [90] }
+
+      # --- 4. Appliance memory pressure (>85% for 15m) ---------------------
+      - uid: aldotel-appliance-memory-high
+        title: Appliance memory pressure
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: Appliance memory pressure on {{ $labels.host }}
+          description: >-
+            {{ $labels.host }} averaged {{ printf "%.1f" $values.B.Value }}%
+            used memory over the last 15m (warns above 85%). Identify the top
+            consumers and check for leaks — memory has no throttling safety net,
+            exhaustion invokes the OOM killer.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT ResourceAttributes['host.name'] AS host,
+                       100 * avgIf(Value, Attributes['state'] = 'used') AS value
+                FROM default.otel_metrics_gauge
+                WHERE MetricName = 'system.memory.utilization'
+                  AND $__timeFilter(TimeUnix)
+                GROUP BY host
+                ORDER BY value DESC
+          - refId: B
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [85] }
+
+  # ==========================================================================
+  # Appliance platform services (metrics + logs)
+  # ==========================================================================
+  - orgId: 1
+    name: ClickStack Appliance Platform
+    folder: ClickStack Alerts
+    interval: 1m
+    rules:
+      # --- 5. Appliance VM restarted ---------------------------------------
+      # k8s.node.uptime is a cumulative counter that RESETS to 0 on boot, so a
+      # low latest value means the node (i.e. the appliance VM) rebooted
+      # recently. Self-resolves once uptime passes the threshold.
+      - uid: aldotel-appliance-vm-restarted
+        title: Appliance VM restarted
+        condition: C
+        for: 1m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: warning
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: Appliance VM {{ $labels.volume }} restarted recently
+          description: >-
+            {{ $labels.volume }} has been up for only
+            {{ printf "%.0f" $values.B.Value }}s — it rebooted within the last
+            15 minutes. Confirm services resumed and verify portal access. If
+            the reboot was unscheduled, check the Hyper-V host.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT ResourceAttributes['k8s.node.name'] AS node,
+                       argMax(Value, TimeUnix) AS value
+                FROM default.otel_metrics_sum
+                WHERE MetricName = 'k8s.node.uptime'
+                  AND $__timeFilter(TimeUnix)
+                GROUP BY node
+                ORDER BY value ASC
+          - refId: B
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 600, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: lt, params: [900] }
+
+      # --- 6. Service recovered after failure (informational) --------------
+      # A pod that restarted inside the window and is now back in Running phase.
+      # This is the "it came back" notification, not a failure page — route it
+      # somewhere low-noise and review the root cause / possible data loss.
+      - uid: aldotel-appliance-service-recovered
+        title: Service recovered after failure
+        condition: C
+        for: 0s
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: info
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: '{{ $labels.pod }} recovered after a restart'
+          description: >-
+            {{ $labels.pod }} restarted {{ printf "%.0f" $values.B.Value }}
+            time(s) in the last 15m and is now Running again. Review the root
+            cause and check whether any data was lost during the outage.
+        data:
+          - refId: A
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT r.pod AS pod, r.d AS value
+                FROM (
+                  SELECT ResourceAttributes['k8s.pod.name'] AS pod,
+                         max(Value) - min(Value) AS d
+                  FROM default.otel_metrics_gauge
+                  WHERE MetricName = 'k8s.container.restarts'
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY pod
+                  HAVING d > 0
+                ) r
+                INNER JOIN (
+                  SELECT ResourceAttributes['k8s.pod.name'] AS pod,
+                         argMax(Value, TimeUnix) AS phase
+                  FROM default.otel_metrics_gauge
+                  WHERE MetricName = 'k8s.pod.phase'
+                    AND $__timeFilter(TimeUnix)
+                  GROUP BY pod
+                  HAVING phase = 2
+                ) p ON r.pod = p.pod
+                ORDER BY value DESC
+          - refId: B
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 900, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }
+
+      # --- 7. Key Vault service unavailable --------------------------------
+      # EDIT-ME-WORKLOAD: 'moc-kms' below must match your Key Vault pod names.
+      # On an Azure Local appliance the Key Vault / KMS role is served by the
+      # moc-kms pods; on a stock cluster change this to 'keyvault'.
+      # Phase 2 = Running, 3 = Succeeded; anything else (Pending/Failed/Unknown)
+      # counts as unavailable.
+      - uid: aldotel-appliance-keyvault-unavailable
+        title: Key Vault service unavailable
+        condition: C
+        for: 5m
+        noDataState: OK
+        execErrState: Error
+        labels:
+          severity: critical
+          stack: clickstack
+          scope: appliance
+        annotations:
+          summary: Key Vault pod {{ $labels.pod }} is not Running
+          description: >-
+            {{ $labels.pod }} has been outside the Running phase for 5m.
+            Restart the Key Vault service and check appliance resource pressure
+            (see the Appliance CPU / memory / volume alerts).
+        data:
+          - refId: A
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: clickstack-ch
+            model:
+              refId: A
+              editorType: sql
+              queryType: table
+              format: 1
+              intervalMs: 1000
+              maxDataPoints: 43200
+              rawSql: |
+                SELECT pod, 1 AS value
+                FROM (
+                  SELECT ResourceAttributes['k8s.pod.name'] AS pod,
+                         argMax(Value, TimeUnix) AS phase
+                  FROM default.otel_metrics_gauge
+                  WHERE MetricName = 'k8s.pod.phase'
+                    AND $__timeFilter(TimeUnix)
+                    AND positionCaseInsensitive(ResourceAttributes['k8s.pod.name'], 'moc-kms') > 0
+                  GROUP BY pod
+                  HAVING phase NOT IN (2, 3)
+                )
+          - refId: B
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: __expr__
+            model: { refId: B, type: reduce, reducer: last, expression: A }
+          - refId: C
+            relativeTimeRange: { from: 300, to: 0 }
+            datasourceUid: __expr__
+            model:
+              refId: C
+              type: threshold
+              expression: B
+              conditions:
+                - evaluator: { type: gt, params: [0] }

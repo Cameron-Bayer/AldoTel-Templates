@@ -9,12 +9,35 @@ clickhouse_datasource_uid = "clickstack-ch"
 clickhouse_database       = "default"
 
 # Webhook URL alerts POST to — your own on-call integration (Slack incoming
-# webhook, a Teams Workflow URL, PagerDuty, Discord, or any HTTP endpoint).
+# webhook, PagerDuty, Discord, or any HTTP endpoint).
+# Leave this empty if you are sending to Microsoft Teams (see below).
 alert_webhook_url = "https://REPLACE-WITH-YOUR-WEBHOOK-URL"
+
+# --- Microsoft Teams --------------------------------------------------------
+# Set this INSTEAD of alert_webhook_url to send alerts to a Teams channel as an
+# Adaptive Card. Get the URL in Teams: right-click the channel -> Workflows ->
+# "Post to a channel when a webhook request is received" -> Add workflow.
+# Do NOT use a legacy Office 365 connector URL (outlook.office.com/webhook/...);
+# Terraform will reject it — Microsoft is retiring those in 2026.
+# teams_workflow_url = "https://prod-NN.LOCATION.logic.azure.com:443/workflows/..."
 
 # Optional: override the default thresholds.
 # error_rate_pct            = 5
 # p95_latency_ms            = 2000
 # error_log_rate_per_sec    = 5
 # slo_burn_rate             = 14.4
-# ch_failed_queries_per_sec = 1
+
+# Optional: override the appliance thresholds.
+# volume_critical_pct_free    = 5
+# volume_low_pct_free         = 15
+# appliance_cpu_pct           = 90
+# appliance_memory_pct        = 85
+# appliance_reboot_uptime_sec = 900
+
+# Optional: point the Key Vault alert at your own workload name. It matches a
+# pod by case-insensitive name substring. The default suits an Azure Local
+# appliance, where the Key Vault / KMS role is served by the moc-kms pods; on a
+# stock cluster set it to whatever your pods are actually called. Run this to
+# see your real pod names:
+#   kubectl get pods -A -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name
+# keyvault_workload_match = "moc-kms"

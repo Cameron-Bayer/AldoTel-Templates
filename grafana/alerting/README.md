@@ -20,9 +20,14 @@ Run either or both.
 
 | File | Purpose |
 |------|---------|
-| `alert-rules.yaml` | The 8 alert rules (queries + thresholds). |
+| `alert-rules.yaml` | The 8 platform alert rules (queries + thresholds). |
+| `appliance-alert-rules.yaml` | 8 **Azure Local appliance** health rules (see below). |
 | `contact-points.yaml` | The alert contact point — a generic webhook (add your URL). |
 | `notification-policy.yaml` | Routes ClickStack alerts to that contact point (optional). |
+
+Both rule files load into the same **ClickStack Alerts** folder and route through the
+same contact point, so running both gives you 15 rules. They are independent —
+delete either file if you only want one set.
 
 ### The 8 alerts
 
@@ -47,6 +52,72 @@ per-series windowed deltas (never `sum(Value)`).
 
 ---
 
+## The 7 appliance alerts (`appliance-alert-rules.yaml`)
+
+Appliance-health signals answerable from telemetry the appliance **already collects**
+(hostmetrics, kubeletstats, k8s_cluster, container logs). Every rule below was
+validated against the metric inventory of a real appliance — see
+[What these rules deliberately do NOT cover](#what-these-rules-deliberately-do-not-cover)
+for the signals that were intentionally left out rather than shipped inert.
+
+| Alert | Source metric (table) | Fires when | Default threshold | `for` | Severity |
+|-------|----------------------|-----------|-------------------|-------|----------|
+| Appliance volume critically low | `system.filesystem.usage` (`sum`) | a mounted volume is nearly full | < 5 % free | 5m | critical |
+| Appliance volume low | `system.filesystem.usage` (`sum`) | a mounted volume is filling up | < 15 % free | 15m | warning |
+| Appliance CPU sustained high | `system.cpu.utilization` (`gauge`) | 15m average non-idle CPU | > 90 % | 1m | warning |
+| Appliance memory pressure | `system.memory.utilization` (`gauge`) | 15m average used memory | > 85 % | 1m | warning |
+| Appliance VM restarted | `k8s.node.uptime` (`sum`) | uptime counter reset | < 900 s uptime | 1m | warning |
+| Service recovered after failure | `k8s.container.restarts` + `k8s.pod.phase` (`gauge`) | pod restarted in window, now Running | > 0 restarts | 0s | info |
+| Key Vault service unavailable | `k8s.pod.phase` (`gauge`) | KMS pod outside Running phase | > 0 pods | 5m | critical |
+
+CPU and memory use `for: 1m` because the 15-minute sustain is already applied
+**inside the query** — the `for` clause only debounces evaluation jitter.
+
+All rules except *Key Vault* are **multi-dimensional** — one alert instance per
+volume or host, with the name in the notification.
+
+### Volume alerts are per-volume, not per-node
+
+`system.filesystem.usage` is split by a `state` attribute (`used` / `free` /
+`reserved`), so a volume's capacity is the **sum of all its states**. The rules group
+by `host.name` + `mountpoint`, which means a full `/var/lib/containerd` fires on its
+own instead of being averaged away by an empty root filesystem. The alert label is
+`volume`, not `node`.
+
+### One rule needs your workload name first
+
+`Key Vault service unavailable` identifies its workload by name substring, defaulting
+to `moc-kms` — the KMS pod on an Azure Local appliance. If your key-management pod is
+named differently, grep `EDIT-ME-WORKLOAD` in `appliance-alert-rules.yaml` and change
+it, otherwise the rule will never fire. Matching is case-insensitive
+(`positionCaseInsensitive`).
+
+### What these rules deliberately do NOT cover
+
+The observability stack runs **inside** the appliance VM, so it can only see the
+appliance. Signals originating on the Azure Local **hosts** — node down, cluster
+quorum, S2D storage pool, physical disk / SMART, NIC link and RDMA, time-sync drift,
+host-OS login attempts — are out of scope. Those require an OTel collector running on
+each node (enrolled via `enroll-emitter.ps1` in the appliance repo) with the
+`windowsperfcounters` and `windowseventlog` receivers.
+
+Corollary worth stating plainly: **"appliance VM down" can never be raised from
+here.** A stack running inside the VM cannot report that the VM stopped. That alert
+has to come from the host cluster or an external watchdog.
+
+Also not covered by these 7: local portal / ARM endpoint probes (need an `httpcheck`
+receiver), certificate expiry (needs a `prometheus` receiver scraping cert-manager on
+`:9402`), and volume growth trend (needs a derived/rate query).
+
+**Policy engine sync failing** was drafted and then deliberately removed. The
+appliance runs no policy pod, service, or deployment, and no log stream carries a
+matching `ServiceName` — so the rule was structurally incapable of firing. Shipping
+it would have told operators that policy sync was monitored when it was not. If your
+deployment does run a policy workload, re-add it as a log-count rule over `otel_logs`
+filtered on that workload's `ServiceName`.
+
+---
+
 ## Install (customer)
 
 These are **provisioning** files. Grafana loads them from disk at startup — you
@@ -58,20 +129,39 @@ Every query references a datasource by UID: **`clickstack-ch`**. Either
 
 - set your ClickHouse datasource's UID to `clickstack-ch`
   (*Connections → Data sources → your ClickHouse → UID*), **or**
-- find/replace `clickstack-ch` in `alert-rules.yaml` with your datasource's UID.
+- find/replace `clickstack-ch` in `alert-rules.yaml` **and
+  `appliance-alert-rules.yaml`** with your datasource's UID.
 
 If your ClickStack writes to a database other than `default`, also find/replace
-`default.` in `alert-rules.yaml`.
+`default.` in both rule files.
 
 ### 2. Set your notification channel
 
 Open `contact-points.yaml` and replace the placeholder `url` with a webhook URL
-for the channel you want — a Slack incoming webhook, a Teams Workflow "Post to a
-channel when a webhook request is received" URL, PagerDuty, Discord, or any HTTP
-endpoint that accepts a POST. Prefer a native email/Slack/PagerDuty integration?
+for the channel you want — a Slack incoming webhook, PagerDuty, Discord, or any
+HTTP endpoint that accepts a POST. Prefer a native email/Slack integration?
 Comment out the `webhook` receiver and use one of the examples in that file (or
 add any Grafana contact-point type), then update `notification-policy.yaml` to
 reference the receiver name you kept.
+
+#### Sending to Microsoft Teams
+
+1. In Teams, **right-click the target channel → Workflows**.
+2. Choose the template **"Post to a channel when a webhook request is received"**,
+   click *Next*, confirm the Team and Channel, then **Add workflow**.
+3. Copy the generated URL — it looks like
+   `https://prod-NN.LOCATION.logic.azure.com:443/workflows/.../triggers/manual/paths/invoke?...&sig=...`
+4. In `contact-points.yaml`, delete the `webhook` receiver and uncomment the
+   **MICROSOFT TEAMS** block, pasting your URL. Keep the contact point name
+   `ClickStack Alerts` so the routing in `notification-policy.yaml` still matches.
+
+> **Do not use a classic "Incoming Webhook" connector** (`outlook.office.com/webhook/...`).
+> Microsoft blocked creation of new Office 365 connectors in 2024 and is retiring
+> existing ones in 2026. Power Automate **Workflows** is the supported replacement,
+> and Grafana's `teams` integration works with it.
+
+> The Workflows URL is a **secret** — the `sig=` query parameter authorizes anyone
+> who has it to post into your channel. Don't commit a real one.
 
 ### 3. Drop the files into Grafana's provisioning path
 
@@ -85,14 +175,15 @@ volumes:
 ```
 
 On restart you'll see **Alerting → Alert rules → "ClickStack Alerts"** folder
-with the 8 rules, and the **ClickStack Alerts** contact point under
-*Contact points*.
+with all 15 rules (8 platform + 7 appliance), and the **ClickStack Alerts**
+contact point under *Contact points*.
 
 > **No filesystem access (Grafana Cloud)?** File provisioning needs write access
 > to `/etc/grafana/provisioning/`, which Grafana Cloud and some managed setups
 > don't allow. Use the Terraform equivalent in [`terraform/`](terraform/README.md)
-> instead — it creates the same 8 rules, contact point, and policy via the
-> Grafana API. Use one method or the other, not both.
+> instead — it creates the contact point, policy, and **all 15 rules** (8 platform
+> + 7 appliance) via the Grafana API, with byte-identical SQL to these YAML files.
+> Use one method or the other, not both.
 
 > **Heads-up on `notification-policy.yaml`:** Grafana provisioning replaces the
 > **entire** root notification policy tree. This file keeps the root receiver as
