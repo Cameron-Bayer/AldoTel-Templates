@@ -6,7 +6,7 @@
 # cpu/memory scrapers on, but their ratio metrics --
 #     system.cpu.utilization / system.memory.utilization
 # -- left at the OpenTelemetry default of DISABLED (they are opt-in). The
-# "Host / OS Metrics" board marks both [required], so preflight shows them MISS
+# "Infrastructure" board marks both [required], so preflight shows them MISS
 # even though the DaemonSet is healthy (cpu.load_average / disk.io / network.io
 # all report fine).
 #
@@ -82,7 +82,7 @@ echo "    found (chart opentelemetry-collector-$CHART_VERSION) - pinning that ve
 step "Staging Helm values override"
 STAGED="$(mktemp)"
 cat > "$STAGED" <<EOF
-# Enable the two opt-in hostmetrics ratio metrics the Host / OS dashboard needs.
+# Enable the two opt-in hostmetrics ratio metrics the Infrastructure dashboard needs.
 # Deep-merged onto the appliance's existing DaemonSet values via --reuse-values.
 config:
   receivers:
@@ -116,7 +116,7 @@ echo ""
 step "Done. DaemonSet rolling restart underway (~1-2 min)."
 cat <<EOF
 Then verify:
-  ./hyperdx/preflight.sh          # 'Host / OS Metrics' -> OK
+  ./hyperdx/preflight.sh          # 'Infrastructure' -> OK
 
 Revert:
   ./collector/enable-host-metrics.sh --namespace ${NAMESPACE} --disable

@@ -1,7 +1,7 @@
 <#
 .SYNOPSIS
     Enable host CPU/memory *utilization* metrics on the appliance's kube-telemetry
-    DaemonSet collector so the "Host / OS Metrics" dashboard fills in.
+    DaemonSet collector so the "Infrastructure" dashboard fills in.
 
 .DESCRIPTION
     The AzureLocal-Observability-Appliance ships its hostmetrics receiver with the
@@ -11,7 +11,7 @@
         system.memory.utilization
 
     -- left at the OpenTelemetry default of DISABLED (they are opt-in). The
-    "Host / OS Metrics" board marks both as [required], so they show up as MISS in
+    "Infrastructure" board marks both as [required], so they show up as MISS in
     preflight even though the DaemonSet is healthy and emitting cpu.load_average,
     disk.io, network.io, etc.
 
@@ -91,7 +91,7 @@ Write-Host "    found (chart opentelemetry-collector-$chartVersion) - pinning th
 # --- Stage the two-metric override -------------------------------------------
 Write-Step "Staging Helm values override"
 $values = @"
-# Enable the two opt-in hostmetrics ratio metrics the Host / OS dashboard needs.
+# Enable the two opt-in hostmetrics ratio metrics the Infrastructure dashboard needs.
 # Deep-merged onto the appliance's existing DaemonSet values via --reuse-values.
 config:
   receivers:
@@ -129,7 +129,7 @@ Write-Host ""
 Write-Step "Done. DaemonSet rolling restart underway (~1-2 min)."
 Write-Host @"
 Then verify:
-  ./hyperdx/preflight.ps1        # 'Host / OS Metrics' -> OK (system.cpu/memory.utilization PASS)
+  ./hyperdx/preflight.ps1        # 'Infrastructure' -> OK (system.cpu/memory.utilization PASS)
 
 Revert:
   ./collector/enable-host-metrics.ps1 -Namespace $Namespace -Disable

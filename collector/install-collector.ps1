@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Deploy the ClickHouse + collector self-metrics scraper into a ClickStack /
   AzureLocal-Observability-Appliance cluster, so the ADVANCED dashboards that need

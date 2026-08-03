@@ -18,7 +18,7 @@ These apply to every compatible tile on the dashboard.
 | Severity | `SeverityText` | Logs (`default.otel_logs`) |
 
 ## Supportability
-For CSS, support, and operations: recomputed alert conditions, failure tracking (crashes, exhaustion, warning events), and troubleshooting (top errors, new log patterns, error sources, live stream). Use with the Logs and Services dashboards for drill-down.
+For CSS, support, and operations: recomputed alert conditions, failure tracking (crashes, exhaustion, warning events), and troubleshooting (top errors, errors by service, error sources, live stream). Use with the Logs and Services dashboards for drill-down.
 
 ## Alert conditions (recomputed live)
 The same conditions that drive alerts, evaluated over the selected range: server/log error rates and unhealthy pods.
@@ -138,7 +138,7 @@ LIMIT 50
 </details>
 
 ## Troubleshooting
-Top error signatures, newly-appearing log patterns, error sources by namespace/pod, and a live error stream. Click a row to open Logs.
+Top error signatures, errors by service, error sources by namespace/pod, and a live error stream. Click a row to open Logs.
 
 ### Top error signatures (normalized) - click a row to open Logs — table · Raw SQL
 
@@ -164,7 +164,7 @@ LIMIT 50
 
 </details>
 
-### New log patterns in last 24h (vs prior 7d) - click a row to open Logs — table · Raw SQL
+### Errors & fatals by service (last 24h) - click a row to open Logs — table · Raw SQL
 
 - **Tables:** `default.otel_logs`
 - **Drill-down:** click a row → opens search
@@ -172,20 +172,15 @@ LIMIT 50
 <details><summary>SQL query</summary>
 
 ```sql
-WITH normalized AS (
-  SELECT ServiceName,
-         replaceRegexpAll(replaceRegexpAll(Body, '[0-9]+', '<n>'), '[0-9a-fA-F-]{8,}', '<id>') AS pattern,
-         Timestamp
-  FROM default.otel_logs
-  WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND Timestamp > now() - INTERVAL 8 DAY AND $__filters
-)
-SELECT ServiceName AS "Service", pattern AS "Error signature",
-       countIf(Timestamp > now() - INTERVAL 1 DAY) AS "Last 24h",
-       countIf(Timestamp <= now() - INTERVAL 1 DAY) AS "Prior 7d"
-FROM normalized
-GROUP BY ServiceName, pattern
-HAVING "Prior 7d" = 0 AND "Last 24h" > 0
-ORDER BY "Last 24h" DESC
+SELECT ServiceName AS "Service",
+       countIf(SeverityNumber BETWEEN 17 AND 20 OR lower(SeverityText) = 'error') AS "Errors",
+       countIf(SeverityNumber >= 21 OR lower(SeverityText) = 'fatal') AS "Fatal",
+       max(Timestamp) AS "Last seen"
+FROM default.otel_logs
+WHERE (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))
+  AND Timestamp > now() - INTERVAL 24 HOUR AND $__filters
+GROUP BY ServiceName
+ORDER BY "Errors" + "Fatal" DESC
 LIMIT 50
 ```
 
