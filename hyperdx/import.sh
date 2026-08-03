@@ -12,7 +12,7 @@
 #   ./import.sh                      # upsert the default (top-level) tier
 #   ./import.sh --advanced           # also upsert advanced/ deep dives (need optional data)
 #   ./import.sh --dry-run            # preview, write nothing
-#   ./import.sh --only services-red.json,logs-overview.json
+#   ./import.sh --only services.json,logs.json
 #   ./import.sh --delete             # remove template-managed dashboards (by tmpl tag)
 #   ./import.sh --duplicate          # force-create new copies (legacy behavior)
 #

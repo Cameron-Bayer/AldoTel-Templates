@@ -407,4 +407,4 @@ Empty tiles almost always mean **the data isn't flowing yet**, not that the dash
 - **[requirements.json](requirements.json)** — the machine-readable source of truth behind `preflight`.
 - **[docs/](docs/)** — per-dashboard, per-tile reference.
 - **[alerts/README.md](alerts/README.md)** — the optional alerts pack (error rate, SLO burn, collector
-  drops, too-many-parts, replication lag), a generic webhook by default.
+  drops, ClickHouse disk low), a generic webhook by default.

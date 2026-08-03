@@ -21,7 +21,7 @@
 #   export HDX_API_KEY="<Personal API Access Key>"
 #   ./import-alerts.sh                          # upsert all (webhook must already exist)
 #   ./import-alerts.sh --dry-run
-#   ./import-alerts.sh --only error-rate.json,replication-lag.json
+#   ./import-alerts.sh --only error-rate.json,clickhouse-disk-low.json
 #   # First-time channel setup (creates the webhook, then imports):
 #   export HDX_EMAIL="you@corp.com"; export HDX_PASS="***"; export HDX_APP_URL="http://localhost:3000"
 #   ./import-alerts.sh --webhook-url "https://your-webhook-endpoint.example/hooks/xxxx"

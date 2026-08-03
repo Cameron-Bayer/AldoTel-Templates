@@ -225,8 +225,8 @@ It then prints a `--only` command listing the dashboards whose **OTel source dat
 ## Alerts pack
 
 Optional bundle of importable **alert** definitions in [`alerts/`](alerts/README.md) — one per
-high-level signal (services error rate, SLO fast burn, collector drops, ClickHouse too-many-parts,
-replication lag). Each binds to a dashboard tile and notifies a channel (a generic webhook you point
+high-level signal (services error rate, SLO fast burn, collector drops, ClickHouse disk low).
+Each binds to a dashboard tile and notifies a channel (a generic webhook you point
 at your on-call system) when a threshold is breached. Portable and idempotent like the dashboards.
 
 ```powershell

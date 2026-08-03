@@ -5,22 +5,26 @@ to a specific dashboard tile and pages a notification channel when a high‑leve
 threshold. Portable by the same model as the dashboards: no hardcoded IDs — the importer resolves the
 per‑install dashboard/tile/webhook IDs at import time.
 
-> **v1 scope: the five high‑level signals.** One alert each for the conditions an operator actually
+> **Scope: four high‑level signals.** One alert each for the conditions an operator actually
 > wants to be woken up for. Thresholds are opinionated defaults and are meant to be tuned per install
-> (edit the file or the alert in the HyperDX UI).
+> (edit the file or the alert in the HyperDX UI). Every alert here is verified to bind to a tile that
+> exists and is of an alertable type — signals whose tiles were retired are not shipped inert.
 
 ## The signals
 
 | File | Alert | Bound tile (dashboard) | Condition (default) | Interval |
 |---|---|---|---|---|
-| `error-rate.json` | Services error rate | `Error rate %` (services‑red) | ratio **> 2%** | 5m |
-| `slo-fast-burn.json` | SLO fast burn | `Availability (SLI)` (services‑red) | availability **< 98.56%** (= 14.4× burn of a 99.9% SLO) | 5m |
-| `collector-drops.json` | Collector dropping telemetry | `Refused spans (should be 0)` (collector‑health) | refused spans **> 0** | 5m |
-| `too-many-parts.json` | ClickHouse too many parts | `Active parts (total)` (ch‑storage) | total active parts **> 5000** | 15m |
-| `replication-lag.json` | ClickHouse replication lag | `Max replication lag (s)` (ch‑keeper) | lag **> 60s** | 5m |
+| `error-rate.json` | Services error rate | `Error rate %` (services) | ratio **> 2%** | 5m |
+| `slo-fast-burn.json` | SLO fast burn | `Availability (SLI = success rate)` (services) | availability **< 98.56%** (= 14.4× burn of a 99.9% SLO) | 5m |
+| `collector-drops.json` | Collector dropping telemetry | `Refused spans (window)` (observability‑platform) | refused spans **> 0** | 5m |
+| `clickhouse-disk-low.json` | ClickHouse running out of disk | `Disk free %` (observability‑platform) | free space **< 10%** | 15m |
 
-All five bind to `line` / `number` tiles (the tile types HyperDX can alert on). Values that HyperDX
-formats as a fraction (error rate, SLI) use fractional thresholds (`0.02` = 2%).
+All four bind to `line` / `number` tiles (the tile types HyperDX can alert on). Values that HyperDX
+formats as a fraction (error rate, SLI, disk free) use fractional thresholds (`0.02` = 2%).
+
+The last two live on the **advanced** dashboard, so import it first with
+`./import.ps1 -Advanced` / `./import.sh --advanced`, and run `collector/install-collector.*` so the
+ClickHouse and collector metrics they read are actually being scraped.
 
 ## Notification channel (generic webhook — wire your own)
 
@@ -62,7 +66,7 @@ $env:HDX_APP_URL = "http://localhost:3000"       # only if the UI origin differs
 export HDX_API_URL="http://localhost:8000"; export HDX_API_KEY="<Personal API Access Key>"
 ./import-alerts.sh                                 # upsert all (webhook must already exist)
 ./import-alerts.sh --dry-run
-./import-alerts.sh --only error-rate.json,replication-lag.json
+./import-alerts.sh --only error-rate.json,clickhouse-disk-low.json
 # first-time channel setup:
 export HDX_EMAIL="you@corp.com"; export HDX_PASS="***"; export HDX_APP_URL="http://localhost:3000"
 ./import-alerts.sh --webhook-url "https://your-webhook-endpoint.example/hooks/xxxx"
@@ -87,8 +91,11 @@ needs only the API key.
   it manages, so prefer editing the JSON if you re‑import).
 - **`collector-drops` is zero‑tolerance** (`> 0`). If your environment has benign transient refusals,
   raise the threshold or lengthen the interval.
-- **`too-many-parts`** watches *total* active parts as a coarse canary; the precise per‑table view is
-  the `Active parts per table` tile on the Storage dashboard.
+- **`clickhouse-disk-low`** is the highest-value alert in this pack. A full ClickHouse disk is the
+  most common way a ClickStack deployment dies: INSERTs start failing with `NOT_ENOUGH_SPACE`,
+  ingestion stops, and every dashboard silently goes blank because no new data is arriving. 10% free
+  gives you room to act; raise it if your volume is small enough that 10% is only a few minutes of
+  headroom.
 
 ## Alert JSON shape
 
@@ -96,7 +103,7 @@ needs only the API key.
 {
   "slug": "error-rate",
   "signal": "Error rate",
-  "dashboard": "services-red",          // dashboard tmpl slug (tmpl:<slug> tag)
+  "dashboard": "services",              // dashboard tmpl slug (tmpl:<slug> tag)
   "tile": "Error rate %",               // tile matched by name
   "alert": {
     "name": "ClickStack · Services error rate > 2%",
@@ -112,6 +119,7 @@ needs only the API key.
 
 > **`dashboard` is a stable slug, not a filename.** It matches the target dashboard's
 > `tmpl:<slug>` tag, which is deliberately short and can differ from the JSON filename —
-> e.g. the alert targeting `dashboards/clickhouse-storage-mergetree.json` uses
-> `"dashboard": "ch-storage"` (tag `tmpl:ch-storage`). The importer resolves the slug to the
-> installed dashboard's real ID at import time, so the tag is what keeps upserts stable.
+> e.g. the alerts targeting `dashboards/advanced/observability-platform-health.json` use
+> `"dashboard": "observability-platform"` (tag `tmpl:observability-platform`). The importer resolves
+> the slug to the installed dashboard's real ID at import time, so the tag is what keeps upserts
+> stable. Run `grep -h '"tmpl:' hyperdx/dashboards/**/*.json` to see every available slug.

@@ -1,0 +1,15 @@
+{
+  "slug": "clickhouse-disk-low",
+  "signal": "ClickHouse running out of disk",
+  "dashboard": "observability-platform",
+  "tile": "Disk free %",
+  "alert": {
+    "name": "ClickStack · ClickHouse disk free < 10%",
+    "source": "tile",
+    "thresholdType": "below",
+    "threshold": 0.1,
+    "interval": "15m",
+    "message": "The ClickHouse data disk has less than 10% free space. This is the single most common way a ClickStack deployment dies: once the disk fills, every INSERT fails with NOT_ENOUGH_SPACE, ingestion stops, and the dashboards silently go blank because no new data arrives. Act before it reaches zero - check 'Data retention & size by table (system.parts)' on the Observability Platform Health dashboard to find the largest tables, then either tighten the retention TTL or expand the volume.",
+    "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
+  }
+}

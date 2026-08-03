@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Imports / upserts the ClickStack ALERT templates into a self-hosted (OSS) HyperDX instance.
 
@@ -22,7 +22,7 @@
 
 .PARAMETER DryRun     Show what would happen without writing anything.
 .PARAMETER Delete     Delete the template-managed alerts (matched by name) instead of importing.
-.PARAMETER Only       Comma-separated alert file names (e.g. "error-rate.json,replication-lag.json").
+.PARAMETER Only       Comma-separated alert file names (e.g. "error-rate.json,clickhouse-disk-low.json").
 .PARAMETER WebhookId    Use this webhook id verbatim (skips lookup/creation).
 .PARAMETER WebhookName  Name of the webhook to look up / create. Default "ClickStack Alerts".
 .PARAMETER WebhookUrl   If set and no webhook is found, create a `generic` webhook with this URL

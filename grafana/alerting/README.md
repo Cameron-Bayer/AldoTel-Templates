@@ -11,7 +11,7 @@ This pack **complements** the HyperDX alerts pack (`../../hyperdx/alerts`): both
 same ClickHouse data, but the two packs cover different signals. This Grafana pack: service
 error rate, p95 latency, SLO fast-burn, trace-ingestion stall, pods-not-running, container
 restarts, error-log rate, and fatal logs.
-The HyperDX pack: collector drops, error rate, replication lag, SLO fast-burn, too-many-parts.
+The HyperDX pack: collector drops, error rate, SLO fast-burn, ClickHouse disk low.
 Run either or both.
 
 ---

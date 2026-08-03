@@ -1,15 +1,15 @@
 {
   "slug": "slo-fast-burn",
   "signal": "SLO fast burn",
-  "dashboard": "services-red",
-  "tile": "Availability (SLI)",
+  "dashboard": "services",
+  "tile": "Availability (SLI = success rate)",
   "alert": {
     "name": "ClickStack · SLO fast burn (14.4x)",
     "source": "tile",
     "thresholdType": "below",
     "threshold": 0.9856,
     "interval": "5m",
-    "message": "Availability has dropped below 98.56% over the last 5 minutes - that is a 14.4x burn of a 99.9% SLO (0.1% budget), which exhausts the monthly error budget in ~2 days. Fast-burn, page-worthy. See the SLO strip at the bottom of the Services - RED dashboard (availability, error budget, multi-window burn-rate table).",
+    "message": "Availability has dropped below 98.56% over the last 5 minutes - that is a 14.4x burn of a 99.9% SLO (0.1% budget), which exhausts the monthly error budget in ~2 days. Fast-burn, page-worthy. See the SLO strip at the bottom of the Services (RED) dashboard (availability, error budget, multi-window burn-rate table).",
     "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
   }
 }
