@@ -7,17 +7,91 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 
 ### Changed
 
+- **Grafana dashboards realigned with the overhauled HyperDX set.** Three changes:
+  - `host-os-metrics.json` → **`infrastructure.json`** (uid `clickstack-host-os` →
+    `clickstack-infrastructure`, title *ClickStack - Infrastructure*). Rebuilt from 14 to 34
+    panels, mirroring the HyperDX **Infrastructure** section structure: *Cluster health*
+    (Kubernetes nodes Ready %, healthy/unhealthy nodes, per-node status/uptime
+    table) → *Node health* (CPU, memory, load, paging, inode usage — stats, per-host charts, and the existing
+    averages table) → *Storage health* (**per-volume** filesystem used % and free capacity, disk
+    operations/IOPS, **average disk latency in ms/op**, disk I/O volume) → *Network health*
+    (I/O volume, **packets dropped**, **interface errors**) → *Capacity planning* (CPU and
+    memory headroom, lowest volume free %, total free memory, headroom-over-time
+    and free-%-by-volume trends). New metrics wired up: `k8s.node.condition_ready`,
+    `k8s.node.uptime`, `system.filesystem.{usage,inodes.usage}`, `system.memory.usage`,
+    `system.disk.{operations,operation_time}`, `system.network.{dropped,errors}`,
+    `system.paging.operations`.
+  - `executive-summary.json` → **`operations-center.json`** (uid unchanged, title
+    *ClickStack - Operations Center*). Adds a **Resource utilization** row (cluster CPU %,
+    cluster memory %, lowest volume free %, and a composite **cluster health score** =
+    nodes-Ready share × pods-Running-or-Succeeded share) and a **Recent cluster events** table
+    (50 newest Kubernetes events), so the first page you open can explain a status change
+    without a second click. 22 → 29 panels.
+  - `advanced/latency-histograms.json` reframed as **Services (Latency Histograms)** — an
+    explicit advanced companion to **Service Health** rather than a standalone board. File name
+    and uid unchanged.
 - **Dashboard clarity pass (customer-facing) across both platforms.** Tiles and panels were
   renamed to be self-explanatory at a glance (e.g. Grafana **Service Health (Golden Signals)** →
   **Service Health** and **Latency Histograms** → **Request Latency & Volume**; many HyperDX/Grafana
   charts gained clearer "per interval" / "selected range" wording, `vs allocatable` / `vs CPU cores`
   qualifiers, and per-tile descriptions). Section headers and intro tiles were added, and the
   Services-RED SLO strip (Availability SLI, error-budget-remaining, burn-rate) labels were clarified.
-  Grafana dashboard file names are unchanged.
 - **Grafana dashboards are once again fully generated.** All clarity edits were ported into
   `grafana/gen-dashboards.js`, so `node grafana/gen-dashboards.js` reproduces the committed JSON —
   restoring the generator as the single source of truth. Narrative docs (`grafana/README.md`,
   `hyperdx/DASHBOARD-DEEP-DIVE.md`) and the auto-generated `hyperdx/docs/` were updated to match.
+
+### Fixed
+
+- **Every dashboard and alert rule now queries only metrics the appliance actually emits.**
+  A metric inventory taken from a live appliance showed that `k8s.node.filesystem.*`,
+  `k8s.node.cpu.usage`, `k8s.node.memory.{usage,available}` and `system.swap.utilization` are
+  **not produced** by the deployed `kubeletstats` / `hostmetrics` configuration — roughly 100
+  references across 18 files resolved to *No Data* rather than failing loudly. All of them were
+  retargeted onto metrics that do exist:
+  | Was | Now | Table |
+  |-----|-----|-------|
+  | `k8s.node.filesystem.{usage,capacity}` | `system.filesystem.usage` (split by `state`) | `otel_metrics_sum` |
+  | `k8s.node.cpu.usage` | `system.cpu.utilization` | `otel_metrics_gauge` |
+  | `k8s.node.memory.usage` | `system.memory.utilization` | `otel_metrics_gauge` |
+  | `k8s.node.memory.available` | `system.memory.usage` (`state='free'`) | `otel_metrics_sum` |
+  | `system.swap.utilization` | `system.filesystem.inodes.usage` / `system.paging.operations` | `otel_metrics_sum` |
+  Affected: 12 Grafana panels (via `gen-dashboards.js`), 12 HyperDX tiles, both disk alert rules,
+  `hyperdx/requirements.json`, and all narrative docs.
+- **Disk monitoring is now per-volume instead of per-node.** `system.filesystem.usage` carries a
+  `mountpoint` attribute, so panels, tiles and alerts group by `host.name` + `mountpoint`. A full
+  `/var/lib/containerd` now surfaces on its own rather than being averaged away by an empty root
+  filesystem. Alert labels changed from `node` to `volume`.
+- **`hyperdx/requirements.json` no longer fails preflight on a healthy appliance.**
+  `k8s.node.cpu.usage` and `k8s.node.memory.usage` were marked `required: true` despite never being
+  emitted, so `preflight.ps1`/`.sh` reported the Kubernetes dashboard as incompatible everywhere.
+
+### Removed
+
+- **`hyperdx/old-dashboards/`** (11 files) — the pre-overhaul dashboard set, superseded since the
+  overhaul shipped and kept only as dead weight.
+- **`hyperdx/OVERHAUL-PLAN.md`** — a design proposal that still claimed "no templates have been
+  changed". The overhaul it proposed is now the shipped state; `DASHBOARD-CATALOG.md` and
+  `DASHBOARD-DEEP-DIVE.md` are the current documentation.
+- **`hyperdx/docs/images/`** (10 PNGs) — unreferenced by any document. `gen-docs.js` still embeds
+  screenshots conditionally, so dropping your own images back into that directory works as before.
+- **The "Policy engine sync failing" alert rule**, from both `appliance-alert-rules.yaml` and the
+  Terraform pack. The appliance runs no policy pod, service or deployment and no log stream carries
+  a matching `ServiceName`, so the rule could not fire under any condition — shipping it implied
+  policy sync was monitored when it was not. The appliance pack is now **7 rules** (15 total with
+  the platform pack); `keyvault_workload_match` now defaults to `moc-kms`, the appliance's real KMS
+  workload.
+- **`ch_failed_queries_per_sec`** from the Terraform variable docs and `terraform.tfvars.example` —
+  it was documented but never declared or used, along with a duplicated workload-match block.
+
+### Upgrading
+
+- The two renamed Grafana dashboards are **new files**. If you previously imported
+  `executive-summary.json` or `host-os-metrics.json`, delete the old **Host / OS Metrics**
+  dashboard (its uid changed) and re-import `infrastructure.json`; **Executive Summary** keeps
+  its uid, so re-importing `operations-center.json` updates it in place.
+- Grafana alert rules are unaffected — they query ClickHouse directly and do not reference
+  dashboard uids.
 
 ## [1.0.0-rc2] — 2026-07-24
 
