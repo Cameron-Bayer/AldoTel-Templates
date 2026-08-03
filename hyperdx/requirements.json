@@ -1,5 +1,5 @@
 {
-  "_comment": "Drives preflight.ps1/.sh (compatibility check) and documents per-dashboard requirements. tier is \"default\" (always populated on a full appliance deploy) or \"advanced\" (opt-in, needs optional data sources; imported only with -Advanced/--advanced). metricType maps to the otel_metrics_<type> table. required=false tiles degrade gracefully if the metric is absent.",
+  "_comment": "Drives preflight.ps1/.sh (compatibility check) and documents per-dashboard requirements. tier is \"default\" (always populated on a full appliance deploy) or \"advanced\" (opt-in, needs optional data sources; imported only with -Advanced/--advanced). metricType maps to the otel_metrics_<type> table. required=false tiles degrade gracefully if the metric is absent. Every metric listed here has been verified against a real appliance deployment; metrics the appliance does not emit are deliberately not listed.",
   "dashboards": [
     {
       "file": "operations-center.json",
@@ -67,8 +67,8 @@
         {
           "kind": "metric",
           "required": false,
-          "metricType": "gauge",
-          "metricName": "system.swap.utilization"
+          "metricType": "sum",
+          "metricName": "system.filesystem.inodes.usage"
         },
         {
           "kind": "metric",
@@ -121,20 +121,14 @@
         {
           "kind": "metric",
           "required": false,
-          "metricType": "gauge",
-          "metricName": "k8s.node.filesystem.usage"
+          "metricType": "sum",
+          "metricName": "system.filesystem.usage"
         },
         {
           "kind": "metric",
           "required": false,
-          "metricType": "gauge",
-          "metricName": "k8s.node.filesystem.capacity"
-        },
-        {
-          "kind": "metric",
-          "required": false,
-          "metricType": "gauge",
-          "metricName": "k8s.node.memory.available"
+          "metricType": "sum",
+          "metricName": "system.memory.usage"
         }
       ]
     },
@@ -151,15 +145,15 @@
       "checks": [
         {
           "kind": "metric",
-          "required": true,
+          "required": false,
           "metricType": "gauge",
-          "metricName": "k8s.node.cpu.usage"
+          "metricName": "system.cpu.utilization"
         },
         {
           "kind": "metric",
-          "required": true,
+          "required": false,
           "metricType": "gauge",
-          "metricName": "k8s.node.memory.usage"
+          "metricName": "system.memory.utilization"
         },
         {
           "kind": "metric",
@@ -194,14 +188,8 @@
         {
           "kind": "metric",
           "required": false,
-          "metricType": "gauge",
-          "metricName": "k8s.node.filesystem.usage"
-        },
-        {
-          "kind": "metric",
-          "required": false,
-          "metricType": "gauge",
-          "metricName": "k8s.node.filesystem.capacity"
+          "metricType": "sum",
+          "metricName": "system.filesystem.usage"
         },
         {
           "kind": "metric",

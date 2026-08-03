@@ -1,7 +1,7 @@
 {
   "uid": "clickstack-latency-histograms",
-  "title": "ClickStack - Request Latency & Volume",
-  "description": "Request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram): average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls.",
+  "title": "ClickStack - Services (Latency Histograms)",
+  "description": "Advanced companion to Service Health: request latency from OpenTelemetry explicit-bucket histogram metrics (otel_metrics_histogram) — average latency (delta Sum / delta Count) and request rate for HTTP server/client and RPC server calls. Only useful if your applications emit OTLP histogram metrics.",
   "tags": [
     "clickstack",
     "opentelemetry"

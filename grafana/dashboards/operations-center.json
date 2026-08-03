@@ -1,7 +1,7 @@
 {
   "uid": "clickstack-exec-summary",
-  "title": "ClickStack - Executive Summary",
-  "description": "One-pane health overview across services, Kubernetes, and logs — top signals from all three ClickStack Grafana dashboards.",
+  "title": "ClickStack - Operations Center",
+  "description": "The single pane to open first: application request health, Kubernetes workload health, cluster resource utilization, log error signals, and recent cluster events — top signals from every ClickStack Grafana dashboard.",
   "tags": [
     "clickstack",
     "opentelemetry"
@@ -70,7 +70,7 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Executive summary\nTop signals for **application requests, Kubernetes health, and logs**, collected by the OpenTelemetry Collector and queried from ClickHouse. All panels honor the selected time range: **rates and percentiles cover the full range**, Kubernetes status uses the **latest sample**, and time-series counts are **per chart interval**. No data usually means telemetry isn't being collected — check the OTel Collector and the ClickHouse datasource."
+        "content": "## Operations Center\nThe single pane to open first: **is anything wrong right now, and where?** Top signals for application requests, Kubernetes health, resource utilization, logs, and recent cluster events — collected by the OpenTelemetry Collector and queried from ClickHouse. All panels honor the selected time range: **rates and percentiles cover the full range**, Kubernetes and utilization status use the **latest sample**, and time-series counts are **per chart interval**. Drill into **Infrastructure**, **Kubernetes**, **Service Health**, or **Logs** for detail. No data usually means telemetry isn't being collected — check the OTel Collector and the ClickHouse datasource."
       },
       "transparent": false
     },
@@ -829,13 +829,334 @@
     {
       "id": null,
       "type": "row",
-      "title": "Application logs",
+      "title": "Resource utilization",
       "collapsed": false,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
         "y": 23
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Cluster CPU utilization",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * avg(busy) AS value FROM (\n  SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix)\n  GROUP BY host, cpu, TimeUnix)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average non-idle CPU across every reporting host over the selected range. Green below 75%, yellow 75–89%, red 90% or higher. Open Infrastructure to see which host is hot."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Cluster memory utilization",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * avgIf(Value, Attributes['state'] = 'used') AS value FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average used-memory percentage across every reporting host over the selected range. Unlike CPU there is no throttling safety net — exhaustion triggers the OOM killer."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Lowest volume free %",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * min(avail / nullIf(cap, 0)) AS value FROM (\n  SELECT host, mountpoint, sumIf(v, st = 'free') AS avail, sum(v) AS cap FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, Attributes['state'] AS st,\n           argMax(Value, TimeUnix) AS v\n    FROM ${database}.otel_metrics_sum\n    WHERE MetricName = 'system.filesystem.usage' AND $__timeFilter(TimeUnix)\n    GROUP BY host, mountpoint, st)\n  GROUP BY host, mountpoint)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "green",
+                "value": 25
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Free-space percentage on the most constrained mounted volume. That volume runs out first, so it governs the whole cluster — and because it is measured per volume, one full data disk cannot be hidden by healthy volumes on the same host. Open Infrastructure to see which volume it is."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Cluster health score",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 24
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * n.ready * p.ok AS value\nFROM (\n  SELECT countIf(v = 1) / nullIf(count(), 0) AS ready FROM (\n    SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n    FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n    GROUP BY n)) n\nCROSS JOIN (\n  SELECT countIf(v IN (2, 3)) / nullIf(count(), 0) AS ok FROM (\n    SELECT ResourceAttributes['k8s.pod.uid'] AS u, argMax(Value, TimeUnix) AS v\n    FROM ${database}.otel_metrics_gauge WHERE MetricName = 'k8s.pod.phase' AND $__timeFilter(TimeUnix)\n    GROUP BY u)) p",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 95
+              },
+              {
+                "color": "green",
+                "value": 100
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Composite availability score: the share of nodes that are Ready multiplied by the share of pods that are Running or Succeeded, both from their latest sample. 100% means every node and every pod is where it should be; anything less means at least one is not."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Application logs",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 29
       },
       "panels": []
     },
@@ -851,7 +1172,7 @@
         "h": 5,
         "w": 6,
         "x": 0,
-        "y": 24
+        "y": 30
       },
       "targets": [
         {
@@ -921,7 +1242,7 @@
         "h": 5,
         "w": 6,
         "x": 6,
-        "y": 24
+        "y": 30
       },
       "targets": [
         {
@@ -998,7 +1319,7 @@
         "h": 5,
         "w": 6,
         "x": 12,
-        "y": 24
+        "y": 30
       },
       "targets": [
         {
@@ -1075,7 +1396,7 @@
         "h": 5,
         "w": 6,
         "x": 18,
-        "y": 24
+        "y": 30
       },
       "targets": [
         {
@@ -1148,7 +1469,7 @@
         "h": 6,
         "w": 12,
         "x": 0,
-        "y": 29
+        "y": 35
       },
       "targets": [
         {
@@ -1223,7 +1544,7 @@
         "h": 6,
         "w": 12,
         "x": 12,
-        "y": 29
+        "y": 35
       },
       "targets": [
         {
@@ -1295,7 +1616,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 35
+        "y": 41
       },
       "panels": []
     },
@@ -1311,7 +1632,7 @@
         "h": 9,
         "w": 24,
         "x": 0,
-        "y": 36
+        "y": 42
       },
       "targets": [
         {
@@ -1486,6 +1807,134 @@
         }
       },
       "description": "Per-service request rate, error count, error percentage, and 95th-percentile latency over the selected time range, sorted by highest error percentage."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Recent cluster events",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Most recent Kubernetes events",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 52
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT Timestamp AS \"Time\",\n       JSONExtractString(Body, 'object', 'type') AS \"Type\",\n       JSONExtractString(Body, 'object', 'reason') AS \"Reason\",\n       concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), ' ', JSONExtractString(Body, 'object', 'regarding', 'namespace'), '/', JSONExtractString(Body, 'object', 'regarding', 'name')) AS \"Object\",\n       JSONExtractString(Body, 'object', 'note') AS \"Message\"\nFROM ${database}.otel_logs\nWHERE ScopeName LIKE '%k8sobjectsreceiver%' AND $__timeFilter(Timestamp)\nORDER BY Timestamp DESC\nLIMIT 50",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Time"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 180
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Type"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 90
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Warning": {
+                        "color": "red",
+                        "index": 0
+                      },
+                      "Normal": {
+                        "color": "green",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Reason"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "The 50 most recent Kubernetes events, newest first. Events are the cluster narrating what it did — scheduling decisions, image pulls, probe failures, evictions — and they are usually the fastest way to explain a status change you just saw above. See the Kubernetes dashboard for aggregated event analysis."
     }
   ]
 }

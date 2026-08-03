@@ -1,7 +1,7 @@
 # ClickHouse + Collector metrics scraper (advanced-tier enabler)
 
-An **optional** OpenTelemetry Collector that makes the **advanced** ClickHouse and
-OTel-Collector dashboards light up on the
+An **optional** OpenTelemetry Collector that makes the **advanced** platform-health
+dashboards light up on the
 [AzureLocal-Observability-Appliance](https://msazure.visualstudio.com/One/_git/AzureLocal-Observability-Appliance)
 (and any ClickStack deploy that uses its mTLS ingest model).
 
@@ -9,25 +9,21 @@ OTel-Collector dashboards light up on the
 
 The appliance's central collector is an **OTLP-only ingest gateway** — it receives
 traces/metrics/logs but does **not** scrape anything. The default-tier dashboards
-(Services RED, Logs, Kubernetes, Host/OS, Executive) light up from app OTLP + the
+(Operations Center, Infrastructure, Kubernetes, Services, Logs, Supportability) light up from app OTLP + the
 appliance's kube-telemetry collectors. But these **advanced** boards need metrics
 that nothing on a stock appliance collects:
 
 | Advanced dashboard | Needs | Source with no scraper on the appliance |
 |--------------------|-------|-----------------------------------------|
-| ClickHouse — Operations (`clickhouse-health`) | `ClickHouseProfileEvents_*`, `ClickHouseMetrics_*` | ClickHouse `:9363` Prometheus endpoint |
-| ClickHouse — Query Performance (summary tiles) | `ClickHouseMetrics_Query/MemoryTracking` | ClickHouse `:9363` |
-| ClickHouse — Keeper & Replication (metric tiles) | `ClickHouseMetrics_ZooKeeper*`, `ClickHouseProfileEvents_Keeper*` | ClickHouse `:9363` |
-| OTel Collector — Pipeline Health (`collector-health`) | `otelcol_*_total`, `otelcol_exporter_queue_*` | central collector `:8888` self-telemetry |
+| HyperDX — Observability Platform Health (`dashboards/advanced/observability-platform-health.json`) | `ClickHouseProfileEvents_*`, `ClickHouseMetrics_*`, `otelcol_*_total`, `otelcol_exporter_queue_*` | ClickHouse `:9363` Prometheus endpoint **and** central collector `:8888` self-telemetry |
 
 This collector scrapes both endpoints and forwards the metrics into the **same**
 `default.otel_metrics_{gauge,sum}` tables the dashboards already read.
 
-> It does **not** help the Raw-SQL ClickHouse tiles
-> (`clickhouse-storage-mergetree`, most `clickhouse-queryperf` tiles) — those read
-> `system.*` directly and only need the HyperDX ClickHouse connection user to have
-> `SELECT` on those tables. Nor does it help the latency-histogram boards, which
-> need your **apps** to emit OTLP histograms.
+> It does **not** help that dashboard's Raw-SQL tiles — the MergeTree/parts and
+> query-log sections read ClickHouse's own `system.*` tables directly and only need
+> the HyperDX ClickHouse connection user to have `SELECT` on them. Nor does it help
+> the latency-histogram board, which needs your **apps** to emit OTLP histograms.
 
 ## How it works (no appliance edits, no ClickHouse credentials)
 
@@ -119,7 +115,7 @@ rows should flip from `FAIL`/`DEGRADED` to `OK` once metrics have flowed (~1-2 m
 
 ## Bonus: host CPU / memory utilization
 
-The default-tier **Host / OS Metrics** board needs `system.cpu.utilization` and
+The default-tier **Infrastructure** board needs `system.cpu.utilization` and
 `system.memory.utilization`. The appliance's kube-telemetry **DaemonSet** already
 runs the hostmetrics receiver, but leaves those two *ratio* metrics at
 OpenTelemetry's opt-in default of **disabled** — so preflight reports them as
@@ -155,7 +151,7 @@ it also auto-pins the already-installed chart version so nothing else changes):
 | [`otel-metrics-collector-values.yaml`](otel-metrics-collector-values.yaml) | Helm values for the upstream `opentelemetry-collector` chart (prometheus receiver → OTLP/mTLS exporter). `__PLACEHOLDER__` tokens are substituted by the installer. |
 | [`emitter-cert.yaml`](emitter-cert.yaml) | Optional dedicated cert-manager emitter identity (applied only with `-CreateDedicatedCert`). |
 | [`install-collector.ps1`](install-collector.ps1) / [`install-collector.sh`](install-collector.sh) | Idempotent `helm upgrade --install` wrapper (+ uninstall). |
-| [`enable-host-metrics.ps1`](enable-host-metrics.ps1) / [`enable-host-metrics.sh`](enable-host-metrics.sh) | Enable `system.cpu.utilization` / `system.memory.utilization` on the appliance's kube-telemetry DaemonSet (opt-in hostmetrics ratios) so **Host / OS Metrics** goes green. Idempotent; `-Disable` reverts. |
+| [`enable-host-metrics.ps1`](enable-host-metrics.ps1) / [`enable-host-metrics.sh`](enable-host-metrics.sh) | Enable `system.cpu.utilization` / `system.memory.utilization` on the appliance's kube-telemetry DaemonSet (opt-in hostmetrics ratios) so **Infrastructure** goes green. Idempotent; `-Disable` reverts. |
 
 ## Notes & caveats
 

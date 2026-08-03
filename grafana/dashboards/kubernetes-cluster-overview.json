@@ -417,7 +417,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Node & workload resource usage",
+      "title": "Host & workload resource usage",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -430,7 +430,7 @@
     {
       "id": null,
       "type": "timeseries",
-      "title": "Node CPU usage",
+      "title": "Host CPU utilization",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -449,7 +449,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cpu_cores\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.cpu.usage' AND $__timeFilter(TimeUnix)\nGROUP BY time, node ORDER BY time",
+          "rawSql": "SELECT time, host, 100 * avg(busy) AS \"cpu %\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix)\n  GROUP BY time, host, cpu, TimeUnix)\nGROUP BY time, host ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -462,7 +462,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "cores",
+          "unit": "percent",
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -499,13 +499,13 @@
           "sort": "desc"
         }
       },
-      "description": "CPU cores used by each node over time. Compare with the node's allocatable CPU capacity.",
+      "description": "Non-idle CPU percentage for each host backing the cluster. Sustained values above 75% warrant attention; above 90% pods will start competing for CPU and latency rises even though nothing has failed.",
       "interval": "1m"
     },
     {
       "id": null,
       "type": "timeseries",
-      "title": "Node memory usage",
+      "title": "Host memory utilization",
       "datasource": {
         "type": "grafana-clickhouse-datasource",
         "uid": "${clickhouseDatasource}"
@@ -524,7 +524,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS mem_bytes\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'k8s.node.memory.usage' AND $__timeFilter(TimeUnix)\nGROUP BY time, node ORDER BY time",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host, 100 * avgIf(Value, Attributes['state'] = 'used') AS \"mem %\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix)\nGROUP BY time, host ORDER BY time",
           "queryType": "timeseries",
           "format": 0,
           "meta": {
@@ -537,7 +537,7 @@
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "bytes_iec",
+          "unit": "percent",
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -574,7 +574,7 @@
           "sort": "desc"
         }
       },
-      "description": "Memory used by each node over time. Compare with node capacity; this panel shows bytes, not utilization percentage.",
+      "description": "Used-memory percentage for each host backing the cluster. Memory has no throttling safety net — once a host is exhausted the kernel OOM-kills containers, so treat sustained values above 92% as urgent.",
       "interval": "1m"
     },
     {

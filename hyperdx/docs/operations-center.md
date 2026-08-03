@@ -181,27 +181,25 @@ WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
 
 </details>
 
-### Cluster disk used % (nodes) — number · Raw SQL
+### Cluster disk used % (volumes) — number · Raw SQL
 
-- **Tables:** `default.otel_metrics_gauge`
+- **Tables:** `default.otel_metrics_sum`
 
 <details><summary>SQL query</summary>
 
 ```sql
-WITH u AS (
-  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS used
-  FROM default.otel_metrics_gauge
+SELECT if(sum(total) = 0, 0, sum(used) / sum(total)) AS "Cluster disk used" FROM (
+  SELECT concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+         argMaxIf(Value, TimeUnix, Attributes['state'] = 'used') AS used,
+         argMaxIf(Value, TimeUnix, Attributes['state'] = 'used')
+           + argMaxIf(Value, TimeUnix, Attributes['state'] = 'free')
+           + argMaxIf(Value, TimeUnix, Attributes['state'] = 'reserved') AS total
+  FROM default.otel_metrics_sum
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.usage' GROUP BY node
-),
-c AS (
-  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS cap
-  FROM default.otel_metrics_gauge
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.capacity' GROUP BY node
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'system.filesystem.usage'
+  GROUP BY volume
 )
-SELECT if(sum(c.cap) = 0, 0, sum(u.used) / sum(c.cap)) AS "Cluster disk used"
-FROM u JOIN c USING (node)
 ```
 
 </details>

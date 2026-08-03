@@ -29,7 +29,7 @@ Follow these steps once and you'll have both.
 > [Installing alerts without filesystem access](#installing-alerts-without-filesystem-access-grafana-cloud).
 
 **1. Download the two folders** — `grafana/dashboards/` (6 JSON files: 5 default + `advanced/latency-histograms.json`) and
-`grafana/alerting/` (3 YAML files).
+`grafana/alerting/` (4 YAML files).
 
 **2. Add the ClickHouse data source** — *Connections → Data sources → Add → ClickHouse*.
 Enter host/port/user/password/database. **Set its UID to `clickstack-ch`** (the *UID*
@@ -38,20 +38,30 @@ field). This is the one gotcha:
      the UID doesn't matter for them.
    - **Alert rules** reference a *fixed* UID (`clickstack-ch`) because provisioned rules
      can't prompt for one. So either name the UID `clickstack-ch`, **or** find/replace
-     `clickstack-ch` in `alerting/alert-rules.yaml` with your datasource's UID.
+     `clickstack-ch` in `alerting/alert-rules.yaml` **and**
+     `alerting/appliance-alert-rules.yaml` with your datasource's UID. (The
+     `kubernetes/` installer does this rewrite for you via `-DatasourceUid`.)
 
 **3. Import the dashboards (UI, no restart)** — for each JSON:
 *Dashboards → New → Import → Upload JSON file →* pick your ClickHouse datasource →
 **Import**. Repeat for each default dashboard (the `dashboards/advanced/` set is opt-in
 and needs the extra data source noted in its row above).
 
-**4. Configure the alerts *before* you install them (so you restart only once)** —
-edit the two YAML files in `alerting/` on disk first:
-   - In `alerting/contact-points.yaml`, replace the placeholder `url` with a
-     webhook URL for the channel you want — a Slack incoming webhook, a Teams
-     Workflow "Post to a channel when a webhook request is received" URL,
-     PagerDuty, Discord, or any HTTP endpoint that accepts a POST.
+**4. Configure the alerts *before* you install them (so you restart only once)**:
+   - **On Kubernetes, skip this step** — [`kubernetes/install-k8s.ps1`](kubernetes/install-k8s.ps1)
+     / [`.sh`](kubernetes/install-k8s.sh) *prompts* you for a destination (Teams, Slack,
+     Email, PagerDuty or a generic webhook), validates it, and writes the contact point
+     to a temp copy for you. See
+     [kubernetes/README.md](kubernetes/README.md#wire-up-notifications).
+   - Installing by hand instead? In `alerting/contact-points.yaml`, replace the
+     placeholder `url` with a webhook URL for the channel you want — a Slack incoming
+     webhook, PagerDuty, Discord, or any HTTP endpoint that accepts a POST. **For
+     Microsoft Teams**, delete the `webhook` receiver and uncomment the `MICROSOFT TEAMS`
+     block in that file, using a Power Automate **Workflows** URL (right-click channel →
+     Workflows → "Post to a channel when a webhook request is received"). Legacy
+     Office 365 connector URLs are being retired by Microsoft and won't work.
    - (Optional) Adjust the `params: [...]` thresholds in `alerting/alert-rules.yaml`
+     and `alerting/appliance-alert-rules.yaml`
      (see [alerting/README.md](alerting/README.md#tuning-thresholds)).
 
 **5. Install the alerts (provisioning, one restart)** — copy `grafana/alerting/` onto
@@ -62,7 +72,8 @@ restart Grafana once:
    volumes:
      - ./alerting:/etc/grafana/provisioning/alerting
    ```
-   Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (8 rules).
+   Rules appear under **Alerting → Alert rules → "ClickStack Alerts"** (15 rules:
+   8 platform + 7 appliance).
    Later threshold tweaks just need a `POST /api/admin/provisioning/alerting/reload`
    (no full restart).
 
@@ -75,7 +86,7 @@ File-based provisioning needs write access to `/etc/grafana/provisioning/`, whic
 Cloud and some managed setups don't allow. In that case the **dashboards still import
 normally** (step 3); for the **alerts**, use the Terraform provider instead — see
 [`alerting/terraform/`](alerting/terraform/README.md) for a ready-to-apply example that
-creates the same 8 rules, the alert contact point, and the notification policy via the
+creates the same 15 rules, the alert contact point, and the notification policy via the
 Grafana API.
 
 ---
@@ -84,11 +95,11 @@ Grafana API.
 
 | File | Dashboard | Reads from | Answers |
 |------|-----------|-----------|---------|
-| `dashboards/executive-summary.json` | **Executive Summary** | all three | One-pane health across services, Kubernetes, and logs — top signals only. |
+| `dashboards/operations-center.json` | **Operations Center** | all three | Is anything wrong right now, and where? Requests, Kubernetes, resource utilization, logs, and recent cluster events — top signals only. |
 | `dashboards/service-health-golden-signals.json` | **Service Health** | `otel_traces` | Are my services up, fast, and error-free? (Rate / Errors / Duration per service) |
 | `dashboards/kubernetes-cluster-overview.json` | **Kubernetes Cluster Overview** | `otel_metrics_gauge` | Are nodes/pods healthy? CPU, memory, restarts, deployment availability. |
 | `dashboards/logs-errors-overview.json` | **Logs & Errors Overview** | `otel_logs` | How much are we logging, what's erroring, and what do the latest errors say? |
-| `dashboards/host-os-metrics.json` | **Host / OS Metrics** | `otel_metrics_gauge`, `otel_metrics_sum` | Are the underlying hosts healthy? CPU, memory, load, disk and network I/O per host. |
+| `dashboards/infrastructure.json` | **Infrastructure** | `otel_metrics_gauge`, `otel_metrics_sum` | Is the foundation healthy? Cluster/node health, host CPU / memory / load, per-volume storage capacity and latency, network throughput and errors, and capacity headroom. |
 
 These five use only the **default OpenTelemetry ClickHouse schema** that ClickStack ships
 with (`otel_traces` / `otel_logs` / `otel_metrics_*`), so they populate on a standard
@@ -98,11 +109,11 @@ ClickStack / HyperDX deployment with no extra data sources.
 
 | File | Dashboard | Reads from | Needs |
 |------|-----------|-----------|-------|
-| `dashboards/advanced/latency-histograms.json` | **Request Latency & Volume** | `otel_metrics_histogram` | Your apps must emit OTLP **explicit-bucket histogram** metrics (`http.*.duration` / `rpc.*.duration`). Average latency and request rate for HTTP server/client and RPC calls. |
+| `dashboards/advanced/latency-histograms.json` | **Services (Latency Histograms)** | `otel_metrics_histogram` | Your apps must emit OTLP **explicit-bucket histogram** metrics (`http.*.duration` / `rpc.*.duration`). Advanced companion to Service Health: average latency and request rate for HTTP server/client and RPC calls. |
 
-**Filters:** the Service Health, Kubernetes, Logs, and Host / OS dashboards include a
+**Filters:** the Service Health, Kubernetes, Logs, and Infrastructure dashboards include a
 **Service**, **Namespace**, or **Host** drop-down (multi-select, defaults to *All*) at the top, so
-you can narrow every panel to the workloads you care about. The Executive Summary is intentionally
+you can narrow every panel to the workloads you care about. The Operations Center is intentionally
 unfiltered — it's the always-on overview.
 
 **Alerts:** a companion set of Grafana unified-alerting rules (error rate, latency,
@@ -120,12 +131,12 @@ the telemetry you actually send. Use this to predict what will have data before 
 
 | Dashboard | Needs | Stays empty if… |
 |-----------|-------|-----------------|
-| **Executive Summary** | any of the signals below | nothing is flowing into ClickStack yet |
+| **Operations Center** | any of the signals below | nothing is flowing into ClickStack yet |
 | **Service Health** | trace spans in `otel_traces` (apps instrumented with OTel tracing) | your services don't emit server spans |
 | **Kubernetes Cluster Overview** | `otel_metrics_gauge` from the OTel **k8s cluster receiver** + **kubelet stats receiver** (ClickStack's infra collectors ship these) | those receivers aren't enabled or scraping |
 | **Logs & Errors Overview** | log rows in `otel_logs` (container logs and/or app OTLP logs) | no log pipeline is wired up |
-| **Host / OS Metrics** | `system.*` metrics from the OTel **hostmetrics receiver** | the hostmetrics receiver isn't enabled |
-| **Request Latency & Volume** | explicit-bucket histogram metrics (`http.*.duration` / `rpc.*.duration`) in `otel_metrics_histogram` | your apps don't emit OTLP histogram metrics |
+| **Infrastructure** | `system.*` metrics from the OTel **hostmetrics receiver** and `k8s.node.*` from the **kubeletstats receiver** | neither receiver is enabled (host panels and node panels fail independently) |
+| **Services (Latency Histograms)** | explicit-bucket histogram metrics (`http.*.duration` / `rpc.*.duration`) in `otel_metrics_histogram` | your apps don't emit OTLP histogram metrics |
 
 **Empty dashboard? quick checks**
 
@@ -227,9 +238,12 @@ providers:
 Captured against a live ClickStack cluster — this is what lands after you import. Click any
 image for full size.
 
-**Executive Summary** — the one-pane health wall:
+> **Note:** these screenshots predate the Operations Center / Infrastructure rebuild, so panel
+> layouts differ from the current JSON. The data sources and thresholds are unchanged.
 
-[![Executive Summary](screenshots/exec-summary.png)](screenshots/exec-summary.png)
+**Operations Center** — the one-pane health wall:
+
+[![Operations Center](screenshots/operations-center.png)](screenshots/operations-center.png)
 
 <table>
 <tr>
@@ -246,17 +260,24 @@ image for full size.
 
 ## Dashboard details
 
-### Executive Summary (all three sources)
+### Operations Center (all three sources)
 - **Application request health:** average server request rate, server request error rate,
   95th-percentile server latency, and a services-receiving-requests count; plus
   server-requests and server-error-rate trends per chart interval.
 - **Kubernetes workload health:** ready nodes, running pods, pods pending/failed/unknown,
   and container restarts during the selected range.
+- **Resource utilization:** cluster CPU utilization, cluster memory utilization, lowest node
+  disk free %, and a **cluster health score** (share of nodes Ready × share of pods
+  Running-or-Succeeded, both from their latest sample — 100% means everything is where it
+  should be).
 - **Application logs:** average log record rate, average error-and-fatal log rate,
   error-and-fatal share of logs, fatal-log count; plus log-records-by-severity and
   error-logs-by-service trends.
 - **Service health details:** every service ranked by error percentage, color-coded.
-- *A single at-a-glance page for status pages, war-rooms, or a leadership screen. No filters.*
+- **Recent cluster events:** the 50 newest Kubernetes events — usually the fastest
+  explanation for a status change you just saw above.
+- *A single at-a-glance page for status pages, war-rooms, or a leadership screen. No filters.
+  Drill into Infrastructure, Kubernetes, Service Health, or Logs for detail.*
 
 ### Service Health (`otel_traces`)
 - **Filter:** `Service` (multi-select, default All).
@@ -303,6 +324,44 @@ image for full size.
   Severity charts group by a normalized bucket, so `info`/`information` and
   `ERROR`/`error` each collapse to one series. Includes both Kubernetes container
   logs and application OTLP logs, exactly as ClickStack ingests them.*
+
+### Infrastructure (`otel_metrics_gauge`, `otel_metrics_sum`)
+- **Filter:** `Host` (multi-select, default All) — applies to host-level `system.*` panels.
+  Node-level `k8s.node.*` panels always show the whole cluster, because `k8s.node.name` and
+  `host.name` are different dimensions.
+- **Cluster health:** Kubernetes nodes Ready %, healthy nodes, unhealthy (Not Ready) nodes,
+  hosts reporting metrics, and a per-node table of status and uptime.
+- **Node health (hosts):** average CPU, memory and 1-minute load plus the highest inode usage %;
+  CPU, memory, load and paging activity as per-host time series; plus a per-host averages table
+  color-coded against thresholds.
+- **Storage health:** filesystem used % **by volume**, free filesystem capacity by volume, disk
+  operations per chart interval (the IOPS signal), **average disk latency in ms/op**, and disk
+  I/O volume per host.
+- **Network health:** network I/O volume, packets dropped, and interface errors per host.
+- **Capacity planning:** CPU headroom, memory headroom, lowest volume free %, total free
+  memory; plus CPU-and-memory headroom over time and free % by volume over time.
+- *Requires the OpenTelemetry **hostmetrics receiver** (`system.*`) and **kubeletstats
+  receiver** (`k8s.node.*`).*
+- **Counter panels are windowed.** Disk and network metrics are cumulative counters, so those
+  charts show the **per-chart-interval delta** (`max − min` per host/device/direction) — that
+  is volume per bucket, not a per-second rate, and bucket width changes with the time range.
+  **Disk latency is the exception:** it divides the operation-time delta by the operation
+  delta, so it is interval-independent and directly comparable across time ranges.
+- **Headroom is the inverse of utilization**, averaged across the fleet. Watch the *slope* of
+  the headroom and disk-free charts rather than the absolute value — a line falling a few
+  percent per day tells you exactly how long you have before you need to add capacity.
+
+### Services — Latency Histograms (`otel_metrics_histogram`, advanced)
+- **Filter:** `Service` (multi-select, default All).
+- **At a glance:** average incoming HTTP latency, average incoming HTTP requests/sec, and
+  average outgoing HTTP latency.
+- **Trends by service:** average incoming HTTP latency and request count per time bucket.
+- **Service & request type:** average latency and request count for the 30 highest-volume
+  service × request-type combinations (incoming HTTP, outgoing HTTP, incoming RPC).
+- *These are request-weighted **means** derived from the change in histogram `Sum` and
+  `Count` — they do **not** show the distribution or tail percentiles. For p95/p99 use
+  **Service Health**, which computes them from traces. This board is opt-in because it only
+  populates if your applications emit OTLP explicit-bucket histogram metrics.*
 
 ---
 

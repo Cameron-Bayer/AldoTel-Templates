@@ -1,0 +1,2398 @@
+{
+  "uid": "clickstack-infrastructure",
+  "title": "ClickStack - Infrastructure",
+  "description": "The foundation underneath ClickStack: Kubernetes node health, host CPU/memory/load/paging, per-volume storage capacity and disk latency, network throughput and errors, and capacity headroom — from the OpenTelemetry hostmetrics and kubeletstats receivers.",
+  "tags": [
+    "clickstack",
+    "opentelemetry"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "graphTooltip": 1,
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "hide": 0,
+        "includeAll": false,
+        "label": "ClickHouse datasource",
+        "multi": false,
+        "name": "clickhouseDatasource",
+        "options": [],
+        "query": "grafana-clickhouse-datasource",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "datasource"
+      },
+      {
+        "name": "database",
+        "label": "ClickHouse database",
+        "type": "constant",
+        "query": "default",
+        "current": {
+          "value": "default",
+          "text": "default",
+          "selected": false
+        },
+        "options": [
+          {
+            "value": "default",
+            "text": "default",
+            "selected": false
+          }
+        ],
+        "hide": 2,
+        "skipUrlSync": false
+      },
+      {
+        "name": "host",
+        "label": "Host",
+        "type": "query",
+        "datasource": {
+          "type": "grafana-clickhouse-datasource",
+          "uid": "${clickhouseDatasource}"
+        },
+        "definition": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
+        "query": {
+          "refId": "host-var",
+          "rawSql": "SELECT DISTINCT ResourceAttributes['host.name'] FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] != '' ORDER BY 1",
+          "meta": {
+            "builderOptions": {
+              "database": "default"
+            }
+          }
+        },
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "allValue": null,
+        "current": {
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ],
+          "selected": false
+        },
+        "options": [],
+        "hide": 0,
+        "sort": 1,
+        "regex": "",
+        "skipUrlSync": false
+      }
+    ]
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": null,
+      "type": "text",
+      "title": "",
+      "gridPos": {
+        "h": 6,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "## Infrastructure\nThe physical and virtual foundation underneath ClickStack: **Kubernetes node health, host CPU/memory/load, per-volume storage, network, and capacity headroom**. Metrics come from the OpenTelemetry `hostmetrics` and `kubeletstats` receivers and are stored in ClickHouse. **Summary cards are averages or latest values over the selected time range**; charts use automatic Grafana intervals. The **Host** filter narrows host-level (`system.*`) panels, which includes every storage panel; the node status panels (`k8s.node.*`) always show the whole cluster. No data usually means the receiver isn't reporting."
+      },
+      "transparent": false
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Cluster health",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Kubernetes nodes Ready %",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * countIf(v = 1) / nullIf(count(), 0) AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 90
+              },
+              {
+                "color": "green",
+                "value": 100
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Percentage of Kubernetes nodes whose latest Ready condition in the selected range is true. Anything below 100% means at least one node is not accepting workloads."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Healthy nodes",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT countIf(v = 1) AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Nodes reporting Ready = true on their most recent sample. Compare with the expected cluster size; a drop means capacity was lost."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Unhealthy nodes (Not Ready)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT countIf(v != 1) AS value FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS v\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY n)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Nodes whose latest Ready condition is false or unknown. Any non-zero value is red and should be investigated immediately — pods on that node are not being scheduled."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Hosts reporting metrics",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT count(DISTINCT ResourceAttributes['host.name']) AS value FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Distinct selected hosts that reported CPU utilization during the selected time range. Fewer hosts than expected means the host-metrics receiver stopped on one of them."
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Node status & uptime",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 12
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT g.node AS \"Node\",\n       if(g.ready = 1, 'Ready', 'Not Ready') AS \"Status\",\n       toUInt64(s.uptime) AS \"Uptime\"\nFROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node,\n         argMax(Value, TimeUnix) AS ready\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'k8s.node.condition_ready' AND $__timeFilter(TimeUnix)\n  GROUP BY node) g\nLEFT JOIN (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS uptime\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'k8s.node.uptime' AND $__timeFilter(TimeUnix)\n  GROUP BY node) s ON g.node = s.node\nORDER BY \"Status\" DESC, \"Uptime\" ASC",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Status"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "Ready": {
+                        "text": "Ready",
+                        "color": "green",
+                        "index": 0
+                      },
+                      "Not Ready": {
+                        "text": "Not Ready",
+                        "color": "red",
+                        "index": 1
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Uptime"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Latest sample per Kubernetes node: Ready status and how long the node has been up. A short uptime after an incident indicates the node rebooted. Per-host CPU and memory are in the Node health section below."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Node health (hosts)",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 20
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Average CPU utilization",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * avg(busy) AS value FROM (\n  SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average non-idle CPU utilization across selected hosts and the full selected time range. Short spikes may be hidden by this average — check the CPU chart below."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Average memory utilization",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * avgIf(Value, Attributes['state'] = 'used') AS value FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 80
+              },
+              {
+                "color": "red",
+                "value": 92
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average used-memory percentage across selected hosts and the full selected time range. Green below 80%, yellow 80–92%, red 92% or higher."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Average 1-minute load",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT avg(Value) AS value FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.cpu.load_average.1m' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 2,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average one-minute system load across selected hosts. Compare each host's load with its CPU-core count; load above the core count means processes are queuing for CPU."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Highest inode usage %",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 21
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * max(used / nullIf(total, 0)) AS value FROM (\n  SELECT host, mountpoint, sumIf(v, st = 'used') AS used, sum(v) AS total FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, Attributes['state'] AS st,\n           argMax(Value, TimeUnix) AS v\n    FROM ${database}.otel_metrics_sum\n    WHERE MetricName = 'system.filesystem.inodes.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n    GROUP BY host, mountpoint, st)\n  GROUP BY host, mountpoint)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 75
+              },
+              {
+                "color": "red",
+                "value": 90
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Highest inode consumption of any mounted volume. A filesystem can refuse new files while still reporting free bytes, because it ran out of inodes rather than space — a workload creating very many small files (container layers, ClickHouse parts, log shards) hits this first."
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "CPU utilization by host",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, 100 * avg(busy) AS \"cpu %\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix, time)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Non-idle CPU percentage for each selected host over time. Sustained values above 75% warrant attention; above 90% are critical.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Memory utilization by host",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 26
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host, 100 * avgIf(Value, Attributes['state'] = 'used') AS \"mem %\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Used-memory percentage for each selected host over time. Sustained values above 80% warrant attention; above 92% are critical.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Load average (1m) by host",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 34
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host, avg(Value) AS \"load 1m\"\nFROM ${database}.otel_metrics_gauge\nWHERE MetricName = 'system.cpu.load_average.1m' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "One-minute run-queue length per host. A load consistently above the host CPU-core count means work is waiting for CPU even if utilization looks acceptable.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Paging activity by host (per chart interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 34
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, sum(d) AS \"page operations\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n         concat(Attributes['direction'], '/', Attributes['type']) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.paging.operations' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Pages moved between memory and disk by each host during each chart interval. This is the memory-pressure signal: a host with ample free memory pages almost never, so a rising line means the working set no longer fits in RAM and the system is trading latency for space. Correlate with the memory chart above.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "table",
+      "title": "Host averages over selected time range",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 9,
+        "w": 24,
+        "x": 0,
+        "y": 42
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT c.host AS \"Host\",\n       round(c.cpu, 1) AS \"CPU %\",\n       round(m.mem, 1) AS \"Mem %\",\n       round(m.load, 2) AS \"Load 1m\",\n       round(m.load15, 2) AS \"Load 15m\"\nFROM (\n  SELECT host, 100 * avg(busy) AS cpu FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix)\n  GROUP BY host) c\nLEFT JOIN (\n  SELECT ResourceAttributes['host.name'] AS host,\n         100 * avgIf(Value, MetricName = 'system.memory.utilization' AND Attributes['state'] = 'used') AS mem,\n         avgIf(Value, MetricName = 'system.cpu.load_average.1m') AS load,\n         avgIf(Value, MetricName = 'system.cpu.load_average.15m') AS load15\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName IN ('system.memory.utilization', 'system.cpu.load_average.1m', 'system.cpu.load_average.15m') AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host) m ON c.host = m.host\nORDER BY \"CPU %\" DESC",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "filterable": true
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "CPU %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 75
+                    },
+                    {
+                      "color": "red",
+                      "value": 90
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Mem %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "green",
+                      "value": null
+                    },
+                    {
+                      "color": "yellow",
+                      "value": 80
+                    },
+                    {
+                      "color": "red",
+                      "value": 92
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load 1m"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Load 15m"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Per-host averages over the full selected time range, sorted by average CPU utilization. These are not the latest samples."
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Storage health",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 51
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Filesystem used % by volume",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 52
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, volume, 100 * (cap - avail) / nullIf(cap, 0) AS \"used %\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n         sumIf(Value, Attributes['state'] = 'free') AS avail, sum(Value) AS cap\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.filesystem.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, volume)\nWHERE cap > 0 ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Percentage of each mounted volume in use, tracked separately per volume rather than rolled up per node — the volume backing container images and the one backing the database fill at completely different rates. Above 80% plan cleanup; above 90% the kubelet starts evicting pods and image pulls fail.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Free filesystem capacity by volume",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 52
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT $__timeInterval(TimeUnix) AS time, concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume, avgIf(Value, Attributes['state'] = 'free') AS \"free\"\nFROM ${database}.otel_metrics_sum\nWHERE MetricName = 'system.filesystem.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\nGROUP BY time, volume ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Absolute free bytes on each mounted volume. A steadily falling line is the earliest reliable signal that you will run out of disk — extrapolate the slope to estimate when, and act before it reaches zero rather than after.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Disk operations by host (per chart interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 60
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, sum(d) AS \"operations\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n         concat(Attributes['device'], '/', Attributes['direction']) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.disk.operations' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Read plus write operations completed by each host during each chart interval — the IOPS signal. This is a count per interval, not per second; interval width changes with the time range.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Average disk latency by host",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 60
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT t.time AS time, t.host AS host, 1000 * t.secs / nullIf(o.ops, 0) AS \"ms/op\"\nFROM (\n  SELECT time, host, sum(d) AS secs FROM (\n    SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n           concat(Attributes['device'], '/', Attributes['direction']) AS s,\n           max(Value) - min(Value) AS d\n    FROM ${database}.otel_metrics_sum\n    WHERE MetricName = 'system.disk.operation_time' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n    GROUP BY time, host, s)\n  GROUP BY time, host) t\nLEFT JOIN (\n  SELECT time, host, sum(d) AS ops FROM (\n    SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n           concat(Attributes['device'], '/', Attributes['direction']) AS s,\n           max(Value) - min(Value) AS d\n    FROM ${database}.otel_metrics_sum\n    WHERE MetricName = 'system.disk.operations' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n    GROUP BY time, host, s)\n  GROUP BY time, host) o ON t.time = o.time AND t.host = o.host\nORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Milliseconds of service time per disk operation (operation-time delta divided by operation delta). Unlike the volume charts this value is independent of the chart interval. Single-digit ms is healthy for SSD; a sustained climb means the disk is saturated.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Disk I/O volume by host (per chart interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 68
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, sum(d) AS bytes FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n         concat(Attributes['device'], '/', Attributes['direction']) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.disk.io' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Combined bytes read and written by each host during each chart interval. This is volume, not bytes per second — a wider time range means wider buckets and larger values.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Network health",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 76
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Network I/O volume by host (per chart interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 0,
+        "y": 77
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, sum(d) AS bytes FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n         concat(Attributes['device'], '/', Attributes['direction']) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.network.io' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Combined bytes received and transmitted by each host during each chart interval. Use it to spot traffic spikes and to correlate them with latency or error charts.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Packets dropped by host (per chart interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 8,
+        "y": 77
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, sum(d) AS \"dropped\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n         concat(Attributes['device'], '/', Attributes['direction']) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.network.dropped' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Network packets discarded by each host during each chart interval. Any sustained non-zero value points at buffer exhaustion, NIC saturation, or a misconfigured interface.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Network interface errors by host (per chart interval)",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 8,
+        "x": 16,
+        "y": 77
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, host, sum(d) AS \"errors\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host,\n         concat(Attributes['device'], '/', Attributes['direction']) AS s,\n         max(Value) - min(Value) AS d\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.network.errors' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, host, s)\nGROUP BY time, host ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Interface-level receive and transmit errors per chart interval. Non-zero values usually indicate a physical problem — cabling, transceiver, or switch port — rather than an application fault.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "row",
+      "title": "Capacity planning",
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 85
+      },
+      "panels": []
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "CPU headroom",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 0,
+        "y": 86
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 - 100 * avg(busy) AS value FROM (\n  SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "green",
+                "value": 25
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average unused CPU across selected hosts — how much compute you can still absorb. Below 25% is tight, below 10% means the next workload spike will cause contention."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Memory headroom",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 6,
+        "y": 86
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 - 100 * avgIf(Value, Attributes['state'] = 'used') AS value FROM ${database}.otel_metrics_gauge WHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "green",
+                "value": 20
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Average unallocated memory across selected hosts. Memory has no equivalent of CPU throttling — running out triggers the OOM killer, so keep this above 20%."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Lowest volume free %",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 12,
+        "y": 86
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT 100 * min(avail / nullIf(cap, 0)) AS value FROM (\n  SELECT host, mountpoint, sumIf(v, st = 'free') AS avail, sum(v) AS cap FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, Attributes['state'] AS st,\n           argMax(Value, TimeUnix) AS v\n    FROM ${database}.otel_metrics_sum\n    WHERE MetricName = 'system.filesystem.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n    GROUP BY host, mountpoint, st)\n  GROUP BY host, mountpoint)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 1,
+          "color": {
+            "mode": "thresholds"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 15
+              },
+              {
+                "color": "green",
+                "value": 25
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Free-space percentage on the most constrained mounted volume anywhere in the fleet. This is the volume that runs out first, so it governs the whole cluster — and because it is measured per volume rather than per node, a single full data disk cannot be averaged away by healthy volumes on the same node."
+    },
+    {
+      "id": null,
+      "type": "stat",
+      "title": "Total free memory",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 5,
+        "w": 6,
+        "x": 18,
+        "y": 86
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT sum(v) AS value FROM (\n  SELECT ResourceAttributes['host.name'] AS host, argMaxIf(Value, TimeUnix, Attributes['state'] = 'free') AS v\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.memory.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host)",
+          "queryType": "table",
+          "format": 1,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "decbytes",
+          "decimals": 1,
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "text"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "mappings": []
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "none",
+        "graphMode": "area",
+        "justifyMode": "auto"
+      },
+      "description": "Sum of the latest free-memory reading across selected hosts — the memory left for new workloads fleet-wide. Note this is a sum, so a large number can still hide one nearly-full host; check the per-host memory chart before relying on it."
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "CPU & memory headroom over time",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 91
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT c.time AS time, 100 - c.busy AS \"CPU headroom %\", 100 - m.used AS \"Memory headroom %\"\nFROM (\n  SELECT time, 100 * avg(busy) AS busy FROM (\n    SELECT $__timeInterval(TimeUnix) AS time, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix, time)\n  GROUP BY time) c\nLEFT JOIN (\n  SELECT $__timeInterval(TimeUnix) AS time, 100 * avgIf(Value, Attributes['state'] = 'used') AS used\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.memory.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time) m ON c.time = m.time\nORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Fleet-average spare CPU and spare memory over time. A steady downward slope over days or weeks is the capacity-planning signal — extrapolate it to decide when to add nodes.",
+      "interval": "1m"
+    },
+    {
+      "id": null,
+      "type": "timeseries",
+      "title": "Free % by volume over time",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "${clickhouseDatasource}"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 91
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-clickhouse-datasource",
+            "uid": "${clickhouseDatasource}"
+          },
+          "editorType": "sql",
+          "rawSql": "SELECT time, volume, 100 * avail / nullIf(cap, 0) AS \"free %\" FROM (\n  SELECT $__timeInterval(TimeUnix) AS time, concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n         sumIf(Value, Attributes['state'] = 'free') AS avail, sum(Value) AS cap\n  FROM ${database}.otel_metrics_sum\n  WHERE MetricName = 'system.filesystem.usage' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY time, volume)\nWHERE cap > 0 ORDER BY time",
+          "queryType": "timeseries",
+          "format": 0,
+          "meta": {
+            "builderOptions": {
+              "database": "default",
+              "mode": "trend"
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "lineWidth": 1,
+            "fillOpacity": 10,
+            "gradientMode": "opacity",
+            "spanNulls": true,
+            "showPoints": "never",
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto"
+          },
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "mean",
+            "max",
+            "lastNotNull"
+          ]
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "description": "Free-space percentage per volume over time. Watch the slope, not the absolute value: a line falling a few percent per day tells you exactly how long you have before cleanup becomes urgent. This is the panel that turns a disk-full outage into a scheduled maintenance task.",
+      "interval": "1m"
+    }
+  ]
+}

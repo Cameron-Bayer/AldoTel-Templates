@@ -78,7 +78,7 @@ SELECT countIf(ready != 1) AS "Unhealthy nodes" FROM (
 
 </details>
 
-### Nodes - status, CPU, memory, uptime — table · Raw SQL
+### Nodes - status & uptime — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
 
@@ -87,12 +87,10 @@ SELECT countIf(ready != 1) AS "Unhealthy nodes" FROM (
 ```sql
 WITH g AS (
   SELECT ResourceAttributes['k8s.node.name'] AS node,
-    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.condition_ready') AS ready,
-    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.cpu.usage') AS cpu,
-    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') AS mem
+    argMax(Value, TimeUnix) AS ready
   FROM default.otel_metrics_gauge
   WHERE TimeUnix > now() - INTERVAL 1 HOUR
-    AND MetricName IN ('k8s.node.condition_ready', 'k8s.node.cpu.usage', 'k8s.node.memory.usage')
+    AND MetricName = 'k8s.node.condition_ready'
   GROUP BY node
 ),
 s AS (
@@ -103,11 +101,9 @@ s AS (
 )
 SELECT g.node AS Node,
   if(g.ready = 1, 'Ready', 'Not Ready') AS Status,
-  round(g.cpu, 2) AS "CPU (cores)",
-  formatReadableSize(g.mem) AS Memory,
   formatReadableTimeDelta(toUInt64(s.uptime)) AS Uptime
 FROM g LEFT JOIN s USING (node)
-ORDER BY g.cpu DESC
+ORDER BY Status DESC, s.uptime ASC
 ```
 
 </details>
@@ -180,22 +176,24 @@ ORDER BY ts
 
 </details>
 
-### Host swap used % — line · Raw SQL
+### Inode used % per volume — line · Raw SQL
 
-- **Tables:** `default.otel_metrics_gauge`
+- **Tables:** `default.otel_metrics_sum`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-       ResourceAttributes['host.name'] AS host,
-       avgIf(Value, Attributes['state'] = 'used') AS "Swap used"
-FROM default.otel_metrics_gauge
-WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+SELECT ts, volume, used / nullIf(total, 0) AS "Inodes used" FROM (
+  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+         concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+         sumIf(Value, Attributes['state'] = 'used') AS used,
+         sum(Value) AS total
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName = 'system.swap.utilization' AND $__filters
-GROUP BY ts, host
-ORDER BY ts
+      AND MetricName = 'system.filesystem.inodes.usage' AND $__filters
+  GROUP BY ts, volume
+) WHERE total > 0 ORDER BY ts
 ```
 
 </details>
@@ -247,49 +245,43 @@ ORDER BY c.cpu DESC
 ## Storage health
 Filesystem usage and free capacity, disk IOPS, read/write latency, and throughput per node.
 
-### Node filesystem usage % — line · Raw SQL
+### Filesystem used % per volume — line · Raw SQL
 
-- **Tables:** `default.otel_metrics_gauge`
+- **Tables:** `default.otel_metrics_sum`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, node, usage / capacity AS "Filesystem" FROM (
+SELECT ts, volume, used / nullIf(total, 0) AS "Filesystem" FROM (
   SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-    ResourceAttributes['k8s.node.name'] AS node,
-    avgIf(Value, MetricName = 'k8s.node.filesystem.usage') AS usage,
-    avgIf(Value, MetricName = 'k8s.node.filesystem.capacity') AS capacity
-  FROM default.otel_metrics_gauge
+    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+    sumIf(Value, Attributes['state'] = 'used') AS used,
+    sum(Value) AS total
+  FROM default.otel_metrics_sum
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-      AND MetricName IN ('k8s.node.filesystem.usage', 'k8s.node.filesystem.capacity')
-  GROUP BY ts, node
-) WHERE capacity > 0 ORDER BY ts
+    AND MetricName = 'system.filesystem.usage'
+  GROUP BY ts, volume
+) WHERE total > 0 ORDER BY ts
 ```
 
 </details>
 
-### Free filesystem capacity per node (GB) — line · Raw SQL
+### Free filesystem capacity per volume (GB) — line · Raw SQL
 
-- **Tables:** `default.otel_metrics_gauge`
+- **Tables:** `default.otel_metrics_sum`
 
 <details><summary>SQL query</summary>
 
 ```sql
-WITH u AS (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS used
-  FROM default.otel_metrics_gauge
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.usage' GROUP BY ts, node
-),
-c AS (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cap
-  FROM default.otel_metrics_gauge
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.capacity' GROUP BY ts, node
-)
-SELECT u.ts AS ts, u.node AS node, greatest(c.cap - u.used, 0) / 1e9 AS "Free (GB)"
-FROM u JOIN c ON u.ts = c.ts AND u.node = c.node ORDER BY ts
+SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+       concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+       avgIf(Value, Attributes['state'] = 'free') / 1e9 AS "Free (GB)"
+FROM default.otel_metrics_sum
+WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'system.filesystem.usage'
+GROUP BY ts, volume ORDER BY ts
 ```
 
 </details>
@@ -490,45 +482,43 @@ GROUP BY ts ORDER BY ts
 
 </details>
 
-### Available memory per node (GB) — line · Raw SQL
+### Free memory per host (GB) — line · Raw SQL
 
-- **Tables:** `default.otel_metrics_gauge`
+- **Tables:** `default.otel_metrics_sum`
 
 <details><summary>SQL query</summary>
 
 ```sql
 SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-       ResourceAttributes['k8s.node.name'] AS node,
-       avg(Value) / 1e9 AS "Available (GB)"
-FROM default.otel_metrics_gauge
+       ResourceAttributes['host.name'] AS host,
+       avgIf(Value, Attributes['state'] = 'free') / 1e9 AS "Free (GB)"
+FROM default.otel_metrics_sum
 WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.memory.available'
-GROUP BY ts, node ORDER BY ts
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'system.memory.usage'
+GROUP BY ts, host ORDER BY ts
 ```
 
 </details>
 
-### Disk free % per node over time — line · Raw SQL
+### Disk free % per volume over time — line · Raw SQL
 
-- **Tables:** `default.otel_metrics_gauge`
+- **Tables:** `default.otel_metrics_sum`
 
 <details><summary>SQL query</summary>
 
 ```sql
-WITH u AS (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS used
-  FROM default.otel_metrics_gauge
+SELECT ts, volume, avail / nullIf(total, 0) AS "Disk free" FROM (
+  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+    sumIf(Value, Attributes['state'] = 'free') AS avail,
+    sum(Value) AS total
+  FROM default.otel_metrics_sum
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.usage' GROUP BY ts, node
-),
-c AS (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['k8s.node.name'] AS node, avg(Value) AS cap
-  FROM default.otel_metrics_gauge
-  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.filesystem.capacity' GROUP BY ts, node
-)
-SELECT u.ts AS ts, u.node AS node, if(c.cap = 0, 0, 1 - u.used / c.cap) AS "Disk free"
-FROM u JOIN c ON u.ts = c.ts AND u.node = c.node ORDER BY ts
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'system.filesystem.usage'
+  GROUP BY ts, volume
+) WHERE total > 0 ORDER BY ts
 ```
 
 </details>

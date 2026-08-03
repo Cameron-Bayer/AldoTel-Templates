@@ -42,71 +42,71 @@ SELECT if(total = 0, 0, ready / total) AS "Nodes ready" FROM (
 
 </details>
 
-### Node CPU usage (cores; vs allocatable) — line · Raw SQL
+### Host CPU utilization % — line · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT
-  toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-  ResourceAttributes['k8s.node.name'] AS node,
-  avg(Value) AS "CPU (cores)"
-FROM default.otel_metrics_gauge
-WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName = 'k8s.node.cpu.usage'
-GROUP BY ts, node
-ORDER BY ts
-```
-
-</details>
-
-### Node memory used (vs allocatable) — line · Raw SQL
-
-- **Tables:** `default.otel_metrics_gauge`
-
-<details><summary>SQL query</summary>
-
-```sql
-SELECT
-  toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-  ResourceAttributes['k8s.node.name'] AS node,
-  avg(Value) AS "Memory"
-FROM default.otel_metrics_gauge
-WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
-    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName = 'k8s.node.memory.usage'
-GROUP BY ts, node
-ORDER BY ts
-```
-
-</details>
-
-### Node filesystem usage % — line · Raw SQL
-
-- **Tables:** `default.otel_metrics_gauge`
-
-<details><summary>SQL query</summary>
-
-```sql
-SELECT ts, node, usage / capacity AS "Filesystem" FROM (
+SELECT ts, host, avg(busy) AS "CPU" FROM (
   SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-    ResourceAttributes['k8s.node.name'] AS node,
-    avgIf(Value, MetricName = 'k8s.node.filesystem.usage') AS usage,
-    avgIf(Value, MetricName = 'k8s.node.filesystem.capacity') AS capacity
+         ResourceAttributes['host.name'] AS host,
+         Attributes['cpu'] AS cpu,
+         TimeUnix AS t,
+         sumIf(Value, Attributes['state'] != 'idle') AS busy
   FROM default.otel_metrics_gauge
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-      AND MetricName IN ('k8s.node.filesystem.usage', 'k8s.node.filesystem.capacity')
-  GROUP BY ts, node
-) WHERE capacity > 0 ORDER BY ts
+      AND MetricName = 'system.cpu.utilization'
+  GROUP BY ts, host, cpu, t
+) GROUP BY ts, host ORDER BY ts
 ```
 
 </details>
 
-### Nodes - status, CPU, memory, uptime — table · Raw SQL
+### Host memory utilization % — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+       ResourceAttributes['host.name'] AS host,
+       avgIf(Value, Attributes['state'] = 'used') AS "Memory"
+FROM default.otel_metrics_gauge
+WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'system.memory.utilization'
+GROUP BY ts, host ORDER BY ts
+```
+
+</details>
+
+### Filesystem used % per volume — line · Raw SQL
+
+- **Tables:** `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ts, volume, used / nullIf(total, 0) AS "Filesystem" FROM (
+  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
+    sumIf(Value, Attributes['state'] = 'used') AS used,
+    sum(Value) AS total
+  FROM default.otel_metrics_sum
+  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND MetricName = 'system.filesystem.usage'
+  GROUP BY ts, volume
+) WHERE total > 0 ORDER BY ts
+```
+
+</details>
+
+### Nodes - status & uptime — table · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
 
@@ -115,12 +115,10 @@ SELECT ts, node, usage / capacity AS "Filesystem" FROM (
 ```sql
 WITH g AS (
   SELECT ResourceAttributes['k8s.node.name'] AS node,
-    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.condition_ready') AS ready,
-    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.cpu.usage') AS cpu,
-    argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') AS mem
+    argMax(Value, TimeUnix) AS ready
   FROM default.otel_metrics_gauge
   WHERE TimeUnix > now() - INTERVAL 1 HOUR
-    AND MetricName IN ('k8s.node.condition_ready', 'k8s.node.cpu.usage', 'k8s.node.memory.usage')
+    AND MetricName = 'k8s.node.condition_ready'
   GROUP BY node
 ),
 s AS (
@@ -131,11 +129,9 @@ s AS (
 )
 SELECT g.node AS Node,
   if(g.ready = 1, 'Ready', 'Not Ready') AS Status,
-  round(g.cpu, 2) AS "CPU (cores)",
-  formatReadableSize(g.mem) AS Memory,
   formatReadableTimeDelta(toUInt64(s.uptime)) AS Uptime
 FROM g LEFT JOIN s USING (node)
-ORDER BY g.cpu DESC
+ORDER BY Status DESC, s.uptime ASC
 ```
 
 </details>
@@ -421,22 +417,21 @@ ORDER BY ts
 
 </details>
 
-### Node memory saturation % — number · Raw SQL
+### Host memory saturation % — number · Raw SQL
 
 - **Tables:** `default.otel_metrics_gauge`
 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT max(sat) AS "Node mem saturation" FROM (
-  SELECT ResourceAttributes['k8s.node.name'] AS node,
-         argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') /
-         nullIf(argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.usage') + argMaxIf(Value, TimeUnix, MetricName = 'k8s.node.memory.available'), 0) AS sat
+SELECT max(sat) AS "Host mem saturation" FROM (
+  SELECT ResourceAttributes['host.name'] AS host,
+         argMaxIf(Value, TimeUnix, Attributes['state'] = 'used') AS sat
   FROM default.otel_metrics_gauge
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
-    AND MetricName IN ('k8s.node.memory.usage', 'k8s.node.memory.available')
-  GROUP BY node
+    AND MetricName = 'system.memory.utilization'
+  GROUP BY host
 )
 ```
 
