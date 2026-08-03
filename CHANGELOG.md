@@ -41,6 +41,24 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   restoring the generator as the single source of truth. Narrative docs (`grafana/README.md`,
   `hyperdx/DASHBOARD-DEEP-DIVE.md`) and the auto-generated `hyperdx/docs/` were updated to match.
 
+### Added
+
+- **The Grafana installer now asks where alerts should go.** `install-k8s.ps1` / `install-k8s.sh`
+  prompt for a notification destination before touching the cluster — Microsoft Teams, Slack,
+  email, PagerDuty, a generic webhook, or keep the file as-is — validate the answer, and generate
+  the matching contact point. Answers are written to temporary copies, so `grafana/alerting/`
+  is never modified and the repo stays re-runnable. Prompts are skipped when stdin is not a TTY
+  or `-NonInteractive` / `--non-interactive` is passed, and every answer has a corresponding
+  flag for unattended installs. Teams deliberately requires a **Power Automate Workflows** URL:
+  Microsoft blocked new Office 365 connectors in 2024 and retires existing ones in 2026, so the
+  installer rejects `outlook.office.com` webhooks rather than wiring up a channel that will
+  silently stop working.
+- **HyperDX alert `clickhouse-disk-low`** — fires when the ClickHouse data volume drops below
+  10% free. The tile already existed on the platform dashboard but nothing alerted on it, and a
+  full ClickHouse volume takes the entire stack down at once: ingestion stops, the pod
+  crash-loops, and every dashboard goes blank. Note the `0.1` threshold — that tile emits a
+  fraction and renders it as a percent, so a value of `10` would never be reached.
+
 ### Fixed
 
 - **Every dashboard and alert rule now queries only metrics the appliance actually emits.**
@@ -65,6 +83,29 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
 - **`hyperdx/requirements.json` no longer fails preflight on a healthy appliance.**
   `k8s.node.cpu.usage` and `k8s.node.memory.usage` were marked `required: true` despite never being
   emitted, so `preflight.ps1`/`.sh` reported the Kubernetes dashboard as incompatible everywhere.
+- **The HyperDX alert pack was entirely non-functional.** `import-alerts` resolves `alert.dashboard`
+  against a dashboard's `tmpl:<slug>` tag and `alert.tile` against an exact tile name; every rule
+  in the pack pointed at a dashboard or tile the overhaul retired, so all five were skipped. The
+  importer skips with a warning rather than failing, which is why a dead pack imported
+  "successfully". `error-rate` and `slo-fast-burn` were rebound from `services-red` to `services`
+  (the latter also for a retitled tile) and `collector-drops` from `collector-health` to
+  `observability-platform`.
+- **`-KeyVaultWorkload` / `--keyvault-workload` was a silent no-op.** The substitution looked for
+  the literal `keyvault`, but the alert pack now ships `moc-kms`. The flag matched nothing and
+  reported success.
+- **`install-k8s.sh` aborted when no workload flag was passed.** Under `set -euo pipefail` the
+  staging block ended with `[ -n "$VAR" ] && echo …`; with an empty variable that compound returns
+  1 as the final command of the `if` body, terminating the script. This fired on the appliance
+  path, where staging is always triggered by the non-default datasource UID.
+- **PowerShell scripts containing non-ASCII characters now carry a UTF-8 BOM.** Windows
+  PowerShell 5.1 reads a BOM-less file as CP1252, which renders an em-dash as a right double
+  quotation mark — a character it will honour as a string delimiter.
+- **Supportability's "new log patterns" tile replaced with errors by service.** The old query ran
+  two regex passes over every log body across an 8-day window and grouped by the result; it was
+  the most expensive query in the pack and its output was dominated by normalisation noise. The
+  replacement counts errors and fatals per service over 24h with a last-seen column, bucketing
+  severity by range — OTel defines ERROR as 17–20 and FATAL as 21–24, so matching `17` and `21`
+  exactly would have dropped ERROR2–4 and FATAL2–4 into neither column.
 
 ### Removed
 
@@ -80,7 +121,11 @@ Tested against **HyperDX 2.27.0** (OSS ClickStack) on minikube.
   a matching `ServiceName`, so the rule could not fire under any condition — shipping it implied
   policy sync was monitored when it was not. The appliance pack is now **7 rules** (15 total with
   the platform pack); `keyvault_workload_match` now defaults to `moc-kms`, the appliance's real KMS
-  workload.
+  workload. The now-dead `-PolicyWorkload` / `--policy-workload` flag was removed from both
+  installers along with the parameter, prompt, substitution and status output behind it.
+- **HyperDX alerts `replication-lag` and `too-many-parts`** — no surviving tile carries either
+  signal, so there was nothing to rebind them to. `Active parts (total)` was dropped from
+  `ch-storage` during the overhaul and no replication tile exists anywhere in the pack.
 - **`ch_failed_queries_per_sec`** from the Terraform variable docs and `terraform.tfvars.example` —
   it was documented but never declared or used, along with a duplicated workload-match block.
 
