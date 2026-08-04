@@ -62,19 +62,19 @@ flags, and prerequisites are in [Install](#install) below.
 
 | File | What it shows | Source kind |
 |------|---------------|-------------|
-| `dashboards/operations-center.json` | One landing page: cluster health score + nodes/pods/restarts, cluster CPU/memory/disk utilization, service error %/p95 + log error %, and recent Kubernetes events | metric + trace + log |
-| `dashboards/infrastructure.json` | Hosts & nodes: node readiness, per-host CPU/load/memory, storage (per-volume filesystem + inodes, IOPS, latency, throughput), network (throughput, drops, errors), and capacity headroom | metric |
-| `dashboards/kubernetes.json` | Cluster/namespace/workload: nodes vs allocatable, namespace CPU/mem, deployment availability, pods by phase, restarts, and container utilization vs limits | metric + log |
-| `dashboards/services.json` | RED method: request rate, error rate %, p50/p95/p99 latency, slowest routes, latency anomaly + heatmap — plus a folded-in **SLO strip** (availability SLI, error budget, multi-window burn rate) | trace |
-| `dashboards/logs.json` | Log volume by severity, error/fatal by service, normalized error signatures, errors & fatals by service, top k8s error sources, live error stream | log |
-| `dashboards/supportability.json` | Incident triage: live alert-condition readouts, failure tracking (restarts, Warning events), and troubleshooting entry points into Logs | log + trace + metric |
+| `dashboards/operations-center.json` | Environment Summary and landing page: cluster/node/workload inventory, health scores, active conditions, resource consumption, service health, impacted nodes, events, and control-plane/data-plane view mapping | metric + trace + log |
+| `dashboards/infrastructure.json` | Infrastructure overview: hosts & nodes, compute/memory, per-volume storage, network reliability, utilization hotspots, capacity risks, growth forecasting, and scale recommendations | metric |
+| `dashboards/kubernetes.json` | Kubernetes overview: cluster and node health, inventory, namespaces, deployments, pods, containers, limit utilization, warning events, and impacted resources | metric + log |
+| `dashboards/services.json` | Full traces experience: service overview, RED request health, latency analysis, trace search/waterfalls, dependency analysis, error correlation, and SLO compliance | trace |
+| `dashboards/logs.json` | Log overview, full search workspace, service/resource/cluster/host/namespace/pod filters, severity trends, normalized/new patterns, and live streams | log |
+| `dashboards/supportability.json` | Active alert-condition summary and guided ALM/ALRS/resource-provider/Kubernetes/network/storage troubleshooting, plus a recurring-signature known-issues view | log + trace + metric |
 
 **Advanced dashboards** (`dashboards/advanced/` — opt-in with `--advanced`; each needs an
 **optional data source** that a standard appliance deploy does not ingest by default):
 
 | File | What it shows | Needs |
 |------|---------------|-------|
-| `dashboards/advanced/observability-platform-health.json` | The observability stack itself: telemetry ingestion (accepted/refused/failed spans, logs, metric points), pipeline back-pressure (exporter queue, sent, collector CPU/mem), ClickHouse storage & availability (running/failed queries, disk free %, tracked memory, retention by table), and dashboard query performance | collector `:8888` self-telemetry scraped into OTel; ClickHouse metrics scraped into OTel; Raw SQL on `system.query_log` / `system.parts` |
+| `dashboards/advanced/observability-platform-health.json` | The observability stack itself: ingestion and pipeline health, ClickHouse storage/availability, query mix and inserts, merges/mutations, cache reads, async inserts, retention, and dashboard-query performance | collector `:8888` self-telemetry scraped into OTel; ClickHouse metrics scraped into OTel; Raw SQL on `system.query_log`, `system.parts`, `system.merges`, and `system.mutations` |
 
 ## Per-dashboard reference
 

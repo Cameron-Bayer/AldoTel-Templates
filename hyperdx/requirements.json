@@ -26,6 +26,24 @@
           "kind": "metric",
           "required": false,
           "metricType": "gauge",
+          "metricName": "system.memory.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.filesystem.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.network.io"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
           "metricName": "k8s.pod.phase"
         },
         {
@@ -279,6 +297,12 @@
           "required": false,
           "label": "error spans",
           "where": "SpanKind:Server AND StatusCode:Error"
+        },
+        {
+          "kind": "trace",
+          "required": false,
+          "label": "client/dependency spans",
+          "where": "SpanKind:Client"
         }
       ]
     },
@@ -339,6 +363,24 @@
           "metricName": "k8s.container.restarts"
         },
         {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "system.cpu.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "system.memory.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.filesystem.usage"
+        },
+        {
           "kind": "log",
           "required": false,
           "label": "cluster events (k8sobjects)",
@@ -354,7 +396,7 @@
       "receivers": [
         "OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics)",
         "ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver)",
-        "Query-performance tiles read system.query_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, and query_log must be enabled"
+        "ClickHouse workload, merge, mutation, cache, insert, retention, and query-performance tiles use Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, system.parts, system.merges, and system.mutations, and query_log must be enabled"
       ],
       "checks": [
         {

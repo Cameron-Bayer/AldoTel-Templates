@@ -3,7 +3,8 @@
   "tags": [
     "clickstack-templates",
     "supportability",
-    "tmpl:supportability"
+    "tmpl:supportability",
+    "control-plane"
   ],
   "filters": [
     {
@@ -38,7 +39,7 @@
       "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Supportability\nFor CSS, support, and operations: recomputed alert conditions, failure tracking (crashes, exhaustion, warning events), and troubleshooting (top errors, errors by service, error sources, live stream). Use with the Logs and Services dashboards for drill-down."
+        "markdown": "### Active Alerts & Guided Troubleshooting\nLive alert-condition status plus guided workflows for ALM, ALRS, resource providers, Kubernetes, networking, and storage. HyperDX does not store Grafana alert state here, so the Active Alerts table recomputes the same observable conditions from current telemetry and links investigation to logs, traces, metrics, and events."
       }
     },
     {
@@ -49,7 +50,7 @@
       "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Alert conditions (recomputed live)\nThe same conditions that drive alerts, evaluated over the selected range: server/log error rates and unhealthy pods."
+        "markdown": "#### Alert conditions (global fixed windows)\nGlobal appliance conditions recomputed over fixed 15-minute request/log/CPU/memory windows and 1-hour pod/filesystem windows. Dashboard filters and the time picker intentionally do not scope this mixed-signal table; use the domain tiles below for filtered investigation."
       }
     },
     {
@@ -323,6 +324,45 @@
         "select": "Timestamp, SeverityText, ServiceName, ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body",
         "where": "SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal",
         "whereLanguage": "lucene"
+      }
+    },
+    {
+      "name": "Global active alert conditions (15m / 1h)",
+      "x": 0,
+      "y": 65,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT * FROM (SELECT 'Server error rate' AS Condition, if(value >= 0.05, 'Critical', if(value >= 0.01, 'Warning', 'Healthy')) AS Status, toFloat64(round(100 * value, 3)) AS Value, '%' AS Unit FROM (SELECT countIf(StatusCode = 'Error') / nullIf(count(), 0) AS value FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 15 MINUTE AND SpanKind = 'Server') UNION ALL SELECT 'Log error rate', if(value >= 0.05, 'Critical', if(value >= 0.01, 'Warning', 'Healthy')), toFloat64(round(100 * value, 3)), '%' FROM (SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) / nullIf(count(), 0) AS value FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp > now() - INTERVAL 15 MINUTE) UNION ALL SELECT 'Pods not running', if(value > 3, 'Critical', if(value > 0, 'Warning', 'Healthy')), toFloat64(value), 'pods' FROM (SELECT countIf(phase NOT IN (2,3)) AS value FROM (SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.phase' GROUP BY pod)) UNION ALL SELECT 'CPU saturation', if(value >= 0.9, 'Critical', if(value >= 0.75, 'Warning', 'Healthy')), toFloat64(round(100 * value, 1)), '%' FROM (SELECT avg(busy) AS value FROM (SELECT Attributes['cpu'] AS cpu, ResourceAttributes['host.name'] AS host, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 15 MINUTE AND MetricName = 'system.cpu.utilization' GROUP BY cpu, host, TimeUnix)) UNION ALL SELECT 'Memory saturation', if(value >= 0.9, 'Critical', if(value >= 0.8, 'Warning', 'Healthy')), toFloat64(round(100 * value, 1)), '%' FROM (SELECT avgIf(Value, Attributes['state'] = 'used') AS value FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 15 MINUTE AND MetricName = 'system.memory.utilization') UNION ALL SELECT 'Filesystem saturation', if(value >= 0.95, 'Critical', if(value >= 0.8, 'Warning', 'Healthy')), round(100 * value, 1), '%' FROM (SELECT max(used / nullIf(total, 0)) AS value FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS volume, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY host, volume))) ORDER BY multiIf(Status = 'Critical', 1, Status = 'Warning', 2, 3), Condition"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 72,
+      "w": 24,
+      "h": 9,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Guided Workflows\n**ALM / ALRS / Resource Providers:** start with Operations Center → identify the unhealthy node/service → inspect Services traces and Logs signatures.<br>**Kubernetes:** check node readiness, deployment availability, pods not running, restarts, then recent events.<br>**Networking:** check throughput, drops, and interface errors by host before correlating service/client-span latency.<br>**Storage:** check per-volume utilization, free capacity, IOPS, and latency; for ClickHouse pressure open advanced Observability Platform Health.<br>The normalized error-signature table below acts as the live known-issues index: recurring signatures can be matched to support documentation while new signatures are prioritized for investigation."
+      }
+    },
+    {
+      "name": "Known issues repository - recurring error signatures",
+      "x": 0,
+      "y": 81,
+      "w": 24,
+      "h": 8,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F-]{8,}', '<id>'), '[0-9]+', '<n>') AS Signature, groupUniqArray(ServiceName) AS Services, count() AS Occurrences, min(Timestamp) AS \"First seen\", max(Timestamp) AS \"Last seen\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) GROUP BY Signature ORDER BY Occurrences DESC LIMIT 100"
       }
     }
   ]

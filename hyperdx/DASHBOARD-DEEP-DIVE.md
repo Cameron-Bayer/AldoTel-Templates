@@ -62,7 +62,7 @@ Both styles respect the dashboard filters described below when their underlying 
 
 ---
 
-## 1. Operations Center
+## 1. Environment Summary / Operations Center
 
 **Data source:** Traces, Logs, Kubernetes metrics, Host metrics  ·  **Filters:** Service, Namespace  ·  **Tier:** Default
 **Purpose:** The cross-domain landing page for a status check. It rolls node readiness, pod health, resource saturation, service errors, log errors, and recent Kubernetes events into one screen. It is for operators, CSS, and anyone who needs to answer "is the appliance healthy right now?" before drilling into a specialist dashboard.
@@ -332,10 +332,10 @@ Both styles respect the dashboard filters described below when their underlying 
 - **Q: What should I do next?** Containers near 100% of limit need tuning or more capacity. Containers far above request but below limit may be noisy neighbors and should have requests adjusted.
 
 ---
-## 4. Services (RED)
+## 4. Traces & Services
 
 **Data source:** Traces  ·  **Filters:** Service  ·  **Tier:** Default
-**Purpose:** The application reliability and performance view. RED stands for **Rate**, **Errors**, and **Duration**; the SLO section translates those failures into a 99.9% availability target and error-budget burn.
+**Purpose:** The application reliability and performance view. RED stands for **Rate**, **Errors**, and **Duration**; expanded sections add service health, client/RPC latency, slow/failed trace search, dependency analysis, error propagation, and per-service SLO compliance. The generated [`docs/services.md`](docs/services.md) is the exact reference for every added tile.
 
 > This dashboard requires application traces with OpenTelemetry server spans in `default.otel_traces`.
 
@@ -404,10 +404,10 @@ Both styles respect the dashboard filters described below when their underlying 
 
 ---
 
-## 5. Logs
+## 5. Log Overview, Search & Live Streaming
 
-**Data source:** Logs  ·  **Filters:** Service, Severity  ·  **Tier:** Default
-**Purpose:** Log triage: volume, error/fatal concentration, recurring signatures, Kubernetes error sources, and a live stream for active investigations. It works even when an application has no tracing.
+**Data source:** Logs  ·  **Filters:** Service, Resource, Cluster, Host, Namespace, Pod, Severity  ·  **Tier:** Default
+**Purpose:** Log overview, full-text search/exploration, normalized and newly appearing patterns, Kubernetes error sources, and both all-log and error live streams. Native HyperDX adds saved searches, bookmarks/favorites, exports, and log/trace correlation. See [`docs/logs.md`](docs/logs.md) for every tile.
 
 > This dashboard reads application/container logs from `default.otel_logs`. Kubernetes namespace and pod columns are populated when those resource attributes are present.
 
@@ -454,12 +454,15 @@ Both styles respect the dashboard filters described below when their underlying 
 
 ---
 
-## 6. Supportability
+## 6. Active Alerts & Guided Troubleshooting
 
 **Data source:** Traces, Logs, Kubernetes metrics/events  ·  **Filters:** Service, Namespace, Severity  ·  **Tier:** Default
-**Purpose:** A support and CSS triage board. It recomputes alert-like conditions live, then lines up the likely causes: restarts, warning events, top signatures, affected services, Kubernetes error sources, and live logs.
+**Purpose:** A support and CSS triage board. It recomputes active conditions across traces, logs, pods, CPU, memory, and filesystems, then provides guided ALM/ALRS/resource-provider/Kubernetes/network/storage workflows and a live recurring-signature known-issues view. See [`docs/supportability.md`](docs/supportability.md) for every tile.
 
-> There is no separate alert-state store. The alert-condition tiles are live calculations over the selected range, not a historical alert console.
+> There is no separate alert-state store. The original alert-condition tiles are live calculations
+> over the selected range. The combined **Global active alert conditions (15m / 1h)** table deliberately
+> uses fixed global windows and ignores dashboard filters so mixed logs, traces, and metrics share one
+> consistent appliance-wide status view.
 
 ### Alert conditions (recomputed live)
 

@@ -16,8 +16,8 @@ These apply to every compatible tile on the dashboard.
 | Service | `ServiceName` | Traces (`default.otel_traces`) |
 | Namespace | `ResourceAttributes['k8s.namespace.name']` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
 
-## Operations Center
-Single-pane health for the AldoTel appliance: cluster health, resource utilization, service & platform status, and recent cluster events. Sourced from OpenTelemetry metrics, traces, and logs. Amber/red stats mean elevated errors, saturation, or unready nodes.
+## Environment Summary & Operations Center
+Single-pane health for the AldoTel appliance: environment inventory, platform health, active issues, resource consumption, service health, impacted resources, and recent cluster events. This appliance deployment represents one managed Kubernetes cluster; use the node/resource table for the cluster drill-down.
 
 ## Cluster health
 Node readiness, pod health, and restarts — the fastest signal that the appliance is up and serving.
@@ -327,3 +327,81 @@ LIMIT 200
 ```
 
 </details>
+
+## Environment Summary
+Inventory and current health for the deployed appliance cluster, nodes, hosts, and running workloads.
+
+### Total clusters — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT if(count() > 0, 1, 0) AS "Clusters" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'
+```
+
+</details>
+
+### Total nodes — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT uniqExact(ResourceAttributes['k8s.node.name']) AS "Nodes" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'
+```
+
+</details>
+
+### Running workloads — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(phase = 2) AS "Running workloads" FROM (SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' GROUP BY pod)
+```
+
+</details>
+
+### Platform health score — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT round(100 * (nodes_ready + pods_ok) / 2, 0) AS "Platform health score" FROM (SELECT (SELECT if(count() = 0, 1, countIf(r = 1) / count()) FROM (SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready' GROUP BY n)) AS nodes_ready, (SELECT if(count() = 0, 1, countIf(p IN (2, 3)) / count()) FROM (SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' GROUP BY pod)) AS pods_ok)
+```
+
+</details>
+
+### Top impacted clusters / nodes — table · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`, `default.otel_metrics_sum`
+
+<details><summary>SQL query</summary>
+
+```sql
+WITH ready AS (SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.condition_ready' GROUP BY node), cpu AS (SELECT host AS node, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY node), mem AS (SELECT ResourceAttributes['host.name'] AS node, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY node), disk AS (SELECT node, max(used / nullIf(total, 0)) AS disk_used FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['mountpoint'] AS mountpoint, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY node, mountpoint) GROUP BY node), net AS (SELECT node, sum(max_value - min_value) AS bytes FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.network.io' GROUP BY node, interface, direction) GROUP BY node), pods AS (SELECT ResourceAttributes['k8s.node.name'] AS node, uniqExact(ResourceAttributes['k8s.pod.name']) AS workloads FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.phase' GROUP BY node) SELECT 'Appliance cluster' AS Cluster, ready.node AS Node, if(ready.ready = 1 AND cpu.cpu_used < 0.9 AND mem.memory_used < 0.9 AND disk.disk_used < 0.95, 'Healthy', if(ready.ready != 1 OR disk.disk_used >= 0.95, 'Critical', 'Warning')) AS Health, (ready.ready != 1) + (cpu.cpu_used >= 0.75) + (mem.memory_used >= 0.8) + (disk.disk_used >= 0.8) AS Alerts, round(100 * cpu.cpu_used, 1) AS "CPU %", round(100 * mem.memory_used, 1) AS "Memory %", round(100 * disk.disk_used, 1) AS "Storage %", formatReadableSize(net.bytes) AS "Network consumption", pods.workloads AS Workloads FROM ready LEFT JOIN cpu USING (node) LEFT JOIN mem USING (node) LEFT JOIN disk USING (node) LEFT JOIN net USING (node) LEFT JOIN pods USING (node) ORDER BY Health ASC, Alerts DESC
+```
+
+</details>
+
+### Detailed environment inventory — table · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT 'Appliance cluster' AS "Cluster name", 'Not emitted by current telemetry' AS "Appliance version", 'Not emitted by current telemetry' AS "Physical nodes", 'Not emitted by current telemetry' AS "Virtual machines", 1 AS "Kubernetes clusters", uniqExact(ResourceAttributes['k8s.pod.name']) AS "Running workloads" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' AND Value = 2
+```
+
+</details>
+
+## Pre-Built Control Plane & Data Plane Views
+**Control plane:** ALM/ALRS hosts, Kubernetes hosts, Aldo VM, and appliance resource consumption map to **Infrastructure**; Kubernetes cluster health maps to **Kubernetes**; resource-provider and service availability/latency/error analysis maps to **Services**.<br>**Data plane:** cluster and Linux/host views map to **Infrastructure**; AKS/Kubernetes nodes, namespaces, applications, pods, and workloads map to **Kubernetes**; infrastructure applications and request dependencies map to **Services**. Use dashboard filters to isolate a host, namespace, pod, or service.

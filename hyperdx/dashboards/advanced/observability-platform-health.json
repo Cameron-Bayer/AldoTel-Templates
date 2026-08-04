@@ -3,7 +3,8 @@
   "tags": [
     "clickstack-templates",
     "advanced",
-    "tmpl:observability-platform"
+    "tmpl:observability-platform",
+    "control-plane"
   ],
   "filters": [
     {
@@ -24,7 +25,7 @@
       "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Observability Platform Health\nHealth of the telemetry pipeline itself: OpenTelemetry collector ingestion & queues, and ClickHouse storage / query performance. **Advanced tier** — needs the metrics-scraper add-on (collector self-metrics + ClickHouse metrics). Empty here means that optional scraping is not enabled."
+        "markdown": "### Observability Platform Health\nHealth of the telemetry pipeline itself: OpenTelemetry collector ingestion & queues, and ClickHouse storage / query performance. **Advanced tier** — needs the metrics-scraper add-on (collector self-metrics + ClickHouse metrics). Empty here means that optional scraping is not enabled.\n\nThis board also covers the requested ClickHouse workload panels. ClickHouse Keeper operation latency is shown only when Keeper metrics are scraped; the standard appliance telemetry currently does not emit that signal, so the dashboard does not fabricate a latency value."
       }
     },
     {
@@ -470,6 +471,133 @@
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "sqlTemplate": "SELECT exception_code,\n       count() AS errors,\n       substring(argMax(exception, event_time), 1, 500) AS sample_exception\nFROM system.query_log\nWHERE type >= 2\n  AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n  AND exception_code != 0\nGROUP BY exception_code\nORDER BY errors DESC\nLIMIT 20"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 86,
+      "w": 24,
+      "h": 5,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### ClickHouse Workload & Merge Activity\nQuery mix, inserts, active merges/mutations, page-cache reads, and asynchronous insert activity from ClickHouse system tables. These advanced panels require query_log and system-table access."
+      }
+    },
+    {
+      "name": "Select vs insert queries (per interval)",
+      "x": 0,
+      "y": 91,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
+      }
+    },
+    {
+      "name": "Inserted rows (per interval)",
+      "x": 0,
+      "y": 98,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, sum(written_rows) AS \"Inserted rows\", formatReadableSize(sum(written_bytes)) AS \"Inserted bytes\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts"
+      }
+    },
+    {
+      "name": "Active merges",
+      "x": 0,
+      "y": 105,
+      "w": 8,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT count() AS \"Active merges\" FROM system.merges"
+      }
+    },
+    {
+      "name": "Pending mutations",
+      "x": 8,
+      "y": 105,
+      "w": 8,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT countIf(NOT is_done) AS \"Pending mutations\" FROM system.mutations"
+      }
+    },
+    {
+      "name": "Merges in progress (average progress)",
+      "x": 16,
+      "y": 105,
+      "w": 8,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT if(count() = 0, 0, avg(progress)) AS \"Merge progress\" FROM system.merges",
+        "numberFormat": {
+          "output": "percent",
+          "mantissa": 0
+        }
+      }
+    },
+    {
+      "name": "Merges in progress (detail)",
+      "x": 0,
+      "y": 110,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT database AS Database, table AS Table, round(progress * 100, 1) AS \"Progress %\", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS \"Elapsed seconds\", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC"
+      }
+    },
+    {
+      "name": "Page-cache read bytes: cache vs source (per interval)",
+      "x": 0,
+      "y": 117,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS \"From cache\", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS \"From source\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
+      }
+    },
+    {
+      "name": "Async insert bytes (per interval)",
+      "x": 0,
+      "y": 124,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS \"Async insert bytes\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
       }
     }
   ]

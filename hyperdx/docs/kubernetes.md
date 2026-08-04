@@ -14,9 +14,10 @@ These apply to every compatible tile on the dashboard.
 | Filter | Column / expression | Source |
 |---|---|---|
 | Namespace | `ResourceAttributes['k8s.namespace.name']` | Metrics (`default.otel_metrics_{gauge|sum|histogram}`) |
+| Event Namespace | `JSONExtractString(Body, 'object', 'regarding', 'namespace')` | Logs (`default.otel_logs`) |
 
-## Kubernetes
-Cluster overview, per-namespace resource usage, workload health (deployments/pods/restarts/events), and utilization against limits. Filter by **Namespace**. Investigate pods stuck out of Running, rising restarts, and containers pinned near their limits.
+## Kubernetes Overview
+Cluster, nodes, namespaces, pods/workloads, containers, resource utilization, and events/issues. Filter by Namespace and use the inventory and troubleshooting tables to move from cluster health to the affected resource.
 
 ## Cluster overview
 Node readiness and per-node CPU, memory, and filesystem usage against capacity.
@@ -474,6 +475,84 @@ SELECT g.ns AS Namespace, g.pod AS Pod, g.container AS Container,
 FROM g LEFT JOIN u USING (ns, pod, container)
 ORDER BY g.cpu_lim DESC
 LIMIT 100
+```
+
+</details>
+
+## Cluster Inventory
+Deployed nodes, namespaces, workloads, pods, and containers observed in the selected time range.
+
+### Observed namespaces — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT uniqExact(ResourceAttributes['k8s.namespace.name']) AS "Namespaces" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' AND $__filters
+```
+
+</details>
+
+### Observed pods — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'])) AS "Pods" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' AND $__filters
+```
+
+</details>
+
+### Observed containers — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], ResourceAttributes['k8s.container.name'])) AS "Containers" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.container.restarts' AND $__filters
+```
+
+</details>
+
+### Observed deployments — number · Raw SQL
+
+- **Tables:** `default.otel_metrics_gauge`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.deployment.name'])) AS "Deployments" FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName IN ('k8s.deployment.available','k8s.deployment.desired') AND $__filters
+```
+
+</details>
+
+## Events & Issues
+Central Kubernetes troubleshooting view for warning/critical events, top reasons, recent events, and impacted resources.
+
+### Recent Kubernetes warning events — table · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT Timestamp, JSONExtractString(Body, 'object', 'reason') AS Reason, JSONExtractString(Body, 'object', 'regarding', 'namespace') AS Namespace, concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), ' ', JSONExtractString(Body, 'object', 'regarding', 'name')) AS Resource, substring(JSONExtractString(Body, 'object', 'note'), 1, 240) AS Message FROM default.otel_logs WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND ScopeName LIKE '%k8sobjectsreceiver%' AND JSONExtractString(Body, 'object', 'type') = 'Warning' AND $__filters ORDER BY Timestamp DESC LIMIT 100
+```
+
+</details>
+
+### Top Kubernetes event reasons / impacted resources — table · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT JSONExtractString(Body, 'object', 'reason') AS Reason, JSONExtractString(Body, 'object', 'regarding', 'namespace') AS Namespace, count() AS Events, uniqExact(concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), '/', JSONExtractString(Body, 'object', 'regarding', 'name'))) AS "Impacted resources", max(Timestamp) AS "Last seen" FROM default.otel_logs WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND ScopeName LIKE '%k8sobjectsreceiver%' AND $__filters GROUP BY Reason, Namespace ORDER BY Events DESC LIMIT 50
 ```
 
 </details>

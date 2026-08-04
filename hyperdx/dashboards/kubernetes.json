@@ -3,7 +3,8 @@
   "tags": [
     "clickstack-templates",
     "kubernetes",
-    "tmpl:kubernetes"
+    "tmpl:kubernetes",
+    "control-plane"
   ],
   "filters": [
     {
@@ -12,6 +13,13 @@
       "expression": "ResourceAttributes['k8s.namespace.name']",
       "sourceId": "{{METRICS_SOURCE_ID}}",
       "sourceMetricType": "gauge",
+      "whereLanguage": "sql"
+    },
+    {
+      "type": "QUERY_EXPRESSION",
+      "name": "Event Namespace",
+      "expression": "JSONExtractString(Body, 'object', 'regarding', 'namespace')",
+      "sourceId": "{{LOGS_SOURCE_ID}}",
       "whereLanguage": "sql"
     }
   ],
@@ -24,7 +32,7 @@
       "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Kubernetes\nCluster overview, per-namespace resource usage, workload health (deployments/pods/restarts/events), and utilization against limits. Filter by **Namespace**. Investigate pods stuck out of Running, rising restarts, and containers pinned near their limits."
+        "markdown": "### Kubernetes Overview\nCluster, nodes, namespaces, pods/workloads, containers, resource utilization, and events/issues. Filter by Namespace and use the inventory and troubleshooting tables to move from cluster health to the affected resource."
       }
     },
     {
@@ -474,6 +482,112 @@
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "sqlTemplate": "WITH g AS (\n  SELECT ResourceAttributes['k8s.namespace.name'] AS ns,\n    ResourceAttributes['k8s.pod.name'] AS pod,\n    ResourceAttributes['k8s.container.name'] AS container,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.cpu_limit_utilization') AS cpu_lim,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.cpu_request_utilization') AS cpu_req,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.memory_limit_utilization') AS mem_lim,\n    argMaxIf(Value, TimeUnix, MetricName = 'k8s.container.memory_request_utilization') AS mem_req\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR\n    AND MetricName IN ('k8s.container.cpu_limit_utilization', 'k8s.container.cpu_request_utilization', 'k8s.container.memory_limit_utilization', 'k8s.container.memory_request_utilization')\n    AND $__filters\n  GROUP BY ns, pod, container\n),\nu AS (\n  SELECT ResourceAttributes['k8s.namespace.name'] AS ns, ResourceAttributes['k8s.pod.name'] AS pod,\n    ResourceAttributes['k8s.container.name'] AS container, argMax(Value, TimeUnix) AS uptime\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'container.uptime'\n  GROUP BY ns, pod, container\n)\nSELECT g.ns AS Namespace, g.pod AS Pod, g.container AS Container,\n  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 1)), '%')) AS \"CPU/limit\",\n  if(isNaN(g.cpu_req), '-', concat(toString(round(g.cpu_req * 100, 1)), '%')) AS \"CPU/request\",\n  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 1)), '%')) AS \"Mem/limit\",\n  if(isNaN(g.mem_req), '-', concat(toString(round(g.mem_req * 100, 1)), '%')) AS \"Mem/request\",\n  if(u.uptime > 0, formatReadableTimeDelta(toUInt64(u.uptime)), '-') AS Uptime\nFROM g LEFT JOIN u USING (ns, pod, container)\nORDER BY g.cpu_lim DESC\nLIMIT 100"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 104,
+      "w": 24,
+      "h": 5,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Cluster Inventory\nDeployed nodes, namespaces, workloads, pods, and containers observed in the selected time range."
+      }
+    },
+    {
+      "name": "Observed namespaces",
+      "x": 0,
+      "y": 109,
+      "w": 6,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT uniqExact(ResourceAttributes['k8s.namespace.name']) AS \"Namespaces\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' AND $__filters"
+      }
+    },
+    {
+      "name": "Observed pods",
+      "x": 6,
+      "y": 109,
+      "w": 6,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'])) AS \"Pods\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' AND $__filters"
+      }
+    },
+    {
+      "name": "Observed containers",
+      "x": 12,
+      "y": 109,
+      "w": 6,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], ResourceAttributes['k8s.container.name'])) AS \"Containers\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.container.restarts' AND $__filters"
+      }
+    },
+    {
+      "name": "Observed deployments",
+      "x": 18,
+      "y": 109,
+      "w": 6,
+      "h": 5,
+      "config": {
+        "displayType": "number",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.deployment.name'])) AS \"Deployments\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName IN ('k8s.deployment.available','k8s.deployment.desired') AND $__filters"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 114,
+      "w": 24,
+      "h": 5,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Events & Issues\nCentral Kubernetes troubleshooting view for warning/critical events, top reasons, recent events, and impacted resources."
+      }
+    },
+    {
+      "name": "Recent Kubernetes warning events",
+      "x": 0,
+      "y": 119,
+      "w": 24,
+      "h": 8,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT Timestamp, JSONExtractString(Body, 'object', 'reason') AS Reason, JSONExtractString(Body, 'object', 'regarding', 'namespace') AS Namespace, concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), ' ', JSONExtractString(Body, 'object', 'regarding', 'name')) AS Resource, substring(JSONExtractString(Body, 'object', 'note'), 1, 240) AS Message FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND ScopeName LIKE '%k8sobjectsreceiver%' AND JSONExtractString(Body, 'object', 'type') = 'Warning' AND $__filters ORDER BY Timestamp DESC LIMIT 100"
+      }
+    },
+    {
+      "name": "Top Kubernetes event reasons / impacted resources",
+      "x": 0,
+      "y": 127,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{LOGS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT JSONExtractString(Body, 'object', 'reason') AS Reason, JSONExtractString(Body, 'object', 'regarding', 'namespace') AS Namespace, count() AS Events, uniqExact(concat(JSONExtractString(Body, 'object', 'regarding', 'kind'), '/', JSONExtractString(Body, 'object', 'regarding', 'name'))) AS \"Impacted resources\", max(Timestamp) AS \"Last seen\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND ScopeName LIKE '%k8sobjectsreceiver%' AND $__filters GROUP BY Reason, Namespace ORDER BY Events DESC LIMIT 50"
       }
     }
   ]

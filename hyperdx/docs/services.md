@@ -15,8 +15,8 @@ These apply to every compatible tile on the dashboard.
 |---|---|---|
 | Service | `ServiceName` | Traces (`default.otel_traces`) |
 
-## Service request health (RED)
-**RED** summarizes each service's request **R**ate, **E**rror rate, and **D**uration (latency), from OpenTelemetry **server spans**. Filter by **Service** and adjust the time range. Watch for rising error rates, latency above your service target, and an SLO burn rate above 1.
+## Traces & Service Reliability
+Service overview, latency analysis, RED request health, end-to-end trace investigation, dependencies, error correlation, and SLO reliability. Data comes from connected OpenTelemetry spans; dependency and request-journey results improve as applications propagate trace context and populate peer/service attributes.
 
 ## Rate & errors
 Server request throughput and error percentage per service, from OpenTelemetry server spans.
@@ -184,3 +184,154 @@ ORDER BY ord
 - **Source / table:** Traces → `default.otel_traces`
 - **Measure(s):** count(*) as `good`  — where `SpanKind:Server AND NOT StatusCode:Error` (lucene); count(*) as `total`  — where `SpanKind:Server` (lucene)
 - **Columns used:** `StatusCode`, `SpanKind`
+
+## 1. Service Overview
+High-level health of all monitored services: request volume, reliability, latency, and the most impacted services.
+
+### Server requests (selected range) — number
+
+- **Source / table:** Traces → `default.otel_traces`
+- **Measure(s):** count(*) as `requests`  — where `SpanKind:Server` (lucene)
+- **Columns used:** `SpanKind`
+
+### Success rate — number
+
+- **Source / table:** Traces → `default.otel_traces`
+- **Measure(s):** avg(`if(StatusCode = 'Error', 0, 1)`) as `success`  — where `SpanKind:Server` (lucene)
+- **Columns used:** `StatusCode`, `SpanKind`
+
+### Average server latency — number
+
+- **Source / table:** Traces → `default.otel_traces`
+- **Measure(s):** avg(`Duration / 1000000000`) as `latency`  — where `SpanKind = 'Server'` (sql)
+- **Columns used:** `Duration`, `SpanKind`
+
+### Average client latency — number
+
+- **Source / table:** Traces → `default.otel_traces`
+- **Measure(s):** avg(`Duration / 1000000000`) as `latency`  — where `SpanKind = 'Client'` (sql)
+- **Columns used:** `Duration`, `SpanKind`
+
+### Service health summary / top impacted services — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS "Error rate %", round(avg(Duration) / 1e6, 1) AS "Average latency (ms)", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 latency (ms)", greatest(0, round(100 - "Error rate %" * 10 - least("P95 latency (ms)" / 100, 30), 0)) AS "Health score", if("Error rate %" >= 5 OR "P95 latency (ms)" >= 2000, 'Critical', if("Error rate %" >= 1 OR "P95 latency (ms)" >= 1000, 'Warning', 'Healthy')) AS Health FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND $__filters GROUP BY ServiceName ORDER BY Health ASC, "Error rate %" DESC, "P95 latency (ms)" DESC
+```
+
+</details>
+
+## 2. Latency Analysis
+Server, client, and RPC latency by service and operation, latency percentiles, slow routes, distribution, and anomaly detection.
+
+### HTTP server / client and RPC latency by service — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, SpanKind AS Kind, if(SpanAttributes['rpc.system'] != '', concat('RPC: ', SpanAttributes['rpc.system']), if(SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '', 'HTTP', 'Other')) AS Protocol, round(avg(Duration) / 1e6, 1) AS "Average (ms)", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)", count() AS Requests FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind IN ('Server','Client') AND $__filters GROUP BY ServiceName, SpanKind, Protocol ORDER BY "P95 (ms)" DESC
+```
+
+</details>
+
+### Latency by service & operation — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, SpanName AS Operation, SpanKind AS Kind, round(avg(Duration) / 1e6, 1) AS "Average (ms)", round(quantile(0.50)(Duration) / 1e6, 1) AS "P50 (ms)", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)", round(quantile(0.99)(Duration) / 1e6, 1) AS "P99 (ms)", count() AS Requests FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind IN ('Server','Client') AND $__filters GROUP BY ServiceName, SpanName, SpanKind HAVING Requests >= 5 ORDER BY "P95 (ms)" DESC LIMIT 100
+```
+
+</details>
+
+## 3. Request Health (RED Metrics)
+Request rate, throughput, failures, status messages, success rate, and user-impact analysis. The existing RED charts above provide the time-series view.
+
+### Failed request analysis — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, SpanName AS Operation, StatusMessage AS Error, count() AS Failures, round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)", max(Timestamp) AS "Last seen" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND StatusCode = 'Error' AND $__filters GROUP BY ServiceName, SpanName, StatusMessage ORDER BY Failures DESC LIMIT 100
+```
+
+</details>
+
+## 4. End-to-End Request Tracing
+Search distributed traces, open waterfalls, inspect critical paths, and isolate slow or failed requests. Click a span to open its full trace journey in HyperDX.
+
+### Slow and failed request traces — search
+
+- **Source / table:** Traces → `default.otel_traces`
+- **Columns shown:** `Timestamp, ServiceName, SpanName, Duration, StatusCode, StatusMessage, TraceId, SpanId, ParentSpanId`
+- **Filter:** `SpanKind = 'Server' AND (StatusCode = 'Error' OR Duration >= 1000000000)` (sql)
+- **Columns used:** `ServiceName`, `Timestamp`, `Duration`, `StatusCode`, `StatusMessage`, `SpanName`, `SpanKind`, `TraceId`, `SpanId`, `ParentSpanId`
+
+### Trace sampling analytics — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, uniqExact(TraceId) AS Traces, count() AS Spans, round(count() / nullIf(uniqExact(TraceId), 0), 1) AS "Spans / trace", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 span (ms)" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters GROUP BY ServiceName ORDER BY Traces DESC
+```
+
+</details>
+
+## 5. Service Dependency Mapping
+Upstream/downstream request relationships inferred from client spans and peer attributes, including dependency latency and errors.
+
+### Service dependency map / most impacted dependencies — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Upstream, coalesce(nullIf(SpanAttributes['peer.service'], ''), nullIf(SpanAttributes['server.address'], ''), nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS "Error rate %", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 latency (ms)" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Client' AND $__filters GROUP BY Upstream, Downstream ORDER BY "Error rate %" DESC, "P95 latency (ms)" DESC
+```
+
+</details>
+
+## 6. Error Correlation & Root Cause Analysis
+Correlate failures across services and time. Candidate root causes are ranked by earliest errors and error concentration; confirm them in the trace waterfall and correlated logs.
+
+### Root cause candidate services / error propagation — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT TraceId, argMin(ServiceName, Timestamp) AS "First error service", min(Timestamp) AS "First error", groupUniqArray(ServiceName) AS "Impacted services", count() AS "Error spans" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND StatusCode = 'Error' AND $__filters GROUP BY TraceId HAVING "Error spans" > 0 ORDER BY "Error spans" DESC, "First error" DESC LIMIT 100
+```
+
+</details>
+
+## 7. SLO & Reliability
+Availability, error budget remaining, burn rate, compliance trend, and violations are implemented by the SLO strip above.
+
+## 8. Infrastructure & Platform Performance
+Use **Infrastructure** for compute/storage/network, **Kubernetes** for nodes/workloads, and advanced **Observability Platform Health** for ClickHouse query/storage, Keeper-adjacent server health, collector health, and the OTel pipeline.
+
+### SLO compliance dashboard / violations — table · Raw SQL
+
+- **Tables:** `default.otel_traces`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, round(100 * countIf(StatusCode != 'Error') / nullIf(count(), 0), 3) AS "Availability %", 99.9 AS "SLO target %", round(100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001), 1) AS "Error budget remaining %", if("Availability %" >= 99.9, 'Compliant', 'Violation') AS Status FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND $__filters GROUP BY ServiceName ORDER BY Status DESC, "Availability %"
+```
+
+</details>

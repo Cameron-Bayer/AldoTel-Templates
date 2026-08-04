@@ -15,12 +15,17 @@ These apply to every compatible tile on the dashboard.
 |---|---|---|
 | Service | `ServiceName` | Logs (`default.otel_logs`) |
 | Severity | `SeverityText` | Logs (`default.otel_logs`) |
+| Host | `ResourceAttributes['host.name']` | Logs (`default.otel_logs`) |
+| Namespace | `ResourceAttributes['k8s.namespace.name']` | Logs (`default.otel_logs`) |
+| Pod | `ResourceAttributes['k8s.pod.name']` | Logs (`default.otel_logs`) |
+| Cluster | `ResourceAttributes['k8s.cluster.name']` | Logs (`default.otel_logs`) |
+| Resource | `ResourceAttributes['service.instance.id']` | Logs (`default.otel_logs`) |
 
-## Log health & investigation
-Application and infrastructure logs ingested into ClickStack via OpenTelemetry. Filter by **Service** or **Severity** and adjust the time range. Look for error/fatal spikes, newly appearing error signatures, and failures concentrated on specific services or pods; click any row to open the matching logs.
+## Logs
+Three-part workflow: **1. Log Overview** for health and volume, **2. Log Search & Exploration** for full-text investigation and filters, and **3. Live Log Streaming** for real-time monitoring. HyperDX search provides the query builder, saved searches, bookmarks/favorites, export, and log-to-trace correlation.
 
-## Volume & error rate
-Log throughput by severity and the error/fatal rate over time — the first place a problem shows up.
+## 1. Log Overview
+High-level log health and volume: totals, logs/sec, error/fatal share, severity, and service trends.
 
 ### Log volume by severity — stacked_bar
 
@@ -36,8 +41,8 @@ Log throughput by severity and the error/fatal rate over time — the first plac
 - **Group by:** `ServiceName`
 - **Columns used:** `ServiceName`, `SeverityText`
 
-## Top errors & patterns
-Error/fatal messages grouped into **signatures** — similar messages collapsed together after replacing IDs and numbers with `<id>`/`<n>`, so recurring failures stand out. The second table highlights signatures that are new in the last 24h (absent in the prior 7 days). These two tables use fixed 24h/7d windows, not the dashboard time range.
+## 2. Log Search & Exploration
+Use the search workspace below for full-text queries and filter by service, host, namespace, pod, severity, or time. Click grouped rows to open matching logs; use native HyperDX saved searches, bookmarks/favorites, exports, and correlation actions.
 
 ### Top error signatures (normalized) - click a row to open Logs — table · Raw SQL
 
@@ -85,8 +90,8 @@ LIMIT 50
 
 </details>
 
-## Live stream
-Most recent error/fatal logs. The Namespace and Pod columns are populated only for Kubernetes workloads and may be blank for other log sources.
+## 3. Live Log Streaming
+Real-time monitoring for all logs and the focused error stream. Pause/resume and open any row for full details in HyperDX.
 
 ### Live error stream - click a row for full log detail — search
 
@@ -132,3 +137,75 @@ LIMIT 50
 - **Source / table:** Logs → `default.otel_logs`
 - **Measure(s):** sum(`if(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'), 1, 0)`)
 - **Columns used:** `SeverityText`
+
+### Average logs / sec — number · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS "Logs / sec" FROM default.otel_logs WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters
+```
+
+</details>
+
+### Average error + fatal logs / sec — number · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS "Errors / sec" FROM default.otel_logs WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters
+```
+
+</details>
+
+### Error + fatal share of logs — number · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) / nullIf(count(), 0) AS "Error share" FROM default.otel_logs WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters
+```
+
+</details>
+
+### Fatal log count — number · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(SeverityNumber >= 21 OR lower(SeverityText) = 'fatal') AS "Fatal logs" FROM default.otel_logs WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters
+```
+
+</details>
+
+### Log search workspace - click a row for full details — search
+
+- **Source / table:** Logs → `default.otel_logs`
+- **Columns shown:** `Timestamp, SeverityText, ServiceName, ResourceAttributes['service.instance.id'], ResourceAttributes['k8s.cluster.name'], ResourceAttributes['host.name'], ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body`
+- **Columns used:** `ResourceAttributes['service.instance.id']`, `ResourceAttributes['k8s.cluster.name']`, `ResourceAttributes['host.name']`, `ResourceAttributes['k8s.namespace.name']`, `ResourceAttributes['k8s.pod.name']`, `ServiceName`, `SeverityText`, `Body`, `Timestamp`
+
+### Live log stream — search
+
+- **Source / table:** Logs → `default.otel_logs`
+- **Columns shown:** `Timestamp, SeverityText, ServiceName, ResourceAttributes['k8s.namespace.name'], ResourceAttributes['k8s.pod.name'], Body`
+- **Columns used:** `ResourceAttributes['k8s.namespace.name']`, `ResourceAttributes['k8s.pod.name']`, `ServiceName`, `SeverityText`, `Body`, `Timestamp`
+
+### New error patterns in the past 24h — table · Raw SQL
+
+- **Tables:** `default.otel_logs`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT ServiceName AS Service, signature AS "New signature", count() AS Occurrences, min(Timestamp) AS "First seen", max(Timestamp) AS "Last seen" FROM (SELECT Timestamp, ServiceName, replaceRegexpAll(replaceRegexpAll(Body, '[0-9a-fA-F-]{8,}', '<id>'), '[0-9]+', '<n>') AS signature FROM default.otel_logs WHERE Timestamp > now() - INTERVAL 8 DAY AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AND $__filters) GROUP BY ServiceName, signature HAVING "First seen" >= now() - INTERVAL 24 HOUR ORDER BY Occurrences DESC LIMIT 100
+```
+
+</details>

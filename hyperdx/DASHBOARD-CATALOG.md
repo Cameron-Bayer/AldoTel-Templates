@@ -138,7 +138,7 @@ see**, and **how to read it**.
 
 ---
 
-### ⭐ Operations Center — `operations-center.json`
+### ⭐ Environment Summary / Operations Center — `operations-center.json`
 *Source: metric + trace + log · Tier: always works (degrades gracefully)*
 
 **What it's for.** A single landing page that rolls up the health of everything — cluster nodes,
@@ -154,6 +154,10 @@ it's also the safest way to *see your telemetry coverage grow* as you wire up mo
 k8s metrics, host metrics, server spans, and logs.
 
 **What you'll see.**
+- **Environment summary:** total clusters/nodes/running workloads, platform health score, an impacted
+  node table with alert count and CPU/memory/storage/network consumption, and an inventory row that
+  explicitly identifies fields the current telemetry does not emit (appliance version, physical-node
+  count, and VM count).
 - **Cluster health:** a composite cluster health score, nodes-ready %, healthy vs. unhealthy (NotReady)
   node counts, pods not Running, and container restarts in range.
 - **Resource utilization:** cluster CPU busy %, memory used %, and disk used %, each as a current
@@ -162,6 +166,8 @@ k8s metrics, host metrics, server spans, and logs.
   request-vs-error trend from traces.
 - **Recent activity:** Warning-event count, top event reasons, and a recent-events table (from
   `k8sobjects` events in `otel_logs`).
+- **Pre-built views:** an in-dashboard map from the requested control-plane/data-plane experiences to
+  the Infrastructure, Kubernetes, and Services dashboards and their filters.
 
 **How to read it.** Start top-left and scan right; anything red/non-zero in the health and status rows
 is your cue to open the matching domain dashboard and drill down. Empty tiles = that signal isn't
@@ -201,7 +207,8 @@ not from `k8s.node.*` — see the note below.
   `system.disk.operations`), disk latency (ms, from `operation_time ÷ operations`), and disk I/O bytes/sec.
 - **Network health:** network I/O bytes/sec, packets dropped/sec, and interface errors/sec — per host and direction.
 - **Capacity planning:** CPU headroom %, memory headroom %, free memory per host (GB), and disk
-  free % per volume over time.
+  free % per volume over time, top CPU/memory/storage/network consumers, a capacity-risk table with
+  scale recommendations, and a storage growth/exhaustion estimate.
 
 **How to read it.** Watch CPU busy % and load together — a load average well above the core count with
 high CPU % means the host is saturated. Rising inode usage warns of write failures long before the
@@ -224,9 +231,9 @@ crash-looping, a deployment under-replicated, or a container pinned at its CPU/m
 than the app code.
 
 **What you need.** A collector with the **`kubeletstats`** and **`k8s_cluster`** receivers (plus RBAC).
-Required metrics: `k8s.node.{cpu,memory}.usage` and allocatable, `k8s.deployment.{available,desired}`,
-`k8s.pod.{phase,cpu,memory}`, `k8s.container.restarts`, and the container limit/request utilization
-metrics. Filesystem and container-vs-limit tiles are optional.
+Primary metrics: `system.cpu.utilization`, `system.memory.utilization`, `system.filesystem.usage`,
+`k8s.deployment.{available,desired}`, `k8s.pod.{phase,cpu,memory}`, `k8s.container.restarts`, and
+container limit/request utilization. Kubernetes events use the `k8sobjects` log stream.
 
 **What you'll see.**
 - **Cluster overview:** nodes-ready %, node CPU usage (cores vs allocatable), node memory used vs
@@ -236,6 +243,8 @@ metrics. Filesystem and container-vs-limit tiles are optional.
   container restarts, a pod status & resources table, and top pods by restarts.
 - **Cluster utilization (vs limits):** pod and container CPU/memory vs limit %, node memory saturation %,
   and a per-container utilization-vs-limit/request table.
+- **Inventory and events:** namespace/pod/container/deployment counts, recent Warning events, top
+  reasons, and impacted-resource counts.
 
 **How to read it.** Top-down: nodes healthy? → deployments at desired replica count? → any pods stuck
 in a bad phase or near their CPU/memory limits? The utilization-vs-limits section is your early warning
@@ -243,12 +252,12 @@ for OOMKills, throttling, and crash loops (containers without a limit set show 0
 
 ---
 
-### 🔵 Services (RED) — `services.json`
+### 🔵 Traces & Services — `services.json`
 *Source: trace · Tier 4 (needs app traces)*
 
-**What it's for.** The classic **RED method** view of your services: how much traffic (Rate), how
-many failures (Errors), and how slow (Duration/latency) — per service and per route — plus a compact
-SLO strip.
+**What it's for.** A complete trace-based service experience: service health, **RED** request metrics,
+server/client/RPC latency, slow and failed trace searches, dependency analysis, error propagation,
+and SLO compliance.
 
 **Why use it / who it's for.** The everyday dashboard for **service owners and SREs**. It answers
 "which service is slow or erroring right now, and on which endpoint?" The slow-routes table links
@@ -265,7 +274,9 @@ empty rows there while rate/error/latency and the SLO strip still work.)*
 - **Slow routes & distribution:** slowest routes by p95 (→ Traces); a **latency-anomaly** chart (last
   24h vs an 8-day ±3σ baseline); a server-latency **heatmap**.
 - **SLO & error budget:** availability (SLI), error-budget remaining, a multi-window burn-rate table,
-  and availability over time against the 99.9% target.
+  availability over time against the 99.9% target, and per-service compliance/violation status.
+- **Trace investigation:** slow/failed request search, trace sampling analytics, dependency edges,
+  impacted dependencies, and root-cause candidate traces.
 
 **How to read it.** Watch the error-rate % and p95 lines for spikes; use *Slowest routes* to see which
 endpoint is responsible, then click through to the actual traces. The anomaly tile flags spikes
@@ -274,11 +285,11 @@ budget faster than the objective allows; a short-window fast burn is page-worthy
 
 ---
 
-### 🔵 Logs — `logs.json`
+### 🔵 Log Overview, Search & Live Streaming — `logs.json`
 *Source: log · Tier 4 (needs app/container logs)*
 
-**What it's for.** Volume, severity mix, top errors, normalized error signatures, errors by service,
-top error sources, and a live error stream.
+**What it's for.** A three-part log workflow: overview, full-text search/exploration, and live
+streaming, with service/resource/cluster/host/namespace/pod/severity filters.
 
 **Why use it / who it's for.** For **anyone triaging an incident or a deploy**. Beyond the usual
 "errors are up" volume chart, its normalized-signature and per-service tiles answer *which* component
@@ -293,7 +304,11 @@ and textual severity.
 - **Top errors & patterns:** top error signatures (normalized, → Logs); errors & fatals by service in
   the last 24h (→ Logs).
 - **Live stream:** a live error stream (→ full log detail); top Kubernetes error sources by
-  namespace/pod (→ Logs); log error rate %; total logs; error + fatal logs.
+  namespace/pod (→ Logs); an unfiltered live stream; log error rate %; total logs; logs/sec;
+  error/fatal logs and rate; fatal count; and error/fatal share.
+- **Search & patterns:** a full log search workspace, normalized signatures, and patterns first seen
+  in the last 24 hours. Native HyperDX provides saved searches, bookmarks/favorites, exports, and
+  log/trace correlation.
 
 **How to read it.** During normal ops, watch the severity mix. During/after a deploy, use *errors &
 fatals by service* and *top error signatures* to see which service regressed and what the recurring
@@ -302,12 +317,12 @@ was replaced — see the note in the memory-limit troubleshooting below.)*
 
 ---
 
-### ⭐ Supportability — `supportability.json`
+### ⭐ Active Alerts & Guided Troubleshooting — `supportability.json`
 *Source: log + trace + metric · Tier: always works (degrades gracefully)*
 
-**What it's for.** An **incident-triage** roll-up: live alert-condition readouts, failure tracking
-(restarts and Warning events), and troubleshooting entry points (error signatures, errors by service,
-k8s error sources, live error stream).
+**What it's for.** An **active-condition and incident-triage** roll-up: threshold status across
+traces/logs/CPU/memory/filesystems/pods, failure tracking, guided ALM/ALRS/resource-provider/
+Kubernetes/network/storage workflows, and a recurring-signature known-issues view.
 
 **Why use it / who it's for.** For **on-call engineers and support**. It's the "something's wrong —
 where do I start?" board. There is no separate alert-state store on the appliance, so the alert tiles
@@ -317,11 +332,12 @@ where do I start?" board. There is no separate alert-state store on the applianc
 degrades gracefully: each section shows what its signal supports.
 
 **What you'll see.**
-- **Alert conditions (recomputed live):** server error rate %, log error rate %, pods not Running,
-  container restarts.
+- **Alert conditions (recomputed live):** the original selected-range server/log/pod/restart tiles,
+  plus a global fixed-window table covering server/log errors, pods, CPU, memory, and filesystems.
 - **Failure tracking:** top pods by restarts, Warning-event count, and top event reasons.
 - **Troubleshooting:** top error signatures (→ Logs), errors & fatals by service (→ Logs), top
   Kubernetes error sources (→ Logs), and a live error stream (→ full detail).
+- **Guided workflows:** domain-specific investigation order plus a live, normalized known-issues table.
 
 **How to read it.** Scan the alert-condition row first — any non-zero/red value points you at the
 failure-tracking and troubleshooting sections below, which name the specific pods, event reasons, and
@@ -344,8 +360,8 @@ telemetry is being dropped or the store is unhealthy.
 **What you need.** Three optional sources, each lighting up its own section:
 - Collector `:8888` self-telemetry scraped into OTel (ingestion + pipeline sections).
 - ClickHouse server metrics scraped into OTel (availability tiles).
-- `SELECT` on `system.query_log` / `system.parts` (retention + query-performance tiles — zero extra
-  setup, just DB access).
+- `SELECT` on `system.query_log`, `system.parts`, `system.merges`, and `system.mutations` (workload,
+  retention, merge/mutation, cache/insert, and query-performance tiles).
 
 **What you'll see.**
 - **Telemetry ingestion:** refused spans/logs/metric points (should be 0); accepted vs refused vs
@@ -353,7 +369,8 @@ telemetry is being dropped or the store is unhealthy.
 - **Pipeline health:** exporter queue utilization %, queue size vs capacity, exporter sent spans, and
   collector CPU / memory (RSS / heap).
 - **ClickHouse storage & availability:** running queries, failed queries, disk free %, current tracked
-  memory, queries per interval, and data retention & size by table.
+  memory, queries per interval, data retention & size by table, select-vs-insert mix, inserted rows,
+  active merges, pending mutations, merge detail, page-cache reads, and async-insert bytes.
 - **Dashboard query performance:** query duration p95/p99, failed queries, and top errors from `query_log`.
 
 **How to read it.** The "should be 0" ingestion tiles are your headline health. If exporter queue

@@ -3,7 +3,8 @@
   "tags": [
     "clickstack-templates",
     "infrastructure",
-    "tmpl:infrastructure"
+    "tmpl:infrastructure",
+    "control-plane"
   ],
   "filters": [
     {
@@ -24,7 +25,7 @@
       "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "### Infrastructure Health\nThe physical/virtual foundation under the appliance: cluster & node health, node/host compute and memory, storage (filesystem, IOPS, latency), network (throughput, drops, errors), and capacity headroom. Compute values are absolute usage vs each node/host capacity."
+        "markdown": "### Infrastructure Overview\nOverall infrastructure health plus compute, memory, hosts, storage, networking, utilization analysis, and capacity planning. Values come from appliance hostmetrics and Kubernetes node health."
       }
     },
     {
@@ -440,6 +441,98 @@
           "output": "percent",
           "mantissa": 0
         }
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 97,
+      "w": 24,
+      "h": 5,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Utilization Analysis\nCross-resource consumption, saturation, top consumers, hotspots, and bottlenecks."
+      }
+    },
+    {
+      "name": "Top CPU and memory consumers",
+      "x": 0,
+      "y": 102,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH cpu AS (SELECT host, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters GROUP BY host) SELECT cpu.host AS Host, round(100 * cpu.cpu_used, 1) AS \"CPU %\", round(100 * mem.memory_used, 1) AS \"Memory %\", if(cpu.cpu_used >= 0.9 OR mem.memory_used >= 0.9, 'Critical', if(cpu.cpu_used >= 0.75 OR mem.memory_used >= 0.8, 'Warning', 'Healthy')) AS Status FROM cpu LEFT JOIN mem USING (host) ORDER BY Status ASC, \"CPU %\" DESC, \"Memory %\" DESC"
+      }
+    },
+    {
+      "name": "Top storage consumers",
+      "x": 0,
+      "y": 109,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "SELECT ResourceAttributes['host.name'] AS Host, Attributes['mountpoint'] AS Volume, formatReadableSize(sumIf(Value, Attributes['state'] = 'used')) AS Used, formatReadableSize(sumIf(Value, Attributes['state'] = 'free')) AS Free, round(100 * sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0), 1) AS \"Used %\" FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY Host, Volume ORDER BY \"Used %\" DESC"
+      }
+    },
+    {
+      "name": "Top network consumers and reliability",
+      "x": 0,
+      "y": 116,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH io AS (SELECT host, interface, sum(max_value - min_value) AS bytes FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.network.io' AND $__filters GROUP BY host, interface, direction) GROUP BY host, interface), dropped AS (SELECT host, interface, sum(max_value - min_value) AS dropped FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.network.dropped' AND $__filters GROUP BY host, interface, direction) GROUP BY host, interface) SELECT io.host AS Host, io.interface AS Interface, formatReadableSize(io.bytes) AS Traffic, dropped.dropped AS \"Packets dropped\" FROM io LEFT JOIN dropped USING (host, interface) ORDER BY io.bytes DESC"
+      }
+    },
+    {
+      "name": "",
+      "x": 0,
+      "y": 123,
+      "w": 24,
+      "h": 5,
+      "config": {
+        "displayType": "markdown",
+        "markdown": "#### Capacity Planning\nCPU, memory, and storage headroom, growth trends, exhaustion risks, and scale guidance. The time-series panels above provide historical trends; the risk table turns current headroom into actionable recommendations."
+      }
+    },
+    {
+      "name": "Capacity risk summary & scale recommendations",
+      "x": 0,
+      "y": 128,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH cpu AS (SELECT host, avg(busy) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY host), disk AS (SELECT host, max(used / nullIf(total, 0)) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS volume, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY host, volume) GROUP BY host) SELECT cpu.host AS Host, round(100 * (1 - cpu.used), 1) AS \"CPU headroom %\", round(100 * (1 - mem.used), 1) AS \"Memory headroom %\", round(100 * (1 - disk.used), 1) AS \"Storage headroom %\", if(disk.used >= 0.9, 'Expand storage / tighten retention', if(cpu.used >= 0.9, 'Add compute capacity', if(mem.used >= 0.9, 'Add memory capacity', if(cpu.used >= 0.75 OR mem.used >= 0.8 OR disk.used >= 0.8, 'Plan scale-up', 'No scale action')))) AS Recommendation FROM cpu LEFT JOIN mem USING (host) LEFT JOIN disk USING (host) ORDER BY \"Storage headroom %\", \"Memory headroom %\", \"CPU headroom %\""
+      }
+    },
+    {
+      "name": "Storage growth forecast / estimated exhaustion risk",
+      "x": 0,
+      "y": 135,
+      "w": 24,
+      "h": 7,
+      "config": {
+        "displayType": "table",
+        "configType": "sql",
+        "connectionId": "{{CONNECTION_ID}}",
+        "sourceId": "{{METRICS_SOURCE_ID}}",
+        "sqlTemplate": "WITH points AS (SELECT host, mountpoint AS volume, toStartOfHour(TimeUnix) AS ts, avg(used / nullIf(total, 0)) AS used_ratio FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, TimeUnix, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY host, mountpoint, TimeUnix) GROUP BY host, volume, ts), slopes AS (SELECT host, volume, argMax(used_ratio, ts) AS current_used, covarPop(toUnixTimestamp(ts), used_ratio) / nullIf(varPop(toUnixTimestamp(ts)), 0) AS slope_per_second FROM points GROUP BY host, volume) SELECT host AS Host, volume AS Volume, round(100 * current_used, 1) AS \"Current used %\", round(slope_per_second * 86400 * 100, 3) AS \"Growth % / day\", if(slope_per_second <= 0, 'No exhaustion trend', concat(toString(round((1 - current_used) / slope_per_second / 86400, 1)), ' days')) AS \"Estimated time to full\" FROM slopes ORDER BY slope_per_second DESC"
       }
     }
   ]

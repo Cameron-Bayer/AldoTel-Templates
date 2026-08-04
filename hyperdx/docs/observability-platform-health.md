@@ -5,7 +5,7 @@
 [← Reference index](README.md) · [Dashboard catalog](../DASHBOARD-CATALOG.md) · [Deep dive](../DASHBOARD-DEEP-DIVE.md) · [HyperDX install guide](../README.md)
 
 - **Template:** `dashboards/advanced/observability-platform-health.json` · tag `tmpl:observability-platform`
-- **Data required:** OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics); ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver); Query-performance tiles read system.query_log via Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, and query_log must be enabled
+- **Data required:** OTel Collector internal telemetry scraped into OTel (Prometheus receiver on the collector's :8888 self-metrics); ClickHouse metrics scraped into OTel (Prometheus/clickhouse receiver); ClickHouse workload, merge, mutation, cache, insert, retention, and query-performance tiles use Raw SQL — the HyperDX ClickHouse connection user must be able to SELECT from system.query_log, system.parts, system.merges, and system.mutations, and query_log must be enabled
 
 ## Dashboard filters
 
@@ -17,6 +17,8 @@ These apply to every compatible tile on the dashboard.
 
 ## Observability Platform Health
 Health of the telemetry pipeline itself: OpenTelemetry collector ingestion & queues, and ClickHouse storage / query performance. **Advanced tier** — needs the metrics-scraper add-on (collector self-metrics + ClickHouse metrics). Empty here means that optional scraping is not enabled.
+
+This board also covers the requested ClickHouse workload panels. ClickHouse Keeper operation latency is shown only when Keeper metrics are scraped; the standard appliance telemetry currently does not emit that signal, so the dashboard does not fabricate a latency value.
 
 ## Telemetry ingestion
 Accepted vs. refused spans, logs, and metric points at the collector. Refusals mean data is being dropped.
@@ -428,6 +430,105 @@ WHERE type >= 2
 GROUP BY exception_code
 ORDER BY errors DESC
 LIMIT 20
+```
+
+</details>
+
+## ClickHouse Workload & Merge Activity
+Query mix, inserts, active merges/mutations, page-cache reads, and asynchronous insert activity from ClickHouse system tables. These advanced panels require query_log and system-table access.
+
+### Select vs insert queries (per interval) — table · Raw SQL
+
+- **Tables:** `system.query_log`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+```
+
+</details>
+
+### Inserted rows (per interval) — table · Raw SQL
+
+- **Tables:** `system.query_log`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, sum(written_rows) AS "Inserted rows", formatReadableSize(sum(written_bytes)) AS "Inserted bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts
+```
+
+</details>
+
+### Active merges — number · Raw SQL
+
+- **Tables:** `system.merges`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT count() AS "Active merges" FROM system.merges
+```
+
+</details>
+
+### Pending mutations — number · Raw SQL
+
+- **Tables:** `system.mutations`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT countIf(NOT is_done) AS "Pending mutations" FROM system.mutations
+```
+
+</details>
+
+### Merges in progress (average progress) — number · Raw SQL
+
+- **Tables:** `system.merges`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT if(count() = 0, 0, avg(progress)) AS "Merge progress" FROM system.merges
+```
+
+</details>
+
+### Merges in progress (detail) — table · Raw SQL
+
+- **Tables:** `system.merges`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT database AS Database, table AS Table, round(progress * 100, 1) AS "Progress %", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS "Elapsed seconds", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC
+```
+
+</details>
+
+### Page-cache read bytes: cache vs source (per interval) — table · Raw SQL
+
+- **Tables:** `system.query_log`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS "From cache", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS "From source" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+```
+
+</details>
+
+### Async insert bytes (per interval) — table · Raw SQL
+
+- **Tables:** `system.query_log`
+
+<details><summary>SQL query</summary>
+
+```sql
+SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS "Async insert bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>
