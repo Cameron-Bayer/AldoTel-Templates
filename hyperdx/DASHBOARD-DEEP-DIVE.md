@@ -15,7 +15,7 @@ Imported dashboard display names are prefixed **`ClickStack -`**; this guide use
 ## Contents
 
 - [Core Concepts](#core-concepts)
-- [1. Operations Center](#1-operations-center)
+- [1. Overview](#1-overview)
 - [2. Infrastructure](#2-infrastructure)
 - [3. Kubernetes](#3-kubernetes)
 - [4. Services (RED)](#4-services-red)
@@ -62,10 +62,10 @@ Both styles respect the dashboard filters described below when their underlying 
 
 ---
 
-## 1. Environment Summary / Operations Center
+## 1. Environment Summary / Overview
 
-**Data source:** Traces, Logs, Kubernetes metrics, Host metrics  ·  **Filters:** Service, Namespace  ·  **Tier:** Default
-**Purpose:** The cross-domain landing page for a status check. It rolls node readiness, pod health, resource saturation, service errors, log errors, and recent Kubernetes events into one screen. It is for operators, CSS, and anyone who needs to answer "is the appliance healthy right now?" before drilling into a specialist dashboard.
+**Data source:** Traces, Logs, Kubernetes/Host metrics, ClickHouse system tables  ·  **Filters:** Service, Log Service, Namespace  ·  **Tier:** Default
+**Purpose:** The unified landing page for a status check. It rolls environment and platform health, resources, services, ClickHouse workload/storage, impacted clusters, and Kubernetes events into one ordered screen. The generated [`docs/overview.md`](docs/overview.md) is the exact reference for every Overview tile.
 
 > Every tile degrades independently. If traces are absent, the service tiles are empty; if `k8sobjects` events are absent, the recent-activity tiles are empty; the remaining signals still work.
 
@@ -151,13 +151,13 @@ Both styles respect the dashboard filters described below when their underlying 
 ## 2. Infrastructure
 
 **Data source:** Host metrics and Kubernetes node metrics  ·  **Filters:** Host  ·  **Tier:** Default
-**Purpose:** The foundation view: hosts, Kubernetes nodes, filesystems, disks, network interfaces, and remaining capacity. Use it when the Operations Center shows saturation, NotReady nodes, disk growth, or unexplained application latency.
+**Purpose:** The foundation view: hosts, Kubernetes nodes, filesystems, disks, network interfaces, and remaining capacity. Use it when the Overview shows saturation, NotReady nodes, disk growth, or unexplained application latency.
 
 > This dashboard needs the collector `hostmetrics` receiver (`system.*` scrapers: CPU, memory, load, filesystem, paging, disk, network) plus Kubernetes node metrics from `kubeletstats` and `k8s_cluster`.
 
 ### Cluster health
 
-**Kubernetes nodes ready %**, **Healthy nodes**, and **Unhealthy nodes (NotReady)** — the same readiness roll-up shown in Operations Center.
+**Kubernetes nodes ready %**, **Healthy nodes**, and **Unhealthy nodes (NotReady)** — the same readiness roll-up shown in Overview.
 - **What they read:** `k8s.node.condition_ready` in `default.otel_metrics_gauge`.
 - **How they are calculated:** Latest readiness per `ResourceAttributes['k8s.node.name']`, then ready/total and ready/not-ready counts.
 - **Q: How should I read it?** Anything below 100% nodes ready is an infrastructure incident until proven otherwise. Start with the per-node table below.
@@ -632,7 +632,7 @@ Both styles respect the dashboard filters described below when their underlying 
 
 | Situation | Start here | Then |
 | --- | --- | --- |
-| Is anything wrong right now? | Operations Center | Follow the unhealthy roll-up to Services, Logs, Kubernetes, or Infrastructure |
+| Is anything wrong right now? | Overview | Follow the unhealthy roll-up to Services, Logs, Kubernetes, or Infrastructure |
 | The application feels slow | Services (RED) | Slowest routes → latency anomaly → traces |
 | Are we meeting our reliability target? | Services (RED) | Availability, error budget remaining, then multi-window burn rate |
 | Errors started after a deployment | Logs | Top error signatures → live error stream |

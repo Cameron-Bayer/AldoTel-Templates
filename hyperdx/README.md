@@ -62,7 +62,7 @@ flags, and prerequisites are in [Install](#install) below.
 
 | File | What it shows | Source kind |
 |------|---------------|-------------|
-| `dashboards/operations-center.json` | Environment Summary and landing page: cluster/node/workload inventory, health scores, active conditions, resource consumption, service health, impacted nodes, events, and control-plane/data-plane view mapping | metric + trace + log |
+| `dashboards/overview.json` | Unified landing page: environment/platform health, resource and service health, ClickHouse queries/storage/merges/cache/inserts, impacted clusters/nodes, and recent events | metric + trace + log + ClickHouse SQL |
 | `dashboards/infrastructure.json` | Infrastructure overview: hosts & nodes, compute/memory, per-volume storage, network reliability, utilization hotspots, capacity risks, growth forecasting, and scale recommendations | metric |
 | `dashboards/kubernetes.json` | Kubernetes overview: cluster and node health, inventory, namespaces, deployments, pods, containers, limit utilization, warning events, and impacted resources | metric + log |
 | `dashboards/services.json` | Full traces experience: service overview, RED request health, latency analysis, trace search/waterfalls, dependency analysis, error correlation, and SLO compliance | trace |
@@ -80,7 +80,7 @@ flags, and prerequisites are in [Install](#install) below.
 
 Every dashboard has a per-tile reference page in [`docs/`](docs/) — one page per dashboard listing
 the ClickHouse tables, columns, and queries behind every visual. See the
-[reference index](docs/README.md) for `operations-center`, `infrastructure`, `kubernetes`,
+[reference index](docs/README.md) for `overview`, `infrastructure`, `kubernetes`,
 `services`, `logs`, `supportability`, and the advanced `observability-platform-health` board. For
 the "which and why" and the tile-by-tile Q&A, see [`DASHBOARD-CATALOG.md`](DASHBOARD-CATALOG.md)
 and [`DASHBOARD-DEEP-DIVE.md`](DASHBOARD-DEEP-DIVE.md).
@@ -141,7 +141,7 @@ The importer resolves those at install time, so the JSON stays portable.
    - `hostmetrics` receiver (`system.*`) + `kubeletstats` + `k8s_cluster` receivers for `infrastructure` and `kubernetes` (add `k8sobjects` for the cluster-events tiles)
    - app traces for `services`; app/container logs for `logs`
    - collector `:8888` self-telemetry + ClickHouse metrics + `SELECT` on `system.*` for the advanced `observability-platform-health`
-   - `operations-center` and `supportability` roll up whatever is flowing (they degrade gracefully)
+   - `overview` and `supportability` roll up whatever is flowing (they degrade gracefully)
 3. A **Personal API Access Key**: HyperDX → **Team Settings → API Keys**.
 
 ## Install
@@ -248,7 +248,7 @@ importable Grafana dashboards that read the **same ClickHouse data** — no extr
 changes. They use the [ClickHouse data source](https://grafana.com/grafana/plugins/grafana-clickhouse-datasource/)
 and a portable **datasource variable**, so on import you just pick your ClickHouse connection:
 
-- **Operations Center** — one pane combining top signals across services, Kubernetes, resource utilization, logs, and recent cluster events.
+- **Overview** — one pane combining top signals across services, Kubernetes, resource utilization, logs, and recent cluster events.
 - **Service Health** — RED metrics per service from `otel_traces`.
 - **Kubernetes Cluster Overview** — nodes, pods, CPU/memory, restarts, container-vs-limit utilization, and cluster events.
 - **Logs & Errors Overview** — volume by severity, error rate, and recent errors from `otel_logs`.
@@ -272,7 +272,7 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 
 | Dashboard | Source kind | Required receivers / signals | Optional (degrades) |
 |-----------|-------------|------------------------------|---------------------|
-| `operations-center` | metric + trace + log | None hard-required — cross-cutting roll-up; every tile degrades when its signal is absent | k8s metrics (nodes/pods/restarts + health score), host metrics (cluster CPU/mem/disk), traces (error %, p95), logs (error %), `k8sobjects` events (recent activity) |
+| `overview` | metric + trace + log + ClickHouse SQL | None hard-required for the cross-signal sections; ClickHouse workload panels require read access to `system.*` tables | environment/platform health, CPU/memory/storage/network, request/log health, ClickHouse queries/inserts/merges/cache, impacted clusters, and events |
 | `infrastructure` | metric | `hostmetrics` receiver — `system.cpu.utilization`, `system.memory.utilization`; `kubeletstats` + `k8s_cluster` — `k8s.node.condition_ready` | `system.cpu.load_average.1m`, `system.filesystem.{usage,inodes.usage}`, `system.memory.usage`, `system.disk.{operations,operation_time,io}`, `system.network.{io,dropped,errors}`, `k8s.node.uptime` |
 | `kubernetes` | metric + log | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.condition_ready`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,cpu,memory}`, `k8s.container.restarts`; `hostmetrics` — `system.{cpu,memory}.utilization` | `system.filesystem.usage`; container-vs-limit tiles use `k8s.container.{cpu,memory}_limit_utilization` / request utilization + `container.uptime`; cluster tables need the `k8sobjects` receiver |
 | `services` | trace | Application traces (OTLP) — server spans (`SpanKind:Server`) | error spans (`StatusCode:Error`); route tiles read `SpanAttributes['http.route']` |
@@ -296,15 +296,16 @@ Every dashboard ships a top-of-page **filter bar** (`filters[]`) so one template
 multi-tenant cluster without editing tiles. Pick a value and all tiles bound to that source
 re-scope. What each exposes:
 
-- **Service** — `services`, `logs`, `operations-center`, `supportability`.
-- **Namespace** — `kubernetes`, `operations-center`, `supportability`.
+- **Service** — `services`, `logs`, `supportability`; on `overview`, **Service** scopes traces and
+  **Log Service** scopes logs.
+- **Namespace** — `kubernetes`, `overview`, `supportability`.
 - **Host** — `infrastructure`.
 - **Severity** — `logs`, `supportability`.
 - **Collector** — `observability-platform-health` (`service.instance.id`).
 
-> Filters bind to one source. On the cross-source `operations-center` and `supportability`, the
-> **Service** filter scopes the trace/log tiles and **Namespace** scopes the metric tiles; tiles from
-> other sources are unaffected.
+> Filters bind to one source. On `overview`, **Service** scopes trace tiles, **Log Service** scopes
+> log tiles, and **Namespace** scopes metric tiles. On `supportability`, Service and Namespace remain
+> source-specific; tiles from other sources are unaffected.
 
 ## Customizing
 

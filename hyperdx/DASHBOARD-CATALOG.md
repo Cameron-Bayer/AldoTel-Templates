@@ -33,7 +33,7 @@ Imported display names are prefixed **`ClickStack ·`**; filenames and stable ta
 ## Dashboard locations
 
 - **`hyperdx/dashboards/`** — the **6 default** dashboards every customer should import; they
-  populate on a standard appliance deploy: `operations-center`, `infrastructure`, `kubernetes`,
+  populate on a standard appliance deploy: `overview`, `infrastructure`, `kubernetes`,
   `services`, `logs`, and `supportability`.
 - **`hyperdx/dashboards/advanced/`** — **1 opt-in** dashboard (import with `--advanced`),
   `observability-platform-health`, which needs data a standard deploy doesn't ingest by default:
@@ -53,8 +53,8 @@ Each dashboard reads from one (or, for the roll-ups, all) of them:
 | **Your hosts / OS** | Collector `hostmetrics` receiver (`system.*`) | `infrastructure` |
 | **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` + `k8sobjects` receivers | `infrastructure`, `kubernetes` |
 | **The OTel Collector itself** | Collector self-telemetry (`:8888`) scraped back in | `observability-platform-health` |
-| **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `observability-platform-health` |
-| **Everything (roll-up)** | All of the above; degrades gracefully | `operations-center`, `supportability` |
+| **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `overview`, `observability-platform-health` |
+| **Everything (roll-up)** | All of the above; degrades gracefully | `overview`, `supportability` |
 
 ---
 
@@ -100,8 +100,8 @@ but a bare cluster with un-instrumented apps won't populate these.
 - **`logs`** — needs application/container **logs** (filelog or OTLP).
 
 ### ⭐ Always works (degrades gracefully)
-- **`operations-center`** — a cross-domain landing page. Every tile shows what it can and quietly hides
-  what isn't flowing yet, so it's safe to import first and watch it fill in as you add pipelines.
+- **`overview`** — the primary cross-domain landing page. Signal tiles fill as telemetry arrives;
+  its ClickHouse workload section reads `system.*` tables directly through the existing connection.
 - **`supportability`** — an incident-triage roll-up over logs, traces, and k8s events; each section
   degrades gracefully to whatever signal is present.
 
@@ -138,12 +138,12 @@ see**, and **how to read it**.
 
 ---
 
-### ⭐ Environment Summary / Operations Center — `operations-center.json`
+### ⭐ Environment Summary / Overview — `overview.json`
 *Source: metric + trace + log · Tier: always works (degrades gracefully)*
 
-**What it's for.** A single landing page that rolls up the health of everything — cluster nodes,
-resource utilization, application services, and recent cluster activity — into a few headline numbers
-and drill-down tables.
+**What it's for.** A single landing page that rolls up the health of everything — environment and
+platform state, resource utilization, service health, ClickHouse workload/storage, impacted clusters,
+and recent activity — into headline numbers, trends, and drill-down tables.
 
 **Why use it / who it's for.** This is the **first dashboard to import** and the one to put on the
 team's shared screen. On-call leads get a 5-second read on "is anything on fire?"; engineers use the
@@ -158,12 +158,14 @@ k8s metrics, host metrics, server spans, and logs.
   node table with alert count and CPU/memory/storage/network consumption, and an inventory row that
   explicitly identifies fields the current telemetry does not emit (appliance version, physical-node
   count, and VM count).
-- **Cluster health:** a composite cluster health score, nodes-ready %, healthy vs. unhealthy (NotReady)
-  node counts, pods not Running, and container restarts in range.
+- **Platform health:** overall and cluster health scores, active conditions, nodes-ready %, healthy
+  vs. unhealthy node counts, pods not Running, and container restarts.
 - **Resource utilization:** cluster CPU busy %, memory used %, and disk used %, each as a current
   number plus a short-term CPU and memory trend line.
-- **Service & platform status:** server error rate %, p95 server latency, log error rate %, and a
-  request-vs-error trend from traces.
+- **Service health:** request volume, server error rate, p95 latency, log error rate, services ranked
+  by trace/log errors, and a request-vs-error trend.
+- **ClickHouse workload & storage:** running/failed queries, free disk, tracked memory, query/failure
+  trends, inserts, query mix, merges, mutations, page-cache reads, and async inserts.
 - **Recent activity:** Warning-event count, top event reasons, and a recent-events table (from
   `k8sobjects` events in `otel_logs`).
 - **Pre-built views:** an in-dashboard map from the requested control-plane/data-plane experiences to
@@ -386,10 +388,10 @@ Pick by role — but remember the **6 default dashboards** are the safe first im
 
 | If you're a… | Start with |
 |--------------|-----------|
-| **Data scientist / analyst** | `operations-center`, `services`, `logs` — the app-signal dashboards you'll build analysis on |
-| **Platform / Kubernetes admin** | `infrastructure`, `kubernetes`, `operations-center`, and `observability-platform-health` |
-| **SRE / reliability owner** | `services` (RED + SLO strip), `logs`, `supportability`, `operations-center` |
-| **On-call / support** | `supportability` and `operations-center` first, then the domain board the alert points at |
+| **Data scientist / analyst** | `overview`, `services`, `logs` — the app-signal dashboards you'll build analysis on |
+| **Platform / Kubernetes admin** | `infrastructure`, `kubernetes`, `overview`, and `observability-platform-health` |
+| **SRE / reliability owner** | `services` (RED + SLO strip), `logs`, `supportability`, `overview` |
+| **On-call / support** | `supportability` and `overview` first, then the domain board the alert points at |
 | **ClickHouse / pipeline operator** | `observability-platform-health` (advanced) |
 | **Just kicking the tires (any cluster)** | the 6 defaults — they show what is flowing today and degrade gracefully as you add data |
 

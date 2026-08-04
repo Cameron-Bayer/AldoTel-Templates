@@ -282,12 +282,14 @@ SELECT countIf(phase NOT IN (2, 3)) AS "Not running" FROM (
 
 ```sql
 SELECT sum(d) AS "New restarts" FROM (
-  SELECT max(Value) - min(Value) AS d
+  SELECT greatest(max(Value) - min(Value), 0) AS d
   FROM default.otel_metrics_gauge
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
     AND MetricName = 'k8s.container.restarts' AND $__filters
-  GROUP BY ResourceAttributes['k8s.pod.name']
+  GROUP BY ResourceAttributes['k8s.namespace.name'],
+           ResourceAttributes['k8s.pod.name'],
+           ResourceAttributes['k8s.container.name']
 )
 ```
 

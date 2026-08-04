@@ -10,6 +10,6 @@ Detailed table/column breakdown for each dashboard visual.
 | ClickStack - Infrastructure | [infrastructure.md](infrastructure.md) |
 | ClickStack - Kubernetes | [kubernetes.md](kubernetes.md) |
 | ClickStack - Logs | [logs.md](logs.md) |
-| ClickStack - Operations Center | [operations-center.md](operations-center.md) |
+| ClickStack - Overview | [overview.md](overview.md) |
 | ClickStack - Services (RED) | [services.md](services.md) |
 | ClickStack - Supportability | [supportability.md](supportability.md) |

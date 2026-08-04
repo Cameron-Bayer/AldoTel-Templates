@@ -2,12 +2,12 @@
   "_comment": "Drives preflight.ps1/.sh (compatibility check) and documents per-dashboard requirements. tier is \"default\" (always populated on a full appliance deploy) or \"advanced\" (opt-in, needs optional data sources; imported only with -Advanced/--advanced). metricType maps to the otel_metrics_<type> table. required=false tiles degrade gracefully if the metric is absent. Every metric listed here has been verified against a real appliance deployment; metrics the appliance does not emit are deliberately not listed.",
   "dashboards": [
     {
-      "file": "operations-center.json",
+      "file": "overview.json",
       "tmpl": "tmpl:operations-center",
       "tier": "default",
-      "name": "Operations Center",
+      "name": "Overview",
       "receivers": [
-        "Cross-cutting roll-up: application traces (OTLP), application/container logs, Kubernetes metrics (kubeletstats + k8s_cluster + k8sobjects events), and host metrics (hostmetrics). Every tile degrades gracefully when a signal is absent."
+        "Cross-cutting roll-up: traces, logs, Kubernetes metrics/events, host metrics, and ClickHouse system tables. Signal-specific tiles degrade gracefully; ClickHouse workload tiles require SELECT access to system.processes, system.query_log, system.disks, system.metrics, system.merges, and system.mutations."
       ],
       "checks": [
         {
