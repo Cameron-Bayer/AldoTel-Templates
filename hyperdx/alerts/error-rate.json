@@ -3,13 +3,16 @@
   "signal": "Error rate",
   "dashboard": "services",
   "tile": "Error rate %",
+  "legacyNames": [
+    "ClickStack · Services error rate > 2%"
+  ],
   "alert": {
-    "name": "ClickStack · Services error rate > 2%",
+    "name": "ClickStack · Traces error rate > 2%",
     "source": "tile",
     "thresholdType": "above",
     "threshold": 0.02,
     "interval": "5m",
-    "message": "Server-span error ratio (errors / total) has exceeded 2% over the last 5 minutes. Investigate the failing services on the Services — RED dashboard.",
+    "message": "Server-span error ratio (errors / total) has exceeded 2% over the last 5 minutes. Investigate the failing services on the Traces dashboard.",
     "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
   }
 }

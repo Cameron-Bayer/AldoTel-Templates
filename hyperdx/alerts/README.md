@@ -14,8 +14,8 @@ per‑install dashboard/tile/webhook IDs at import time.
 
 | File | Alert | Bound tile (dashboard) | Condition (default) | Interval |
 |---|---|---|---|---|
-| `error-rate.json` | Services error rate | `Error rate %` (services) | ratio **> 2%** | 5m |
-| `slo-fast-burn.json` | SLO fast burn | `Availability (SLI = success rate)` (services) | availability **< 98.56%** (= 14.4× burn of a 99.9% SLO) | 5m |
+| `error-rate.json` | Traces error rate | `Error rate %` (Traces) | ratio **> 2%** | 5m |
+| `slo-fast-burn.json` | SLO fast burn | `Availability (SLI = success rate)` (Traces) | availability **< 98.56%** (= 14.4× burn of a 99.9% SLO) | 5m |
 | `collector-drops.json` | Collector dropping telemetry | `Refused spans (window)` (observability‑platform) | refused spans **> 0** | 5m |
 | `clickhouse-disk-low.json` | ClickHouse running out of disk | `Disk free %` (observability‑platform) | free space **< 10%** | 15m |
 

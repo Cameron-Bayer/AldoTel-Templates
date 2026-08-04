@@ -18,7 +18,7 @@ Imported dashboard display names are prefixed **`ClickStack -`**; this guide use
 - [1. Overview](#1-overview)
 - [2. Infrastructure](#2-infrastructure)
 - [3. Kubernetes](#3-kubernetes)
-- [4. Services (RED)](#4-services-red)
+- [4. Traces](#4-traces)
 - [5. Logs](#5-logs)
 - [6. Supportability](#6-supportability)
 - [7. Observability Platform Health](#7-observability-platform-health)
@@ -113,12 +113,12 @@ Both styles respect the dashboard filters described below when their underlying 
 **Server error rate (%)** — failed server spans as a percentage of all server spans.
 - **What it reads:** Traces in `default.otel_traces`, using `SpanKind` and `StatusCode`.
 - **How it is calculated:** `avg(if(StatusCode = 'Error', 1, 0))` where `SpanKind = 'Server'`.
-- **Q: Why a percentage?** It accounts for traffic volume. One hundred errors in a million requests is very different from one hundred errors in two hundred requests. Drill into **Services (RED)** for per-service trends and SLO burn.
+- **Q: Why a percentage?** It accounts for traffic volume. One hundred errors in a million requests is very different from one hundred errors in two hundred requests. Drill into **Traces** for per-service trends and SLO burn.
 
 **95th-percentile server latency (p95)** — slow-tail request latency.
 - **What it reads:** `Duration` from server spans in `default.otel_traces`.
 - **How it is calculated:** `quantile(Duration / 1000000000)` where `SpanKind = 'Server'`, converting nanoseconds to seconds.
-- **Q: What should I do if it rises?** Check **Services (RED)** for p50/p95/p99 separation, slow routes, and the anomaly band. A p95 spike with flat p50 usually means a subset of routes or dependencies is slow.
+- **Q: What should I do if it rises?** Check **Traces** for p50/p95/p99 separation, slow routes, and the anomaly band. A p95 spike with flat p50 usually means a subset of routes or dependencies is slow.
 
 **Log error rate (%)** — the share of log records that are errors or fatals.
 - **What it reads:** Logs in `default.otel_logs`, using `SeverityNumber` and `SeverityText`.
@@ -332,14 +332,15 @@ Both styles respect the dashboard filters described below when their underlying 
 - **Q: What should I do next?** Containers near 100% of limit need tuning or more capacity. Containers far above request but below limit may be noisy neighbors and should have requests adjusted.
 
 ---
-## 4. Traces & Services
+## 4. Traces
 
 **Data source:** Traces  ·  **Filters:** Service  ·  **Tier:** Default
-**Purpose:** The application reliability and performance view. RED stands for **Rate**, **Errors**, and **Duration**; expanded sections add service health, client/RPC latency, slow/failed trace search, dependency analysis, error propagation, and per-service SLO compliance. The generated [`docs/services.md`](docs/services.md) is the exact reference for every added tile.
+**Purpose:** The application reliability and performance view. RED stands for **Rate**, **Errors**, and **Duration**. Eight ordered sections cover service overview, latency analysis, request health, end-to-end tracing, dependency mapping, root-cause analysis, SLO reliability, and optional ClickHouse/collector platform health. The generated [`docs/traces.md`](docs/traces.md) is the exact reference for every tile.
 
 > This dashboard requires application traces with OpenTelemetry server spans in `default.otel_traces`.
+> HTTP, RPC, client-dependency, and platform panels degrade when those optional attributes/signals are absent. Keeper latency is intentionally shown as unavailable until Keeper metrics scraping is enabled.
 
-### Rate & errors
+### Service overview and request health
 
 **Server request count over time, by service** — request throughput.
 - **What it reads:** `default.otel_traces`, using `SpanKind` and `ServiceName`.
@@ -351,7 +352,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** It counts errors where `SpanKind:Server AND StatusCode:Error` and total requests where `SpanKind:Server`, grouped by service, then displays errors/total.
 - **Q: What is healthy?** Usually low and stable. Rising error percentage is more important than raw count because it normalizes for traffic.
 
-### Latency & error breakdown
+### Latency analysis
 
 **Server latency percentiles (p50 / p95 / p99)** — typical, slow, and worst-tail latency.
 - **What it reads:** `Duration` from server spans in `default.otel_traces`.
@@ -379,6 +380,13 @@ Both styles respect the dashboard filters described below when their underlying 
 - **What it reads:** `Duration` from server spans.
 - **How it is calculated:** It buckets `Duration / 1000000000` and counts spans per bucket.
 - **Q: What does this add?** It reveals multiple populations of requests, such as cached versus uncached paths, that averages and single percentiles can hide.
+
+### End-to-end tracing, dependencies, and root cause
+
+Distributed, slow, and failed trace searches expose the native HyperDX trace waterfall and request
+journey. Critical-path candidates rank the longest span in each trace; dependency tables show
+upstream/downstream request flow, latency, and error rate; error-correlation panels add propagation
+paths, exceptions by service, and anomaly timelines.
 
 ### SLO & error budget
 
@@ -469,7 +477,7 @@ Both styles respect the dashboard filters described below when their underlying 
 **Server error rate (%)** — trace-based request failure ratio.
 - **What it reads:** `StatusCode` and `SpanKind` from `default.otel_traces`.
 - **How it is calculated:** `avg(if(StatusCode = 'Error', 1, 0))` where `SpanKind = 'Server'`.
-- **Q: What should I do if it is high?** Open **Services (RED)** for the affected service's error rate, latency, slow routes, and SLO burn.
+- **Q: What should I do if it is high?** Open **Traces** for the affected service's error rate, latency, slow routes, and SLO burn.
 
 **Log error rate (%)** — log-based failure ratio.
 - **What it reads:** `SeverityNumber` and `SeverityText` from `default.otel_logs`.
@@ -632,9 +640,9 @@ Both styles respect the dashboard filters described below when their underlying 
 
 | Situation | Start here | Then |
 | --- | --- | --- |
-| Is anything wrong right now? | Overview | Follow the unhealthy roll-up to Services, Logs, Kubernetes, or Infrastructure |
-| The application feels slow | Services (RED) | Slowest routes → latency anomaly → traces |
-| Are we meeting our reliability target? | Services (RED) | Availability, error budget remaining, then multi-window burn rate |
+| Is anything wrong right now? | Overview | Follow the unhealthy roll-up to Traces, Logs, Kubernetes, or Infrastructure |
+| The application feels slow | Traces | Slowest routes → latency anomaly → traces |
+| Are we meeting our reliability target? | Traces | Availability, error budget remaining, then multi-window burn rate |
 | Errors started after a deployment | Logs | Top error signatures → live error stream |
 | A pod is unhealthy or restarting | Kubernetes | Pods by phase → Pods status/resources → Top pods by restarts |
 | A namespace is consuming too much capacity | Kubernetes | Namespace CPU/memory → Containers utilization vs limit/request |

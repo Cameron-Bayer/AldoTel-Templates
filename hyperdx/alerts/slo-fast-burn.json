@@ -9,7 +9,7 @@
     "thresholdType": "below",
     "threshold": 0.9856,
     "interval": "5m",
-    "message": "Availability has dropped below 98.56% over the last 5 minutes - that is a 14.4x burn of a 99.9% SLO (0.1% budget), which exhausts the monthly error budget in ~2 days. Fast-burn, page-worthy. See the SLO strip at the bottom of the Services (RED) dashboard (availability, error budget, multi-window burn-rate table).",
+    "message": "Availability has dropped below 98.56% over the last 5 minutes - that is a 14.4x burn of a 99.9% SLO (0.1% budget), which exhausts the monthly error budget in ~2 days. Fast-burn, page-worthy. See the SLO section of the Traces dashboard (availability, error budget, multi-window burn-rate table).",
     "channel": { "type": "webhook", "webhookId": "{{ALERT_WEBHOOK_ID}}" }
   }
 }

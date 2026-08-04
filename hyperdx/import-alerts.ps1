@@ -154,10 +154,11 @@ foreach ($f in $files) {
   $tileName = $tmpl.tile
   $a = $tmpl.alert
   $alertName = $a.name
+  $alertNames = @($alertName) + @($tmpl.legacyNames)
 
   # --- delete mode: match by name ---
   if ($Delete) {
-    $match = $existingAlerts | Where-Object { $_.name -eq $alertName } | Select-Object -First 1
+    $match = $existingAlerts | Where-Object { $alertNames -contains $_.name } | Select-Object -First 1
     if ($match) {
       if ($DryRun) { Write-Host "[DRY RUN] would DELETE '$alertName' -> $(Id-Of $match)" -ForegroundColor Yellow }
       else {

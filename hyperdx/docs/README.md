@@ -11,5 +11,5 @@ Detailed table/column breakdown for each dashboard visual.
 | ClickStack - Kubernetes | [kubernetes.md](kubernetes.md) |
 | ClickStack - Logs | [logs.md](logs.md) |
 | ClickStack - Overview | [overview.md](overview.md) |
-| ClickStack - Services (RED) | [services.md](services.md) |
 | ClickStack - Supportability | [supportability.md](supportability.md) |
+| ClickStack - Traces | [traces.md](traces.md) |

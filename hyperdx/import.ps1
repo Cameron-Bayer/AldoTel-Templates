@@ -18,7 +18,7 @@
   Force-create new dashboards even if a matching one exists (legacy behavior).
 
 .PARAMETER Only
-  Comma-separated list of dashboard file names to act on (e.g. "services.json,logs.json").
+  Comma-separated list of dashboard file names to act on (e.g. "traces.json,logs.json").
   A named file is resolved from any tier (top-level or advanced/).
 
 .PARAMETER Advanced
@@ -31,7 +31,7 @@
   ./import.ps1                 # upsert the default (top-level) tier
   ./import.ps1 -Advanced       # also upsert advanced/ deep dives
   ./import.ps1 -DryRun         # preview
-  ./import.ps1 -Only services.json
+  ./import.ps1 -Only traces.json
   ./import.ps1 -Delete         # remove template-managed dashboards
 #>
 param(
@@ -92,8 +92,12 @@ $dashRoot = Join-Path $PSScriptRoot "dashboards"
 $recurse = [bool]$Advanced -or [bool]$Only
 $files = Get-ChildItem -Path $dashRoot -Filter *.json -File -Recurse:$recurse
 if ($Only) {
-  $wanted = $Only.Split(',') | ForEach-Object { $_.Trim() }
+  $wanted = $Only.Split(',') | ForEach-Object {
+    $name = $_.Trim()
+    if ($name -eq 'services.json') { 'traces.json' } else { $name }
+  }
   $files = $files | Where-Object { $wanted -contains $_.Name }
+  if (-not $files) { throw "No dashboard files matched -Only '$Only'." }
 }
 
 foreach ($f in $files) {

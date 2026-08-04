@@ -981,4 +981,4 @@ LIMIT 200
 </details>
 
 ## Related Control Plane & Data Plane Views
-Use **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Services** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows.
+Use **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Traces** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows.

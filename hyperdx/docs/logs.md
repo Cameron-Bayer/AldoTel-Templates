@@ -284,7 +284,7 @@ LIMIT 100
 </details>
 
 ## Log Query Builder, Saved Searches & Correlation
-Use the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Services**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace.
+Use the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Traces**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace.
 
 ## 3. Live Log Streaming
 Recent logs automatically refresh with the dashboard. Click a row to open the native HyperDX search workspace for true live-tail monitoring, Pause & Resume, full log details, and continued filtering by service, namespace, or pod.

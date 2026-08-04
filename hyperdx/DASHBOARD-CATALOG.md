@@ -8,7 +8,7 @@ import for *your* setup — so nothing lands empty and nothing confuses your tea
 > Kubernetes cluster, the OpenTelemetry Collector, and ClickHouse itself). The **6 default** dashboards
 > live in `hyperdx/dashboards/`; the single **advanced** deep dive lives in
 > `hyperdx/dashboards/advanced/`. `./import.ps1` recurses into `advanced/`, so it still imports all
-> 7 unless you choose a subset. SLO lives as a compact strip inside **Services (RED)**.
+> 7 unless you choose a subset. SLO lives as a compact strip inside **Traces**.
 
 ---
 
@@ -34,7 +34,7 @@ Imported display names are prefixed **`ClickStack ·`**; filenames and stable ta
 
 - **`hyperdx/dashboards/`** — the **6 default** dashboards every customer should import; they
   populate on a standard appliance deploy: `overview`, `infrastructure`, `kubernetes`,
-  `services`, `logs`, and `supportability`.
+  `traces`, `logs`, and `supportability`.
 - **`hyperdx/dashboards/advanced/`** — **1 opt-in** dashboard (import with `--advanced`),
   `observability-platform-health`, which needs data a standard deploy doesn't ingest by default:
   the collector's own `:8888` self-telemetry, ClickHouse server metrics, and `SELECT` on ClickHouse
@@ -49,7 +49,7 @@ Each dashboard reads from one (or, for the roll-ups, all) of them:
 
 | Domain | What produces the data | Dashboards |
 |--------|------------------------|------------|
-| **Your applications** | Your services emit OTLP **traces** and **logs** | `services` (RED + SLO strip), `logs` |
+| **Your applications** | Your services emit OTLP **traces** and **logs** | `traces` (RED + SLO strip), `logs` |
 | **Your hosts / OS** | Collector `hostmetrics` receiver (`system.*`) | `infrastructure` |
 | **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` + `k8sobjects` receivers | `infrastructure`, `kubernetes` |
 | **The OTel Collector itself** | Collector self-telemetry (`:8888`) scraped back in | `observability-platform-health` |
@@ -95,7 +95,7 @@ Your OTel Collector must be deployed with the right receivers (and, for Kubernet
 Your services must send OpenTelemetry **traces** / **logs**. This is the core ClickStack use case,
 but a bare cluster with un-instrumented apps won't populate these.
 
-- **`services`** — needs OTLP **traces** with server spans (`SpanKind = 'Server'`) and `StatusCode`;
+- **`traces`** — needs OTLP **traces** with server spans (`SpanKind = 'Server'`) and `StatusCode`;
   includes the compact SLO strip.
 - **`logs`** — needs application/container **logs** (filelog or OTLP).
 
@@ -169,7 +169,7 @@ k8s metrics, host metrics, server spans, and logs.
 - **Recent activity:** Warning-event count, top event reasons, and a recent-events table (from
   `k8sobjects` events in `otel_logs`).
 - **Pre-built views:** an in-dashboard map from the requested control-plane/data-plane experiences to
-  the Infrastructure, Kubernetes, and Services dashboards and their filters.
+  the Infrastructure, Kubernetes, and Traces dashboards and their filters.
 
 **How to read it.** Start top-left and scan right; anything red/non-zero in the health and status rows
 is your cue to open the matching domain dashboard and drill down. Empty tiles = that signal isn't
@@ -254,16 +254,16 @@ for OOMKills, throttling, and crash loops (containers without a limit set show 0
 
 ---
 
-### 🔵 Traces & Services — `services.json`
+### 🔵 Traces — `traces.json`
 *Source: trace · Tier 4 (needs app traces)*
 
 **What it's for.** A complete trace-based service experience: service health, **RED** request metrics,
 server/client/RPC latency, slow and failed trace searches, dependency analysis, error propagation,
-and SLO compliance.
+SLO compliance, and optional ClickHouse/collector platform health.
 
 **Why use it / who it's for.** The everyday dashboard for **service owners and SREs**. It answers
 "which service is slow or erroring right now, and on which endpoint?" The slow-routes table links
-straight into Traces so you go from symptom to root-cause exemplar in one click, while the SLO strip
+straight into Traces so you go from symptom to root-cause exemplar in one click, while the SLO section
 shows whether the same failures are burning reliability budget.
 
 **What you need.** OTLP **traces** with server spans (`SpanKind = 'Server'`) and `StatusCode`. *(HTTP-
@@ -271,14 +271,20 @@ route tiles read `SpanAttributes['http.route']`; pure gRPC/messaging services th
 empty rows there while rate/error/latency and the SLO strip still work.)*
 
 **What you'll see.**
-- **Rate & errors:** server request count over time by service; error rate %.
-- **Latency & error breakdown:** p50/p95/p99 latency; errors by status message (pie).
+- **Service overview and RED:** request rate, request volume, error rate, average latency, success
+  rate, health score, and top impacted services.
+- **Latency analysis:** separate HTTP server, HTTP client, and RPC server latency tables; p50/p95/p99;
+  service/operation trends; slow routes; anomaly detection; and the latency heatmap.
 - **Slow routes & distribution:** slowest routes by p95 (→ Traces); a **latency-anomaly** chart (last
   24h vs an 8-day ±3σ baseline); a server-latency **heatmap**.
 - **SLO & error budget:** availability (SLI), error-budget remaining, a multi-window burn-rate table,
-  availability over time against the 99.9% target, and per-service compliance/violation status.
-- **Trace investigation:** slow/failed request search, trace sampling analytics, dependency edges,
-  impacted dependencies, and root-cause candidate traces.
+  budget-consumption trend, availability over time against the 99.9% target, and per-service
+  compliance/violation status.
+- **Trace investigation:** distributed, slow, and failed request searches; native waterfall/request
+  journey drill-down; trace sampling; critical-path candidates; dependency edges; impacted
+  dependencies; exceptions; error anomalies; and root-cause candidate traces.
+- **Platform performance:** ClickHouse workload/storage, collector queue utilization, and refused
+  spans. Keeper latency is explicitly marked unavailable until Keeper metrics scraping is enabled.
 
 **How to read it.** Watch the error-rate % and p95 lines for spikes; use *Slowest routes* to see which
 endpoint is responsible, then click through to the actual traces. The anomaly tile flags spikes
@@ -388,9 +394,9 @@ Pick by role — but remember the **6 default dashboards** are the safe first im
 
 | If you're a… | Start with |
 |--------------|-----------|
-| **Data scientist / analyst** | `overview`, `services`, `logs` — the app-signal dashboards you'll build analysis on |
+| **Data scientist / analyst** | `overview`, `traces`, `logs` — the app-signal dashboards you'll build analysis on |
 | **Platform / Kubernetes admin** | `infrastructure`, `kubernetes`, `overview`, and `observability-platform-health` |
-| **SRE / reliability owner** | `services` (RED + SLO strip), `logs`, `supportability`, `overview` |
+| **SRE / reliability owner** | `traces` (RED + SLO strip), `logs`, `supportability`, `overview` |
 | **On-call / support** | `supportability` and `overview` first, then the domain board the alert points at |
 | **ClickHouse / pipeline operator** | `observability-platform-health` (advanced) |
 | **Just kicking the tires (any cluster)** | the 6 defaults — they show what is flowing today and degrade gracefully as you add data |

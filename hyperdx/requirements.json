@@ -278,12 +278,12 @@
       ]
     },
     {
-      "file": "services.json",
+      "file": "traces.json",
       "tmpl": "tmpl:services",
       "tier": "default",
-      "name": "Services (RED)",
+      "name": "Traces",
       "receivers": [
-        "Application traces (OTLP)"
+        "Application traces (OTLP) with server/client span kinds, status, HTTP/RPC attributes, trace context propagation, and peer/service attributes. Optional platform panels use ClickHouse system tables and collector self-telemetry."
       ],
       "checks": [
         {
@@ -303,6 +303,24 @@
           "required": false,
           "label": "client/dependency spans",
           "where": "SpanKind:Client"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "otelcol_exporter_queue_size"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "otelcol_exporter_queue_capacity"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "otelcol_receiver_refused_spans_total"
         }
       ]
     },

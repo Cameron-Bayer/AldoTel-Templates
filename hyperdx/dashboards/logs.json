@@ -460,7 +460,7 @@
       "h": 5,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Log Query Builder, Saved Searches & Correlation\nUse the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Services**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace."
+        "markdown": "#### Log Query Builder, Saved Searches & Correlation\nUse the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Traces**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace."
       }
     },
     {

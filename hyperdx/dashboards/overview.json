@@ -1084,7 +1084,7 @@
       "h": 4,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Related Control Plane & Data Plane Views\nUse **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Services** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows."
+        "markdown": "#### Related Control Plane & Data Plane Views\nUse **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Traces** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows."
       }
     }
   ]

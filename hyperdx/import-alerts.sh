@@ -127,9 +127,10 @@ for f in "${FILES[@]}"; do
   slug="$(jq -r '.dashboard' "$f")"
   tile_name="$(jq -r '.tile' "$f")"
   name="$(jq -r '.alert.name' "$f")"
+  names="$(jq -c '[.alert.name] + (.legacyNames // [])' "$f")"
 
   if [ "$DELETE" = 1 ]; then
-    id="$(echo "$EXISTING_ALERTS" | jq -r --arg n "$name" '[.[] | select(.name==$n)][0].id // empty')"
+    id="$(echo "$EXISTING_ALERTS" | jq -r --argjson names "$names" '[.[] | select(.name as $n | $names | index($n))][0].id // empty')"
     if [ -n "$id" ]; then
       if [ "$DRY_RUN" = 1 ]; then echo "[DRY RUN] would DELETE '$name' -> $id"
       else api -X DELETE "$BASE_URL/api/v2/alerts/$id" -o /dev/null; echo "Deleted '$name' -> $id"; fi

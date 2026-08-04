@@ -12,7 +12,7 @@
 #   ./import.sh                      # upsert the default (top-level) tier
 #   ./import.sh --advanced           # also upsert advanced/ deep dives (need optional data)
 #   ./import.sh --dry-run            # preview, write nothing
-#   ./import.sh --only services.json,logs.json
+#   ./import.sh --only traces.json,logs.json
 #   ./import.sh --delete             # remove template-managed dashboards (by tmpl tag)
 #   ./import.sh --duplicate          # force-create new copies (legacy behavior)
 #
@@ -93,9 +93,17 @@ if [ -n "$ONLY" ]; then
   SELECTED=()
   for f in "${FILES[@]}"; do
     base="$(basename "$f")"
-    for w in "${WANTED[@]}"; do [ "$base" = "$(echo "$w" | xargs)" ] && SELECTED+=("$f"); done
+    for w in "${WANTED[@]}"; do
+      wanted="$(echo "$w" | xargs)"
+      [ "$wanted" = "services.json" ] && wanted="traces.json"
+      [ "$base" = "$wanted" ] && SELECTED+=("$f")
+    done
   done
   FILES=("${SELECTED[@]}")
+  if [ "${#FILES[@]}" -eq 0 ]; then
+    echo "No dashboard files matched --only '$ONLY'." >&2
+    exit 1
+  fi
 fi
 
 for f in "${FILES[@]}"; do

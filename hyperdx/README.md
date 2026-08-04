@@ -40,7 +40,7 @@ export HDX_API_KEY="<your Personal API Access Key>"
 ./import.sh --advanced   # also import the advanced/ deep dives (optional data sources)
 ```
 
-Prefer a subset? `./import.sh --only services.json,logs.json`. The **default**
+Prefer a subset? `./import.sh --only traces.json,logs.json`. The **default**
 import covers the six dashboards that populate on a standard appliance deploy; the **advanced/**
 tier (`--advanced`) adds the `observability-platform-health` deep dive, which needs optional data
 sources (collector self-telemetry, ClickHouse metrics, and `system.*` SQL access). Full details,
@@ -65,7 +65,7 @@ flags, and prerequisites are in [Install](#install) below.
 | `dashboards/overview.json` | Unified landing page: environment/platform health, resource and service health, ClickHouse queries/storage/merges/cache/inserts, impacted clusters/nodes, and recent events | metric + trace + log + ClickHouse SQL |
 | `dashboards/infrastructure.json` | Infrastructure overview: hosts & nodes, compute/memory, per-volume storage, network reliability, utilization hotspots, capacity risks, growth forecasting, and scale recommendations | metric |
 | `dashboards/kubernetes.json` | Kubernetes overview: cluster and node health, inventory, namespaces, deployments, pods, containers, limit utilization, warning events, and impacted resources | metric + log |
-| `dashboards/services.json` | Full traces experience: service overview, RED request health, latency analysis, trace search/waterfalls, dependency analysis, error correlation, and SLO compliance | trace |
+| `dashboards/traces.json` | Full traces experience: service overview, RED request health, latency analysis, trace search/waterfalls, dependency analysis, error correlation, and SLO compliance | trace |
 | `dashboards/logs.json` | Log overview, full search workspace, service/resource/cluster/host/namespace/pod filters, severity trends, normalized/new patterns, and live streams | log |
 | `dashboards/supportability.json` | Active alert-condition summary and guided ALM/ALRS/resource-provider/Kubernetes/network/storage troubleshooting, plus a recurring-signature known-issues view | log + trace + metric |
 
@@ -81,7 +81,7 @@ flags, and prerequisites are in [Install](#install) below.
 Every dashboard has a per-tile reference page in [`docs/`](docs/) — one page per dashboard listing
 the ClickHouse tables, columns, and queries behind every visual. See the
 [reference index](docs/README.md) for `overview`, `infrastructure`, `kubernetes`,
-`services`, `logs`, `supportability`, and the advanced `observability-platform-health` board. For
+`traces`, `logs`, `supportability`, and the advanced `observability-platform-health` board. For
 the "which and why" and the tile-by-tile Q&A, see [`DASHBOARD-CATALOG.md`](DASHBOARD-CATALOG.md)
 and [`DASHBOARD-DEEP-DIVE.md`](DASHBOARD-DEEP-DIVE.md).
 
@@ -139,7 +139,7 @@ The importer resolves those at install time, so the JSON stays portable.
    a **Logs** (kind `log`), **Traces** (kind `trace`), and **Metrics** (kind `metric`) source.
 2. Telemetry flowing in via the standard OTel collector:
    - `hostmetrics` receiver (`system.*`) + `kubeletstats` + `k8s_cluster` receivers for `infrastructure` and `kubernetes` (add `k8sobjects` for the cluster-events tiles)
-   - app traces for `services`; app/container logs for `logs`
+   - app traces for `traces`; app/container logs for `logs`
    - collector `:8888` self-telemetry + ClickHouse metrics + `SELECT` on `system.*` for the advanced `observability-platform-health`
    - `overview` and `supportability` roll up whatever is flowing (they degrade gracefully)
 3. A **Personal API Access Key**: HyperDX → **Team Settings → API Keys**.
@@ -190,13 +190,13 @@ The importer:
 | Flag | Effect |
 |------|--------|
 | `-DryRun` / `--dry-run` | Print what would be created/updated/deleted; write nothing. |
-| `-Only <files>` / `--only <files>` | Comma-separated file names to act on (e.g. `services.json,logs.json`). |
+| `-Only <files>` / `--only <files>` | Comma-separated file names to act on (e.g. `traces.json,logs.json`). |
 | `-Delete` / `--delete` | Remove the template-managed dashboards (matched by `tmpl:` tag). |
 | `-Duplicate` / `--duplicate` | Force-create new copies even if a matching dashboard exists. |
 
 ```powershell
 ./import.ps1 -DryRun
-./import.ps1 -Only services.json,logs.json
+./import.ps1 -Only traces.json,logs.json
 ./import.ps1 -Delete
 ```
 
@@ -275,7 +275,7 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 | `overview` | metric + trace + log + ClickHouse SQL | None hard-required for the cross-signal sections; ClickHouse workload panels require read access to `system.*` tables | environment/platform health, CPU/memory/storage/network, request/log health, ClickHouse queries/inserts/merges/cache, impacted clusters, and events |
 | `infrastructure` | metric | `hostmetrics` receiver — `system.cpu.utilization`, `system.memory.utilization`; `kubeletstats` + `k8s_cluster` — `k8s.node.condition_ready` | `system.cpu.load_average.1m`, `system.filesystem.{usage,inodes.usage}`, `system.memory.usage`, `system.disk.{operations,operation_time,io}`, `system.network.{io,dropped,errors}`, `k8s.node.uptime` |
 | `kubernetes` | metric + log | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.condition_ready`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,cpu,memory}`, `k8s.container.restarts`; `hostmetrics` — `system.{cpu,memory}.utilization` | `system.filesystem.usage`; container-vs-limit tiles use `k8s.container.{cpu,memory}_limit_utilization` / request utilization + `container.uptime`; cluster tables need the `k8sobjects` receiver |
-| `services` | trace | Application traces (OTLP) — server spans (`SpanKind:Server`) | error spans (`StatusCode:Error`); route tiles read `SpanAttributes['http.route']` |
+| `traces` | trace + optional metric/SQL | Application traces (OTLP) — server spans (`SpanKind:Server`) | error/client spans; HTTP/RPC/peer attributes; route tiles use `http.route`; platform panels use collector self-telemetry and ClickHouse `system.*`; Keeper latency needs separate Keeper scraping |
 | `logs` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:error/fatal`) |
 | `supportability` | log + trace + metric | None hard-required — incident-triage roll-up; each section degrades to whatever signal is present | traces (error %), logs (error %, signatures, sources), k8s metrics (pods not Running, restarts), `k8sobjects` events |
 | `observability-platform-health` _(advanced)_ | metric + SQL | None hard-required (degrades). Ingestion/pipeline tiles use collector `:8888` self-telemetry (`otelcol_receiver_accepted_*`, `otelcol_exporter_{sent_spans,queue_size,queue_capacity}`); availability tiles use `ClickHouseMetrics_{Query,MemoryTracking}` | ClickHouse metrics scraped into OTel; Raw SQL on `system.query_log` (query performance, top errors) and `system.parts` (data retention) — HyperDX ClickHouse user must `SELECT` from them, `query_log` enabled |
@@ -296,7 +296,7 @@ Every dashboard ships a top-of-page **filter bar** (`filters[]`) so one template
 multi-tenant cluster without editing tiles. Pick a value and all tiles bound to that source
 re-scope. What each exposes:
 
-- **Service** — `services`, `logs`, `supportability`; on `overview`, **Service** scopes traces and
+- **Service** — `traces`, `logs`, `supportability`; on `overview`, **Service** scopes traces and
   **Log Service** scopes logs.
 - **Namespace** — `kubernetes`, `overview`, `supportability`.
 - **Host** — `infrastructure`.
@@ -323,7 +323,7 @@ re-scope. What each exposes:
 
 Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond static charts:
 
-- **`services` → latency anomaly:** plots p95 latency against a **causal rolling baseline
+- **`traces` → latency anomaly:** plots p95 latency against a **causal rolling baseline
   with ±3σ control bands** (trailing ~8-day window that ends before each point), so a spike is
   flagged relative to its own recent baseline rather than a static threshold — and an in-progress
   incident can't poison the baseline it's measured against.
@@ -331,7 +331,7 @@ Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond sta
   (error + fatal counts, last-seen) that replaced the older heavy "new log patterns" regex scan,
   which was repeatedly killed by ClickHouse's server-wide `OvercommitTracker` on memory-constrained
   instances. Click a row to drill into the matching **Logs**.
-- **`services` → SLO strip:** a folded-in Availability (SLI) number, Error-budget-remaining
+- **`traces` → SLO strip:** a folded-in Availability (SLI) number, Error-budget-remaining
   number, and a **multi-window burn-rate** table against a 99.9% SLO
   (`>1` = burning budget too fast) — the reliability view that used to be a separate dashboard.
 - **`observability-platform-health` _(advanced)_ → `system.query_log`:** query duration p95/p99,
@@ -342,7 +342,7 @@ Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond sta
 - **All builder tables over Logs/Traces → click-through drill-downs:** table tiles use tile
   `onClick` (table-only) to link a clicked row straight into the **Traces** or **Logs** search,
   pre-filtered from the row — turning every table into a triage launcher:
-  - `services`: slowest routes → Traces (`SpanAttributes['http.route'] = '{{...}}'`).
+  - `traces`: slowest routes → Traces (`SpanAttributes['http.route'] = '{{...}}'`).
   - `logs` / `supportability`: error signatures, errors-by-service, and k8s error sources → Logs.
 
 Both run entirely as ClickHouse SQL — no extra service. Other easy extensions:
@@ -371,7 +371,7 @@ error-budget burn-rate tiles.
 
 - **Credentials** — the API key and any webhook URL are environment secrets; keep them out of
   version control.
-- **HTTP-oriented tiles degrade on non-HTTP services.** `services`'s route tiles read
+- **HTTP-oriented tiles degrade on non-HTTP services.** `traces`'s route tiles read
   `SpanAttributes['http.route']` and `StatusMessage`; pure gRPC/messaging services that don't set
   those will show empty/`(none)` rows there while the rate/error/latency tiles still work.
 - The importer **upserts** (matches by the `tmpl:<slug>` tag), so re-running updates dashboards in
