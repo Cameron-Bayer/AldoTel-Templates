@@ -53,7 +53,7 @@
         "sqlTemplate": "SELECT if(total = 0, 0, ready / total) AS \"Nodes ready\" FROM (\n  SELECT countIf(ready = 1) AS ready, count() AS total FROM (\n    SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'k8s.node.condition_ready'\n    GROUP BY node\n  )\n)",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 0
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -82,7 +82,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT countIf(ready = 1) AS \"Healthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)"
+        "sqlTemplate": "SELECT countIf(ready = 1) AS \"Healthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -110,7 +114,11 @@
             "color": "chart-error",
             "label": "High"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -151,9 +159,9 @@
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
-        "sqlTemplate": "SELECT ts, host, avg(cpu_busy) AS \"CPU busy\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['cpu'] AS cpu,\n         TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS cpu_busy\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.utilization' AND $__filters\n  GROUP BY ts, host, cpu, TimeUnix\n)\nGROUP BY ts, host\nORDER BY ts"
+        "sqlTemplate": "SELECT ts, host, avg(cpu_busy) AS \"CPU busy\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['cpu'] AS cpu,\n         TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS cpu_busy\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.utilization' AND $__filters\n  GROUP BY ts, host, cpu, TimeUnix\n)\nGROUP BY ts, host\nORDER BY ts"
       }
     },
     {
@@ -167,7 +175,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avg(Value) AS \"Load (1m)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.load_average.1m' AND $__filters\nGROUP BY ts, host\nORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avg(Value) AS \"Load (1m)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.load_average.1m' AND $__filters\nGROUP BY ts, host\nORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -183,9 +195,9 @@
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
-        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avgIf(Value, Attributes['state'] = 'used') AS \"Memory used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.utilization' AND $__filters\nGROUP BY ts, host\nORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avgIf(Value, Attributes['state'] = 'used') AS \"Memory used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.utilization' AND $__filters\nGROUP BY ts, host\nORDER BY ts"
       }
     },
     {
@@ -201,9 +213,9 @@
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
-        "sqlTemplate": "SELECT ts, volume, used / nullIf(total, 0) AS \"Inodes used\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n         sumIf(Value, Attributes['state'] = 'used') AS used,\n         sum(Value) AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'system.filesystem.inodes.usage' AND $__filters\n  GROUP BY ts, volume\n) WHERE total > 0 ORDER BY ts"
+        "sqlTemplate": "SELECT ts, volume, used / nullIf(total, 0) AS \"Inodes used\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n         sumIf(Value, Attributes['state'] = 'used') AS used,\n         sum(Value) AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'system.filesystem.inodes.usage' AND $__filters\n  GROUP BY ts, volume\n) WHERE total > 0 ORDER BY ts"
       }
     },
     {
@@ -217,7 +229,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "WITH c AS (\n  SELECT host, avg(b) AS cpu FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n           sumIf(Value, Attributes['state'] != 'idle') AS b\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'system.cpu.utilization' AND $__filters\n    GROUP BY host, cpu, TimeUnix\n  ) GROUP BY host\n),\nm AS (\n  SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS mem\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.utilization' AND $__filters\n  GROUP BY host\n),\nl AS (\n  SELECT ResourceAttributes['host.name'] AS host, avg(Value) AS load1\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.load_average.1m' AND $__filters\n  GROUP BY host\n)\nSELECT c.host AS Host,\n  concat(toString(round(c.cpu * 100, 1)), '%') AS \"CPU busy\",\n  concat(toString(round(m.mem * 100, 1)), '%') AS \"Mem used\",\n  round(l.load1, 2) AS \"Load (1m)\"\nFROM c LEFT JOIN m USING (host) LEFT JOIN l USING (host)\nORDER BY c.cpu DESC"
+        "sqlTemplate": "WITH c AS (\n  SELECT host, avg(b) AS cpu FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n           sumIf(Value, Attributes['state'] != 'idle') AS b\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'system.cpu.utilization' AND $__filters\n    GROUP BY host, cpu, TimeUnix\n  ) GROUP BY host\n),\nm AS (\n  SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS mem\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.utilization' AND $__filters\n  GROUP BY host\n),\nl AS (\n  SELECT ResourceAttributes['host.name'] AS host, avg(Value) AS load1\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.load_average.1m' AND $__filters\n  GROUP BY host\n)\nSELECT c.host AS Host,\n  concat(toString(round(c.cpu * 100, 2)), '%') AS \"CPU busy\",\n  concat(toString(round(m.mem * 100, 2)), '%') AS \"Mem used\",\n  round(l.load1, 2) AS \"Load (1m)\"\nFROM c LEFT JOIN m USING (host) LEFT JOIN l USING (host)\nORDER BY c.cpu DESC"
       }
     },
     {
@@ -244,9 +256,9 @@
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
-        "sqlTemplate": "SELECT ts, volume, used / nullIf(total, 0) AS \"Filesystem\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n    sumIf(Value, Attributes['state'] = 'used') AS used,\n    sum(Value) AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\n  GROUP BY ts, volume\n) WHERE total > 0 ORDER BY ts"
+        "sqlTemplate": "SELECT ts, volume, used / nullIf(total, 0) AS \"Filesystem\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n    sumIf(Value, Attributes['state'] = 'used') AS used,\n    sum(Value) AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\n  GROUP BY ts, volume\n) WHERE total > 0 ORDER BY ts"
       }
     },
     {
@@ -260,7 +272,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n       avgIf(Value, Attributes['state'] = 'free') / 1e9 AS \"Free (GB)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_sum\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\nGROUP BY ts, volume ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n       concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n       avgIf(Value, Attributes['state'] = 'free') / 1e9 AS \"Free (GB)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_sum\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\nGROUP BY ts, volume ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -274,7 +290,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"IOPS\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.disk.operations' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS \"IOPS\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.disk.operations' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -288,7 +308,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "WITH t AS (\n  SELECT ts, host, direction, sum(d) AS tsec FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,\n           greatest(Value - lagInFrame(Value, 1, Value) OVER (\n             PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.disk.operation_time' AND $__filters\n  ) GROUP BY ts, host, direction\n),\no AS (\n  SELECT ts, host, direction, sum(d) AS ops FROM (\n    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,\n           greatest(Value - lagInFrame(Value, 1, Value) OVER (\n             PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.disk.operations' AND $__filters\n  ) GROUP BY ts, host, direction\n)\nSELECT t.ts AS ts, concat(t.host, ' · ', t.direction) AS series,\n       if(o.ops = 0, 0, t.tsec / o.ops * 1000) AS \"Latency (ms)\"\nFROM t JOIN o ON t.ts = o.ts AND t.host = o.host AND t.direction = o.direction\nORDER BY ts"
+        "sqlTemplate": "WITH t AS (\n  SELECT ts, host, direction, sum(d) AS tsec FROM (\n    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,\n           greatest(Value - lagInFrame(Value, 1, Value) OVER (\n             PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.disk.operation_time' AND $__filters\n  ) GROUP BY ts, host, direction\n),\no AS (\n  SELECT ts, host, direction, sum(d) AS ops FROM (\n    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,\n           greatest(Value - lagInFrame(Value, 1, Value) OVER (\n             PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n    FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.disk.operations' AND $__filters\n  ) GROUP BY ts, host, direction\n)\nSELECT t.ts AS ts, concat(t.host, ' · ', t.direction) AS series,\n       if(o.ops = 0, 0, t.tsec / o.ops * 1000) AS \"Latency (ms)\"\nFROM t JOIN o ON t.ts = o.ts AND t.host = o.host AND t.direction = o.direction\nORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -303,9 +327,10 @@
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
-          "output": "byte"
+          "output": "byte",
+          "mantissa": 2
         },
-        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Bytes/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.disk.io' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS \"Bytes/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.disk.io' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
       }
     },
     {
@@ -331,9 +356,10 @@
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
         "numberFormat": {
-          "output": "byte"
+          "output": "byte",
+          "mantissa": 2
         },
-        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Bytes/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.io' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS \"Bytes/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.io' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
       }
     },
     {
@@ -347,7 +373,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Dropped/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.dropped' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS \"Dropped/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.dropped' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -361,7 +391,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS \"Errors/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.errors' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts"
+        "sqlTemplate": "SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS \"Errors/sec\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n         ResourceAttributes['host.name'] AS host,\n         Attributes['direction'] AS direction,\n         greatest(Value - lagInFrame(Value, 1, Value) OVER (\n           PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.network.errors' AND $__filters\n)\nGROUP BY ts, host, direction\nORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -386,10 +420,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ts, 1 - avg(b) AS \"CPU headroom\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS b\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters\n  GROUP BY ts, host, cpu, TimeUnix\n) GROUP BY ts ORDER BY ts",
+        "sqlTemplate": "SELECT ts, 1 - avg(b) AS \"CPU headroom\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS b\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters\n  GROUP BY ts, host, cpu, TimeUnix\n) GROUP BY ts ORDER BY ts",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -404,10 +438,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, 1 - avgIf(Value, Attributes['state'] = 'used') AS \"Memory headroom\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters\nGROUP BY ts ORDER BY ts",
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, 1 - avgIf(Value, Attributes['state'] = 'used') AS \"Memory headroom\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters\nGROUP BY ts ORDER BY ts",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -422,7 +456,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avgIf(Value, Attributes['state'] = 'free') / 1e9 AS \"Free (GB)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_sum\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.usage'\nGROUP BY ts, host ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n       ResourceAttributes['host.name'] AS host,\n       avgIf(Value, Attributes['state'] = 'free') / 1e9 AS \"Free (GB)\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_sum\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.memory.usage'\nGROUP BY ts, host ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -436,10 +474,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ts, volume, avail / nullIf(total, 0) AS \"Disk free\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n    sumIf(Value, Attributes['state'] = 'free') AS avail,\n    sum(Value) AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\n  GROUP BY ts, volume\n) WHERE total > 0 ORDER BY ts",
+        "sqlTemplate": "SELECT ts, volume, avail / nullIf(total, 0) AS \"Disk free\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n    concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n    sumIf(Value, Attributes['state'] = 'free') AS avail,\n    sum(Value) AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\n  GROUP BY ts, volume\n) WHERE total > 0 ORDER BY ts",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 0
+          "mantissa": 2
         }
       }
     },
@@ -465,7 +503,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "WITH cpu AS (SELECT host, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters GROUP BY host) SELECT cpu.host AS Host, round(100 * cpu.cpu_used, 1) AS \"CPU %\", round(100 * mem.memory_used, 1) AS \"Memory %\", if(cpu.cpu_used >= 0.9 OR mem.memory_used >= 0.9, 'Critical', if(cpu.cpu_used >= 0.75 OR mem.memory_used >= 0.8, 'Warning', 'Healthy')) AS Status FROM cpu LEFT JOIN mem USING (host) ORDER BY Status ASC, \"CPU %\" DESC, \"Memory %\" DESC"
+        "sqlTemplate": "WITH cpu AS (SELECT host, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters GROUP BY host) SELECT cpu.host AS Host, round(100 * cpu.cpu_used, 2) AS \"CPU %\", round(100 * mem.memory_used, 2) AS \"Memory %\", if(cpu.cpu_used >= 0.9 OR mem.memory_used >= 0.9, 'Critical', if(cpu.cpu_used >= 0.75 OR mem.memory_used >= 0.8, 'Warning', 'Healthy')) AS Status FROM cpu LEFT JOIN mem USING (host)         ORDER BY Status ASC, cpu.cpu_used DESC, mem.memory_used DESC"
       }
     },
     {
@@ -479,7 +517,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ResourceAttributes['host.name'] AS Host, Attributes['mountpoint'] AS Volume, formatReadableSize(sumIf(Value, Attributes['state'] = 'used')) AS Used, formatReadableSize(sumIf(Value, Attributes['state'] = 'free')) AS Free, round(100 * sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0), 1) AS \"Used %\" FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY Host, Volume ORDER BY \"Used %\" DESC"
+        "sqlTemplate": "SELECT ResourceAttributes['host.name'] AS Host, Attributes['mountpoint'] AS Volume, formatReadableSize(sumIf(Value, Attributes['state'] = 'used')) AS Used, formatReadableSize(sumIf(Value, Attributes['state'] = 'free')) AS Free, round(100 * sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0), 2) AS \"Used %\" FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters         GROUP BY Host, Volume ORDER BY sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0) DESC"
       }
     },
     {
@@ -518,7 +556,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "WITH cpu AS (SELECT host, avg(busy) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY host), disk AS (SELECT host, max(used / nullIf(total, 0)) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS volume, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY host, volume) GROUP BY host) SELECT cpu.host AS Host, round(100 * (1 - cpu.used), 1) AS \"CPU headroom %\", round(100 * (1 - mem.used), 1) AS \"Memory headroom %\", round(100 * (1 - disk.used), 1) AS \"Storage headroom %\", if(disk.used >= 0.9, 'Expand storage / tighten retention', if(cpu.used >= 0.9, 'Add compute capacity', if(mem.used >= 0.9, 'Add memory capacity', if(cpu.used >= 0.75 OR mem.used >= 0.8 OR disk.used >= 0.8, 'Plan scale-up', 'No scale action')))) AS Recommendation FROM cpu LEFT JOIN mem USING (host) LEFT JOIN disk USING (host) ORDER BY \"Storage headroom %\", \"Memory headroom %\", \"CPU headroom %\""
+        "sqlTemplate": "WITH cpu AS (SELECT host, avg(busy) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY host), disk AS (SELECT host, max(used / nullIf(total, 0)) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS volume, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY host, volume) GROUP BY host) SELECT cpu.host AS Host, round(100 * (1 - cpu.used), 2) AS \"CPU headroom %\", round(100 * (1 - mem.used), 2) AS \"Memory headroom %\", round(100 * (1 - disk.used), 2) AS \"Storage headroom %\", if(disk.used >= 0.9, 'Expand storage / tighten retention', if(cpu.used >= 0.9, 'Add compute capacity', if(mem.used >= 0.9, 'Add memory capacity', if(cpu.used >= 0.75 OR mem.used >= 0.8 OR disk.used >= 0.8, 'Plan scale-up', 'No scale action')))) AS Recommendation FROM cpu LEFT JOIN mem USING (host) LEFT JOIN disk USING (host)         ORDER BY disk.used DESC, mem.used DESC, cpu.used DESC"
       }
     },
     {
@@ -532,7 +570,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "WITH points AS (SELECT host, mountpoint AS volume, toStartOfHour(TimeUnix) AS ts, avg(used / nullIf(total, 0)) AS used_ratio FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, TimeUnix, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY host, mountpoint, TimeUnix) GROUP BY host, volume, ts), slopes AS (SELECT host, volume, argMax(used_ratio, ts) AS current_used, covarPop(toUnixTimestamp(ts), used_ratio) / nullIf(varPop(toUnixTimestamp(ts)), 0) AS slope_per_second FROM points GROUP BY host, volume) SELECT host AS Host, volume AS Volume, round(100 * current_used, 1) AS \"Current used %\", round(slope_per_second * 86400 * 100, 3) AS \"Growth % / day\", if(slope_per_second <= 0, 'No exhaustion trend', concat(toString(round((1 - current_used) / slope_per_second / 86400, 1)), ' days')) AS \"Estimated time to full\" FROM slopes ORDER BY slope_per_second DESC"
+        "sqlTemplate": "WITH points AS (SELECT host, mountpoint AS volume, toStartOfHour(TimeUnix) AS ts, avg(used / nullIf(total, 0)) AS used_ratio FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, TimeUnix, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY host, mountpoint, TimeUnix) GROUP BY host, volume, ts), slopes AS (SELECT host, volume, argMax(used_ratio, ts) AS current_used, covarPop(toUnixTimestamp(ts), used_ratio) / nullIf(varPop(toUnixTimestamp(ts)), 0) AS slope_per_second FROM points GROUP BY host, volume) SELECT host AS Host, volume AS Volume, round(100 * current_used, 2) AS \"Current used %\", round(slope_per_second * 86400 * 100, 2) AS \"Growth % / day\", if(slope_per_second <= 0, 'No exhaustion trend', concat(toString(round((1 - current_used) / slope_per_second / 86400, 2)), ' days')) AS \"Estimated time to full\" FROM slopes ORDER BY slope_per_second DESC"
       }
     }
   ]

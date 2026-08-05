@@ -343,6 +343,9 @@ re-scope. What each exposes:
 
 Several tiles use the **Raw SQL** variant (`configType: "sql"`) to go beyond static charts:
 
+- **Range-aware SQL buckets:** time-series SQL derives its interval from the selected start/end
+  timestamps (approximately 120 buckets) instead of relying on HyperDX's optional
+  `intervalSeconds` substitution. Numeric charts consistently display two decimal places.
 - **`traces` → latency anomaly:** plots p95 latency against a **causal rolling baseline
   with ±3σ control bands** (trailing ~8-day window that ends before each point), so a spike is
   flagged relative to its own recent baseline rather than a static threshold — and an in-progress

@@ -64,7 +64,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT if(count() > 0, 1, 0) AS \"Clusters\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'"
+        "sqlTemplate": "SELECT if(count() > 0, 1, 0) AS \"Clusters\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -78,7 +82,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score >= 90, 1, 0)) AS \"Healthy clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 0)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))"
+        "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score >= 90, 1, 0)) AS \"Healthy clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0))\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -92,7 +100,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score >= 75 AND score < 90, 1, 0)) AS \"Warning clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 0)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
+        "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score >= 75 AND score < 90, 1, 0)) AS \"Warning clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0))\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
         "colorRules": [
           {
             "operator": "gt",
@@ -100,7 +108,11 @@
             "color": "chart-warning",
             "label": "Warning"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -114,7 +126,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score < 75, 1, 0)) AS \"Critical clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 0)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
+        "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score < 75, 1, 0)) AS \"Critical clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0))\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
         "colorRules": [
           {
             "operator": "gt",
@@ -122,7 +134,11 @@
             "color": "chart-error",
             "label": "Critical"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -150,7 +166,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT uniqExact(ResourceAttributes['k8s.node.name']) AS \"Nodes\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'"
+        "sqlTemplate": "SELECT uniqExact(ResourceAttributes['k8s.node.name']) AS \"Nodes\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -164,7 +184,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT countIf(phase = 2) AS \"Running workloads\" FROM (SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' GROUP BY pod)"
+        "sqlTemplate": "SELECT countIf(phase = 2) AS \"Running workloads\" FROM (SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' GROUP BY pod)",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -189,7 +213,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT score AS \"Overall platform health score\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 0)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
+        "sqlTemplate": "SELECT score AS \"Overall platform health score\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 2)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
         "colorRules": [
           {
             "operator": "lt",
@@ -203,7 +227,11 @@
             "color": "chart-error",
             "label": "Critical"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -231,7 +259,11 @@
             "color": "chart-error",
             "label": "Multiple active conditions"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -248,7 +280,7 @@
         "sqlTemplate": "SELECT if(total = 0, 0, ready / total) AS \"Nodes ready\" FROM (\n  SELECT countIf(ready = 1) AS ready, count() AS total FROM (\n    SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n    FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n    WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n      AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n      AND MetricName = 'k8s.node.condition_ready'\n    GROUP BY node\n  )\n)",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 0
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -277,7 +309,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT score AS \"Cluster health score\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 0)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
+        "sqlTemplate": "SELECT score AS \"Cluster health score\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  round(100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0)), 2)\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
         "colorRules": [
           {
             "operator": "lt",
@@ -291,7 +323,11 @@
             "color": "chart-error",
             "label": "Critical"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -313,7 +349,11 @@
             "color": "chart-warning",
             "label": "Pods not Running"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -327,7 +367,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT countIf(ready = 1) AS \"Healthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)"
+        "sqlTemplate": "SELECT countIf(ready = 1) AS \"Healthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -355,7 +399,11 @@
             "color": "chart-error",
             "label": "High"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -377,7 +425,11 @@
             "color": "chart-warning",
             "label": "Restarts happening"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -405,7 +457,7 @@
         "sqlTemplate": "SELECT avg(b) AS \"Cluster CPU busy\" FROM (\n  SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS b\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.cpu.utilization'\n  GROUP BY host, cpu, TimeUnix\n)",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -437,7 +489,7 @@
         "sqlTemplate": "SELECT avgIf(Value, Attributes['state'] = 'used') AS \"Cluster memory used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization'",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -469,7 +521,7 @@
         "sqlTemplate": "SELECT if(sum(total) = 0, 0, sum(used) / sum(total)) AS \"Cluster disk used\" FROM (\n  SELECT concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,\n         argMaxIf(Value, TimeUnix, Attributes['state'] = 'used') AS used,\n         argMaxIf(Value, TimeUnix, Attributes['state'] = 'used')\n           + argMaxIf(Value, TimeUnix, Attributes['state'] = 'free')\n           + argMaxIf(Value, TimeUnix, Attributes['state'] = 'reserved') AS total\n  FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND MetricName = 'system.filesystem.usage'\n  GROUP BY volume\n)",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -501,7 +553,8 @@
         "sqlTemplate": "SELECT sum(greatest(max_value - min_value, 0)) AS \"Network consumption\" FROM (\n        SELECT ResourceAttributes['host.name'] AS host, Attributes['interface'] AS interface,\n               Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value\n        FROM {{METRICS_SCHEMA}}.otel_metrics_sum\n        WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n          AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n          AND MetricName = 'system.network.io'\n        GROUP BY host, interface, direction\n      )",
         "numberFormat": {
           "output": "byte",
-          "numericUnit": "bytes_iec"
+          "numericUnit": "bytes_iec",
+          "mantissa": 2
         }
       }
     },
@@ -516,10 +569,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ts, avg(b) AS \"Cluster CPU busy\" FROM (\n  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS b\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization'\n  GROUP BY ts, host, cpu, TimeUnix\n) GROUP BY ts ORDER BY ts",
+        "sqlTemplate": "SELECT ts, avg(b) AS \"Cluster CPU busy\" FROM (\n  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS b\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization'\n  GROUP BY ts, host, cpu, TimeUnix\n) GROUP BY ts ORDER BY ts",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -534,10 +587,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, avgIf(Value, Attributes['state'] = 'used') AS \"Cluster memory used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization'\nGROUP BY ts ORDER BY ts",
+        "sqlTemplate": "SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, avgIf(Value, Attributes['state'] = 'used') AS \"Cluster memory used\"\nFROM {{METRICS_SCHEMA}}.otel_metrics_gauge\nWHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization'\nGROUP BY ts ORDER BY ts",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -563,7 +616,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT count() AS \"Server requests\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters"
+        "sqlTemplate": "SELECT count() AS \"Server requests\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -577,7 +634,7 @@
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "select": [
           {
@@ -613,7 +670,8 @@
         "displayType": "number",
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         },
         "select": [
           {
@@ -637,7 +695,7 @@
         "sourceId": "{{LOGS_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "select": [
           {
@@ -674,7 +732,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests,\n              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS \"Error rate %\",\n              round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 latency (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ServiceName\n       ORDER BY \"Error rate %\" DESC, Requests DESC\n       LIMIT 50",
+        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests,\n              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error rate %\",\n              round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 latency (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ServiceName\n               ORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, Requests DESC\n       LIMIT 50",
         "onClick": {
           "type": "search",
           "target": {
@@ -697,7 +755,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Logs,\n              countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AS Errors,\n              round(100 * Errors / nullIf(Logs, 0), 3) AS \"Error rate %\",\n              maxIf(Timestamp, SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AS \"Last error\"\n       FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND $__filters\n       GROUP BY ServiceName\n       HAVING Errors > 0\n       ORDER BY \"Error rate %\" DESC, Errors DESC\n       LIMIT 50",
+        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Logs,\n              countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AS Errors,\n              round(100 * Errors / nullIf(Logs, 0), 2) AS \"Error rate %\",\n              maxIf(Timestamp, SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AS \"Last error\"\n       FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND $__filters\n       GROUP BY ServiceName\n       HAVING Errors > 0\n               ORDER BY Errors / nullIf(Logs, 0) DESC, Errors DESC\n       LIMIT 50",
         "onClick": {
           "type": "search",
           "target": {
@@ -732,7 +790,11 @@
             "where": "SpanKind = 'Server'",
             "whereLanguage": "sql"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -757,7 +819,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT greatest(count() - 1, 0) AS \"Running queries\" FROM system.processes"
+        "sqlTemplate": "SELECT greatest(count() - 1, 0) AS \"Running queries\" FROM system.processes",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -779,7 +845,11 @@
             "color": "chart-warning",
             "label": "Failures present"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -796,7 +866,7 @@
         "sqlTemplate": "SELECT min(free_space / nullIf(total_space, 0)) AS \"Disk free\" FROM system.disks",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -828,7 +898,8 @@
         "sqlTemplate": "SELECT value AS \"Memory tracked\" FROM system.metrics WHERE metric = 'MemoryTracking'",
         "numberFormat": {
           "output": "byte",
-          "numericUnit": "bytes_iec"
+          "numericUnit": "bytes_iec",
+          "mantissa": 2
         }
       }
     },
@@ -843,7 +914,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n              countIf(type = 'QueryFinish') AS Queries\n       FROM system.query_log\n       WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY ts ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              countIf(type = 'QueryFinish') AS Queries\n       FROM system.query_log\n       WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY ts ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -857,7 +932,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n              countIf(exception_code != 0) AS \"Failed queries\"\n       FROM system.query_log\n       WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY ts ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              countIf(exception_code != 0) AS \"Failed queries\"\n       FROM system.query_log\n       WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY ts ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -871,7 +950,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, sum(written_rows) AS \"Inserted rows\", formatReadableSize(sum(written_bytes)) AS \"Inserted bytes\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, sum(written_rows) AS \"Inserted rows\", formatReadableSize(sum(written_bytes)) AS \"Inserted bytes\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts"
       }
     },
     {
@@ -885,7 +964,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
       }
     },
     {
@@ -899,7 +978,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT count() AS \"Active merges\" FROM system.merges"
+        "sqlTemplate": "SELECT count() AS \"Active merges\" FROM system.merges",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -913,7 +996,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT countIf(NOT is_done) AS \"Pending mutations\" FROM system.mutations"
+        "sqlTemplate": "SELECT countIf(NOT is_done) AS \"Pending mutations\" FROM system.mutations",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -930,7 +1017,7 @@
         "sqlTemplate": "SELECT if(count() = 0, 0, avg(progress)) AS \"Merge progress\" FROM system.merges",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 0
+          "mantissa": 2
         }
       }
     },
@@ -945,7 +1032,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT database AS Database, table AS Table, round(progress * 100, 1) AS \"Progress %\", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS \"Elapsed seconds\", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC"
+        "sqlTemplate": "SELECT database AS Database, table AS Table, round(progress * 100, 2) AS \"Progress %\", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS \"Elapsed seconds\", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC"
       }
     },
     {
@@ -959,7 +1046,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS \"From cache\", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS \"From source\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS \"From cache\", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS \"From source\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
       }
     },
     {
@@ -973,7 +1060,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS \"Async insert bytes\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS \"Async insert bytes\" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts"
       }
     },
     {
@@ -998,7 +1085,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "WITH ready AS (SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.condition_ready' GROUP BY node), cpu AS (SELECT host AS node, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY node), mem AS (SELECT ResourceAttributes['host.name'] AS node, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY node), disk AS (SELECT node, max(used / nullIf(total, 0)) AS disk_used FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['mountpoint'] AS mountpoint, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY node, mountpoint) GROUP BY node), net AS (SELECT node, sum(max_value - min_value) AS bytes FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.network.io' GROUP BY node, interface, direction) GROUP BY node), pods AS (SELECT ResourceAttributes['k8s.node.name'] AS node, uniqExact(ResourceAttributes['k8s.pod.name']) AS workloads FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.phase' GROUP BY node) SELECT 'Appliance cluster' AS Cluster, ready.node AS Node, multiIf(ready.ready != 1, 'Critical', isNull(cpu.cpu_used) AND isNull(mem.memory_used) AND isNull(disk.disk_used), 'Unknown', ifNull(disk.disk_used >= 0.95, 0) OR ifNull(cpu.cpu_used >= 0.9, 0) OR ifNull(mem.memory_used >= 0.9, 0), 'Critical', ifNull(disk.disk_used >= 0.8, 0) OR ifNull(cpu.cpu_used >= 0.75, 0) OR ifNull(mem.memory_used >= 0.8, 0), 'Warning', 'Healthy') AS Health, (ready.ready != 1) + ifNull(cpu.cpu_used >= 0.75, 0) + ifNull(mem.memory_used >= 0.8, 0) + ifNull(disk.disk_used >= 0.8, 0) AS Alerts, round(100 * cpu.cpu_used, 1) AS \"CPU %\", round(100 * mem.memory_used, 1) AS \"Memory %\", round(100 * disk.disk_used, 1) AS \"Storage %\", formatReadableSize(net.bytes) AS \"Network consumption\", pods.workloads AS Workloads FROM ready LEFT JOIN cpu USING (node) LEFT JOIN mem USING (node) LEFT JOIN disk USING (node) LEFT JOIN net USING (node) LEFT JOIN pods USING (node) ORDER BY multiIf(Health = 'Critical', 1, Health = 'Warning', 2, Health = 'Unknown', 3, 4), Alerts DESC"
+        "sqlTemplate": "WITH ready AS (SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.condition_ready' GROUP BY node), cpu AS (SELECT host AS node, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY node), mem AS (SELECT ResourceAttributes['host.name'] AS node, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY node), disk AS (SELECT node, max(used / nullIf(total, 0)) AS disk_used FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['mountpoint'] AS mountpoint, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY node, mountpoint) GROUP BY node), net AS (SELECT node, sum(max_value - min_value) AS bytes FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM {{METRICS_SCHEMA}}.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.network.io' GROUP BY node, interface, direction) GROUP BY node), pods AS (SELECT ResourceAttributes['k8s.node.name'] AS node, uniqExact(ResourceAttributes['k8s.pod.name']) AS workloads FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.phase' GROUP BY node) SELECT 'Appliance cluster' AS Cluster, ready.node AS Node, multiIf(ready.ready != 1, 'Critical', isNull(cpu.cpu_used) AND isNull(mem.memory_used) AND isNull(disk.disk_used), 'Unknown', ifNull(disk.disk_used >= 0.95, 0) OR ifNull(cpu.cpu_used >= 0.9, 0) OR ifNull(mem.memory_used >= 0.9, 0), 'Critical', ifNull(disk.disk_used >= 0.8, 0) OR ifNull(cpu.cpu_used >= 0.75, 0) OR ifNull(mem.memory_used >= 0.8, 0), 'Warning', 'Healthy') AS Health, (ready.ready != 1) + ifNull(cpu.cpu_used >= 0.75, 0) + ifNull(mem.memory_used >= 0.8, 0) + ifNull(disk.disk_used >= 0.8, 0) AS Alerts, round(100 * cpu.cpu_used, 2) AS \"CPU %\", round(100 * mem.memory_used, 2) AS \"Memory %\", round(100 * disk.disk_used, 2) AS \"Storage %\", formatReadableSize(net.bytes) AS \"Network consumption\", pods.workloads AS Workloads FROM ready LEFT JOIN cpu USING (node) LEFT JOIN mem USING (node) LEFT JOIN disk USING (node) LEFT JOIN net USING (node) LEFT JOIN pods USING (node) ORDER BY multiIf(Health = 'Critical', 1, Health = 'Warning', 2, Health = 'Unknown', 3, 4), Alerts DESC"
       }
     },
     {
@@ -1045,7 +1132,11 @@
             "color": "chart-warning",
             "label": "Warnings present"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {

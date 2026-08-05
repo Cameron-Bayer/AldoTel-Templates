@@ -49,7 +49,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"RPS\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters"
+        "sqlTemplate": "SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"RPS\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -66,7 +70,7 @@
         "sqlTemplate": "SELECT countIf(StatusCode = 'Error') / nullIf(count(), 0) AS \"Error rate\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "colorRules": [
           {
@@ -103,7 +107,8 @@
           }
         ],
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },
@@ -127,7 +132,7 @@
         ],
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         }
       }
     },
@@ -142,7 +147,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS \"Error rate %\", round(avg(Duration) / 1e6, 1) AS \"Average latency (ms)\", round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 latency (ms)\", greatest(0, round(100 - \"Error rate %\" * 10 - least(\"P95 latency (ms)\" / 100, 30), 0)) AS \"Health score\", if(\"Error rate %\" >= 5 OR \"P95 latency (ms)\" >= 2000, 'Critical', if(\"Error rate %\" >= 1 OR \"P95 latency (ms)\" >= 1000, 'Warning', 'Healthy')) AS Health FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND $__filters GROUP BY ServiceName ORDER BY multiIf(Health = 'Critical', 0, Health = 'Warning', 1, 2), \"Error rate %\" DESC, \"P95 latency (ms)\" DESC"
+        "sqlTemplate": "SELECT Service, Requests,\n       round(error_rate_pct, 2) AS \"Error rate %\",\n       round(average_latency_ms, 2) AS \"Average latency (ms)\",\n       round(p95_latency_ms, 2) AS \"P95 latency (ms)\",\n       greatest(0, round(100 - error_rate_pct * 10 - least(p95_latency_ms / 100, 30), 2)) AS \"Health score\",\n       if(error_rate_pct >= 5 OR p95_latency_ms >= 2000, 'Critical',\n          if(error_rate_pct >= 1 OR p95_latency_ms >= 1000, 'Warning', 'Healthy')) AS Health\nFROM (\n  SELECT ServiceName AS Service, count() AS Requests,\n         100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS error_rate_pct,\n         avg(Duration) / 1e6 AS average_latency_ms,\n         quantile(0.95)(Duration) / 1e6 AS p95_latency_ms\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND SpanKind = 'Server' AND $__filters\n  GROUP BY ServiceName\n)\nORDER BY multiIf(Health = 'Critical', 0, Health = 'Warning', 1, 2), error_rate_pct DESC, p95_latency_ms DESC"
       }
     },
     {
@@ -173,7 +178,11 @@
             "where": "SpanKind:Server",
             "whereLanguage": "lucene"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -189,7 +198,7 @@
         "asRatio": true,
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "select": [
           {
@@ -237,7 +246,8 @@
           }
         ],
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },
@@ -260,7 +270,8 @@
           }
         ],
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },
@@ -277,7 +288,8 @@
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "sqlTemplate": "SELECT avg(Duration) / 1e9 AS \"HTTP server latency\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server'\n         AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')\n         AND $__filters",
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },
@@ -294,7 +306,8 @@
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "sqlTemplate": "SELECT avg(Duration) / 1e9 AS \"HTTP client latency\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Client'\n         AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')\n         AND $__filters",
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },
@@ -309,7 +322,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests,\n              round(avg(Duration) / 1e6, 1) AS \"Average (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 (ms)\",\n              round(quantile(0.99)(Duration) / 1e6, 1) AS \"P99 (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server'\n         AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')\n         AND $__filters\n       GROUP BY ServiceName\n       ORDER BY \"P95 (ms)\" DESC",
+        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests,\n              round(avg(Duration) / 1e6, 2) AS \"Average (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 (ms)\",\n              round(quantile(0.99)(Duration) / 1e6, 2) AS \"P99 (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server'\n         AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')\n         AND $__filters\n       GROUP BY ServiceName\n               ORDER BY quantile(0.95)(Duration) DESC",
         "onClick": {
           "type": "search",
           "target": {
@@ -332,7 +345,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests,\n              round(avg(Duration) / 1e6, 1) AS \"Average (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 (ms)\",\n              round(quantile(0.99)(Duration) / 1e6, 1) AS \"P99 (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Client'\n         AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')\n         AND $__filters\n       GROUP BY ServiceName\n       ORDER BY \"P95 (ms)\" DESC",
+        "sqlTemplate": "SELECT ServiceName AS Service, count() AS Requests,\n              round(avg(Duration) / 1e6, 2) AS \"Average (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 (ms)\",\n              round(quantile(0.99)(Duration) / 1e6, 2) AS \"P99 (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Client'\n         AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')\n         AND $__filters\n       GROUP BY ServiceName\n               ORDER BY quantile(0.95)(Duration) DESC",
         "onClick": {
           "type": "search",
           "target": {
@@ -355,7 +368,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, SpanAttributes['rpc.system'] AS RPC,\n              count() AS Requests, round(avg(Duration) / 1e6, 1) AS \"Average (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 (ms)\",\n              round(quantile(0.99)(Duration) / 1e6, 1) AS \"P99 (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND SpanAttributes['rpc.system'] != '' AND $__filters\n       GROUP BY ServiceName, RPC\n       ORDER BY \"P95 (ms)\" DESC",
+        "sqlTemplate": "SELECT ServiceName AS Service, SpanAttributes['rpc.system'] AS RPC,\n              count() AS Requests, round(avg(Duration) / 1e6, 2) AS \"Average (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 (ms)\",\n              round(quantile(0.99)(Duration) / 1e6, 2) AS \"P99 (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND SpanAttributes['rpc.system'] != '' AND $__filters\n       GROUP BY ServiceName, RPC\n               ORDER BY quantile(0.95)(Duration) DESC",
         "onClick": {
           "type": "search",
           "target": {
@@ -403,7 +416,8 @@
           }
         ],
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },
@@ -418,7 +432,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n              ServiceName AS Service, avg(Duration) / 1e6 AS \"Average latency (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              ServiceName AS Service, avg(Duration) / 1e6 AS \"Average latency (ms)\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -432,7 +450,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, SpanName AS Operation, SpanKind AS Kind, round(avg(Duration) / 1e6, 1) AS \"Average (ms)\", round(quantile(0.50)(Duration) / 1e6, 1) AS \"P50 (ms)\", round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 (ms)\", round(quantile(0.99)(Duration) / 1e6, 1) AS \"P99 (ms)\", count() AS Requests FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind IN ('Server','Client') AND $__filters GROUP BY ServiceName, SpanName, SpanKind HAVING Requests >= 5 ORDER BY \"P95 (ms)\" DESC LIMIT 100"
+        "sqlTemplate": "SELECT ServiceName AS Service, SpanName AS Operation, SpanKind AS Kind, round(avg(Duration) / 1e6, 2) AS \"Average (ms)\", round(quantile(0.50)(Duration) / 1e6, 2) AS \"P50 (ms)\", round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 (ms)\", round(quantile(0.99)(Duration) / 1e6, 2) AS \"P99 (ms)\", count() AS Requests FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind IN ('Server','Client') AND $__filters GROUP BY ServiceName, SpanName, SpanKind         HAVING Requests >= 5 ORDER BY quantile(0.95)(Duration) DESC LIMIT 100"
       }
     },
     {
@@ -446,7 +464,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS \"Service\", route AS \"Route\", round(p95_ms, 1) AS \"p95 (ms)\", round(p50_ms, 1) AS \"p50 (ms)\", requests AS \"Requests\" FROM (\n  SELECT ServiceName,\n         SpanAttributes['http.route'] AS route,\n         quantile(0.95)(Duration) / 1e6 AS p95_ms,\n         quantile(0.5)(Duration) / 1e6 AS p50_ms,\n         count() AS requests\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server'\n    AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND SpanAttributes['http.route'] != ''\n    AND $__filters\n  GROUP BY ServiceName, route\n  HAVING requests >= 20\n)\nORDER BY p95_ms DESC\nLIMIT 50"
+        "sqlTemplate": "SELECT ServiceName AS \"Service\", route AS \"Route\", round(p95_ms, 2) AS \"p95 (ms)\", round(p50_ms, 2) AS \"p50 (ms)\", requests AS \"Requests\" FROM (\n  SELECT ServiceName,\n         SpanAttributes['http.route'] AS route,\n         quantile(0.95)(Duration) / 1e6 AS p95_ms,\n         quantile(0.5)(Duration) / 1e6 AS p50_ms,\n         count() AS requests\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server'\n    AND Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND SpanAttributes['http.route'] != ''\n    AND $__filters\n  GROUP BY ServiceName, route\n  HAVING requests >= 20\n)\nORDER BY p95_ms DESC\nLIMIT 50"
       }
     },
     {
@@ -460,7 +478,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "WITH points AS (\n  SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n         quantile(0.95)(Duration)/1e6 AS p95_ms\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n  GROUP BY t\n),\nscored AS (\n  SELECT t, p95_ms,\n         avg(p95_ms)       OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS base,\n         stddevPop(p95_ms) OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS sigma\n  FROM points\n)\nSELECT t,\n       p95_ms,\n       base AS baseline_ms,\n       base + 3 * sigma AS upper_ms,\n       greatest(base - 3 * sigma, 0) AS lower_ms\nFROM scored\nWHERE t >= now() - INTERVAL 24 HOUR\nORDER BY t"
+        "sqlTemplate": "WITH points AS (\n  SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n         quantile(0.95)(Duration)/1e6 AS p95_ms\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE SpanKind = 'Server' AND Timestamp > now() - INTERVAL 8 DAY AND $__filters\n  GROUP BY t\n),\nscored AS (\n  SELECT t, p95_ms,\n         avg(p95_ms)       OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS base,\n         stddevPop(p95_ms) OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS sigma\n  FROM points\n)\nSELECT t,\n       p95_ms,\n       base AS baseline_ms,\n       base + 3 * sigma AS upper_ms,\n       greatest(base - 3 * sigma, 0) AS lower_ms\nFROM scored\nWHERE t >= now() - INTERVAL 24 HOUR\nORDER BY t",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -475,7 +497,8 @@
         "where": "SpanKind:Server",
         "whereLanguage": "lucene",
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         },
         "select": [
           {
@@ -524,7 +547,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n              ServiceName AS Service, count() / {intervalSeconds:Int64} AS RPS\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              ServiceName AS Service, count() / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS RPS\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -544,7 +571,11 @@
             "where": "SpanKind:Server",
             "whereLanguage": "lucene"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -564,7 +595,11 @@
             "where": "SpanKind:Server AND StatusCode:Error",
             "whereLanguage": "lucene"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -578,7 +613,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, SpanName AS Operation, StatusMessage AS Error, count() AS Failures, round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 (ms)\", max(Timestamp) AS \"Last seen\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND StatusCode = 'Error' AND $__filters GROUP BY ServiceName, SpanName, StatusMessage ORDER BY Failures DESC LIMIT 100"
+        "sqlTemplate": "SELECT ServiceName AS Service, SpanName AS Operation, StatusMessage AS Error, count() AS Failures, round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 (ms)\", max(Timestamp) AS \"Last seen\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND StatusCode = 'Error' AND $__filters GROUP BY ServiceName, SpanName, StatusMessage ORDER BY Failures DESC LIMIT 100"
       }
     },
     {
@@ -592,7 +627,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"Requests / sec\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters"
+        "sqlTemplate": "SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"Requests / sec\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -611,7 +650,11 @@
             "where": "SpanKind:Server",
             "whereLanguage": "lucene"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -634,7 +677,7 @@
         ],
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         }
       }
     },
@@ -702,7 +745,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT TraceId, argMax(ServiceName, Duration) AS \"Slowest service\",\n              argMax(SpanName, Duration) AS \"Slowest operation\",\n              round(max(Duration) / 1e6, 1) AS \"Longest span (ms)\",\n              round(sum(Duration) / 1e6, 1) AS \"Total span time (ms)\",\n              count() AS Spans\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND $__filters\n       GROUP BY TraceId\n       ORDER BY \"Longest span (ms)\" DESC\n       LIMIT 100",
+        "sqlTemplate": "SELECT TraceId, argMax(ServiceName, Duration) AS \"Slowest service\",\n              argMax(SpanName, Duration) AS \"Slowest operation\",\n              round(max(Duration) / 1e6, 2) AS \"Longest span (ms)\",\n              round(sum(Duration) / 1e6, 2) AS \"Total span time (ms)\",\n              count() AS Spans\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND $__filters\n       GROUP BY TraceId\n               ORDER BY max(Duration) DESC\n       LIMIT 100",
         "onClick": {
           "type": "search",
           "target": {
@@ -725,7 +768,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, uniqExact(TraceId) AS Traces, count() AS Spans, round(count() / nullIf(uniqExact(TraceId), 0), 1) AS \"Spans / trace\", round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 span (ms)\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters GROUP BY ServiceName ORDER BY Traces DESC"
+        "sqlTemplate": "SELECT ServiceName AS Service, uniqExact(TraceId) AS Traces, count() AS Spans, round(count() / nullIf(uniqExact(TraceId), 0), 2) AS \"Spans / trace\", round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 span (ms)\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters GROUP BY ServiceName ORDER BY Traces DESC"
       }
     },
     {
@@ -750,7 +793,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Upstream, coalesce(nullIf(SpanAttributes['peer.service'], ''), nullIf(SpanAttributes['server.address'], ''), nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS \"Error rate %\", round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 latency (ms)\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Client' AND $__filters GROUP BY Upstream, Downstream ORDER BY \"Error rate %\" DESC, \"P95 latency (ms)\" DESC"
+        "sqlTemplate": "SELECT ServiceName AS Upstream, coalesce(nullIf(SpanAttributes['peer.service'], ''), nullIf(SpanAttributes['server.address'], ''), nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error rate %\", round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 latency (ms)\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Client' AND $__filters         GROUP BY Upstream, Downstream ORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, quantile(0.95)(Duration) DESC"
       }
     },
     {
@@ -764,7 +807,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Upstream,\n              coalesce(nullIf(SpanAttributes['peer.service'], ''),\n                       nullIf(SpanAttributes['server.address'], ''),\n                       nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream,\n              count() AS Requests,\n              round(avg(Duration) / 1e6, 1) AS \"Average latency (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 1) AS \"P95 latency (ms)\",\n              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS \"Error rate %\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Client' AND $__filters\n       GROUP BY Upstream, Downstream\n       ORDER BY \"Error rate %\" DESC, \"P95 latency (ms)\" DESC",
+        "sqlTemplate": "SELECT ServiceName AS Upstream,\n              coalesce(nullIf(SpanAttributes['peer.service'], ''),\n                       nullIf(SpanAttributes['server.address'], ''),\n                       nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream,\n              count() AS Requests,\n              round(avg(Duration) / 1e6, 2) AS \"Average latency (ms)\",\n              round(quantile(0.95)(Duration) / 1e6, 2) AS \"P95 latency (ms)\",\n              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error rate %\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Client' AND $__filters\n       GROUP BY Upstream, Downstream\n               ORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, quantile(0.95)(Duration) DESC",
         "onClick": {
           "type": "search",
           "target": {
@@ -835,7 +878,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n              ServiceName AS Service, count() AS Errors\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND StatusCode = 'Error' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              ServiceName AS Service, count() AS Errors\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND StatusCode = 'Error' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -849,7 +896,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "WITH points AS (\n         SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n                countIf(StatusCode = 'Error') AS errors\n         FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n         WHERE Timestamp > now() - INTERVAL 8 DAY AND $__filters\n         GROUP BY t\n       ), scored AS (\n         SELECT t, errors,\n                avg(errors) OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS baseline,\n                stddevPop(errors) OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS sigma\n         FROM points\n       )\n       SELECT t, errors, baseline, baseline + 3 * sigma AS upper\n       FROM scored\n       WHERE t >= now() - INTERVAL 24 HOUR\n       ORDER BY t"
+        "sqlTemplate": "WITH points AS (\n         SELECT toStartOfInterval(Timestamp, INTERVAL 5 MINUTE) AS t,\n                countIf(StatusCode = 'Error') AS errors\n         FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n         WHERE Timestamp > now() - INTERVAL 8 DAY AND $__filters\n         GROUP BY t\n       ), scored AS (\n         SELECT t, errors,\n                avg(errors) OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS baseline,\n                stddevPop(errors) OVER (ORDER BY t ROWS BETWEEN 2304 PRECEDING AND 12 PRECEDING) AS sigma\n         FROM points\n       )\n       SELECT t, errors, baseline, baseline + 3 * sigma AS upper\n       FROM scored\n       WHERE t >= now() - INTERVAL 24 HOUR\n       ORDER BY t",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -874,7 +925,7 @@
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "select": [
           {
@@ -914,7 +965,7 @@
         "sourceId": "{{TRACES_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         },
         "sqlTemplate": "SELECT 1 - (countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)) / 0.001 AS \"Budget remaining\"\nFROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\nWHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n  AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n  AND $__filters",
         "colorRules": [
@@ -947,7 +998,7 @@
         "sqlTemplate": "SELECT (countIf(SpanKind = 'Server' AND StatusCode = 'Error') /\n              nullIf(countIf(SpanKind = 'Server'), 0)) / 0.001 AS \"Budget consumed\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND $__filters",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -970,7 +1021,11 @@
             "color": "chart-error",
             "label": "Violation"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -984,10 +1039,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n              ServiceName AS Service,\n              (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001 AS \"Budget consumption\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts",
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              ServiceName AS Service,\n              (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001 AS \"Budget consumption\"\n       FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters\n       GROUP BY ts, Service\n       ORDER BY ts",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -1003,7 +1058,7 @@
         "asRatio": true,
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "select": [
           {
@@ -1032,7 +1087,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window AS \"Window\",\n       round(error_ratio, 5) AS \"Error rate\",\n       round(error_ratio / budget, 2) AS \"Burn rate (×)\"\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR AND $__filters\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR AND $__filters\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR AND $__filters\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY AND $__filters\n)\nORDER BY ord"
+        "sqlTemplate": "WITH 0.001 AS budget\nSELECT window AS \"Window\",\n       round(100 * error_ratio, 2) AS \"Error rate %\",\n       round(error_ratio / budget, 2) AS \"Burn rate (×)\"\nFROM (\n  SELECT '1h' AS window, 1 AS ord,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0) AS error_ratio\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 1 HOUR AND $__filters\n  UNION ALL\n  SELECT '6h', 2,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 6 HOUR AND $__filters\n  UNION ALL\n  SELECT '24h', 3,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 24 HOUR AND $__filters\n  UNION ALL\n  SELECT '3d', 4,\n         countIf(SpanKind = 'Server' AND StatusCode = 'Error') / nullIf(countIf(SpanKind = 'Server'), 0)\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp > now() - INTERVAL 3 DAY AND $__filters\n)\nORDER BY ord"
       }
     },
     {
@@ -1046,7 +1101,7 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{TRACES_SOURCE_ID}}",
-        "sqlTemplate": "SELECT ServiceName AS Service, round(100 * countIf(StatusCode != 'Error') / nullIf(count(), 0), 3) AS \"Availability %\", 99.9 AS \"SLO target %\", round(100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001), 1) AS \"Error budget remaining %\", if(\"Availability %\" >= 99.9, 'Compliant', 'Violation') AS Status FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND $__filters GROUP BY ServiceName ORDER BY Status DESC, \"Availability %\""
+        "sqlTemplate": "SELECT Service, round(availability_pct, 2) AS \"Availability %\", 99.9 AS \"SLO target %\", round(error_budget_remaining_pct, 2) AS \"Error budget remaining %\", if(availability_pct >= 99.9, 'Compliant', 'Violation') AS Status FROM (\n  SELECT ServiceName AS Service,\n         100 * countIf(StatusCode != 'Error') / nullIf(count(), 0) AS availability_pct,\n         100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001) AS error_budget_remaining_pct\n  FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n  WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n    AND SpanKind = 'Server' AND $__filters\n  GROUP BY ServiceName\n)\nORDER BY Status DESC, availability_pct"
       }
     },
     {
@@ -1071,7 +1126,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT greatest(count() - 1, 0) AS \"Running queries\" FROM system.processes"
+        "sqlTemplate": "SELECT greatest(count() - 1, 0) AS \"Running queries\" FROM system.processes",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -1088,7 +1147,7 @@
         "sqlTemplate": "SELECT max(1 - free_space / nullIf(total_space, 0)) AS \"Storage used\" FROM system.disks",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -1106,7 +1165,7 @@
         "sqlTemplate": "SELECT max(size / nullIf(capacity, 0)) AS \"Queue utilization\" FROM (\n         SELECT ResourceAttributes['service.instance.id'] AS instance,\n                Attributes['exporter'] AS exporter,\n                Attributes['data_type'] AS data_type,\n                argMaxIf(Value, TimeUnix, MetricName = 'otelcol_exporter_queue_size') AS size,\n                argMaxIf(Value, TimeUnix, MetricName = 'otelcol_exporter_queue_capacity') AS capacity\n         FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n         WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n           AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n           AND MetricName IN ('otelcol_exporter_queue_size','otelcol_exporter_queue_capacity')\n         GROUP BY instance, exporter, data_type\n       )",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 1
+          "mantissa": 2
         }
       }
     },
@@ -1129,7 +1188,11 @@
             "color": "chart-error",
             "label": "Drops detected"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -1143,9 +1206,10 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{METRICS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,\n              quantile(0.95)(query_duration_ms) / 1000 AS p95,\n              quantile(0.99)(query_duration_ms) / 1000 AS p99\n       FROM system.query_log\n       WHERE type = 'QueryFinish'\n         AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY t\n       ORDER BY t",
+        "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS t,\n              quantile(0.95)(query_duration_ms) / 1000 AS p95,\n              quantile(0.99)(query_duration_ms) / 1000 AS p99\n       FROM system.query_log\n       WHERE type = 'QueryFinish'\n         AND event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY t\n       ORDER BY t",
         "numberFormat": {
-          "output": "duration"
+          "output": "duration",
+          "mantissa": 2
         }
       }
     },

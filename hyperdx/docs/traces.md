@@ -72,7 +72,25 @@ SELECT countIf(StatusCode = 'Error') / nullIf(count(), 0) AS "Error rate"
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS Service, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS "Error rate %", round(avg(Duration) / 1e6, 1) AS "Average latency (ms)", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 latency (ms)", greatest(0, round(100 - "Error rate %" * 10 - least("P95 latency (ms)" / 100, 30), 0)) AS "Health score", if("Error rate %" >= 5 OR "P95 latency (ms)" >= 2000, 'Critical', if("Error rate %" >= 1 OR "P95 latency (ms)" >= 1000, 'Warning', 'Healthy')) AS Health FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND $__filters GROUP BY ServiceName ORDER BY multiIf(Health = 'Critical', 0, Health = 'Warning', 1, 2), "Error rate %" DESC, "P95 latency (ms)" DESC
+SELECT Service, Requests,
+       round(error_rate_pct, 2) AS "Error rate %",
+       round(average_latency_ms, 2) AS "Average latency (ms)",
+       round(p95_latency_ms, 2) AS "P95 latency (ms)",
+       greatest(0, round(100 - error_rate_pct * 10 - least(p95_latency_ms / 100, 30), 2)) AS "Health score",
+       if(error_rate_pct >= 5 OR p95_latency_ms >= 2000, 'Critical',
+          if(error_rate_pct >= 1 OR p95_latency_ms >= 1000, 'Warning', 'Healthy')) AS Health
+FROM (
+  SELECT ServiceName AS Service, count() AS Requests,
+         100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS error_rate_pct,
+         avg(Duration) / 1e6 AS average_latency_ms,
+         quantile(0.95)(Duration) / 1e6 AS p95_latency_ms
+  FROM default.otel_traces
+  WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND SpanKind = 'Server' AND $__filters
+  GROUP BY ServiceName
+)
+ORDER BY multiIf(Health = 'Critical', 0, Health = 'Warning', 1, 2), error_rate_pct DESC, p95_latency_ms DESC
 ```
 
 </details>
@@ -154,9 +172,9 @@ SELECT avg(Duration) / 1e9 AS "HTTP client latency"
 
 ```sql
 SELECT ServiceName AS Service, count() AS Requests,
-              round(avg(Duration) / 1e6, 1) AS "Average (ms)",
-              round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)",
-              round(quantile(0.99)(Duration) / 1e6, 1) AS "P99 (ms)"
+              round(avg(Duration) / 1e6, 2) AS "Average (ms)",
+              round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 (ms)",
+              round(quantile(0.99)(Duration) / 1e6, 2) AS "P99 (ms)"
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
@@ -164,7 +182,7 @@ SELECT ServiceName AS Service, count() AS Requests,
          AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')
          AND $__filters
        GROUP BY ServiceName
-       ORDER BY "P95 (ms)" DESC
+               ORDER BY quantile(0.95)(Duration) DESC
 ```
 
 </details>
@@ -178,9 +196,9 @@ SELECT ServiceName AS Service, count() AS Requests,
 
 ```sql
 SELECT ServiceName AS Service, count() AS Requests,
-              round(avg(Duration) / 1e6, 1) AS "Average (ms)",
-              round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)",
-              round(quantile(0.99)(Duration) / 1e6, 1) AS "P99 (ms)"
+              round(avg(Duration) / 1e6, 2) AS "Average (ms)",
+              round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 (ms)",
+              round(quantile(0.99)(Duration) / 1e6, 2) AS "P99 (ms)"
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
@@ -188,7 +206,7 @@ SELECT ServiceName AS Service, count() AS Requests,
          AND (SpanAttributes['http.request.method'] != '' OR SpanAttributes['http.method'] != '')
          AND $__filters
        GROUP BY ServiceName
-       ORDER BY "P95 (ms)" DESC
+               ORDER BY quantile(0.95)(Duration) DESC
 ```
 
 </details>
@@ -202,15 +220,15 @@ SELECT ServiceName AS Service, count() AS Requests,
 
 ```sql
 SELECT ServiceName AS Service, SpanAttributes['rpc.system'] AS RPC,
-              count() AS Requests, round(avg(Duration) / 1e6, 1) AS "Average (ms)",
-              round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)",
-              round(quantile(0.99)(Duration) / 1e6, 1) AS "P99 (ms)"
+              count() AS Requests, round(avg(Duration) / 1e6, 2) AS "Average (ms)",
+              round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 (ms)",
+              round(quantile(0.99)(Duration) / 1e6, 2) AS "P99 (ms)"
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
          AND SpanKind = 'Server' AND SpanAttributes['rpc.system'] != '' AND $__filters
        GROUP BY ServiceName, RPC
-       ORDER BY "P95 (ms)" DESC
+               ORDER BY quantile(0.95)(Duration) DESC
 ```
 
 </details>
@@ -228,7 +246,7 @@ SELECT ServiceName AS Service, SpanAttributes['rpc.system'] AS RPC,
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
               ServiceName AS Service, avg(Duration) / 1e6 AS "Average latency (ms)"
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -247,7 +265,7 @@ SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS Service, SpanName AS Operation, SpanKind AS Kind, round(avg(Duration) / 1e6, 1) AS "Average (ms)", round(quantile(0.50)(Duration) / 1e6, 1) AS "P50 (ms)", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)", round(quantile(0.99)(Duration) / 1e6, 1) AS "P99 (ms)", count() AS Requests FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind IN ('Server','Client') AND $__filters GROUP BY ServiceName, SpanName, SpanKind HAVING Requests >= 5 ORDER BY "P95 (ms)" DESC LIMIT 100
+SELECT ServiceName AS Service, SpanName AS Operation, SpanKind AS Kind, round(avg(Duration) / 1e6, 2) AS "Average (ms)", round(quantile(0.50)(Duration) / 1e6, 2) AS "P50 (ms)", round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 (ms)", round(quantile(0.99)(Duration) / 1e6, 2) AS "P99 (ms)", count() AS Requests FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind IN ('Server','Client') AND $__filters GROUP BY ServiceName, SpanName, SpanKind         HAVING Requests >= 5 ORDER BY quantile(0.95)(Duration) DESC LIMIT 100
 ```
 
 </details>
@@ -259,7 +277,7 @@ SELECT ServiceName AS Service, SpanName AS Operation, SpanKind AS Kind, round(av
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS "Service", route AS "Route", round(p95_ms, 1) AS "p95 (ms)", round(p50_ms, 1) AS "p50 (ms)", requests AS "Requests" FROM (
+SELECT ServiceName AS "Service", route AS "Route", round(p95_ms, 2) AS "p95 (ms)", round(p50_ms, 2) AS "p50 (ms)", requests AS "Requests" FROM (
   SELECT ServiceName,
          SpanAttributes['http.route'] AS route,
          quantile(0.95)(Duration) / 1e6 AS p95_ms,
@@ -342,8 +360,8 @@ Request volume, throughput, reliability, status errors, failed requests, and suc
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
-              ServiceName AS Service, count() / {intervalSeconds:Int64} AS RPS
+SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
+              ServiceName AS Service, count() / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS RPS
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
@@ -375,7 +393,7 @@ SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS Service, SpanName AS Operation, StatusMessage AS Error, count() AS Failures, round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 (ms)", max(Timestamp) AS "Last seen" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND StatusCode = 'Error' AND $__filters GROUP BY ServiceName, SpanName, StatusMessage ORDER BY Failures DESC LIMIT 100
+SELECT ServiceName AS Service, SpanName AS Operation, StatusMessage AS Error, count() AS Failures, round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 (ms)", max(Timestamp) AS "Last seen" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND StatusCode = 'Error' AND $__filters GROUP BY ServiceName, SpanName, StatusMessage ORDER BY Failures DESC LIMIT 100
 ```
 
 </details>
@@ -442,15 +460,15 @@ Distributed trace search and request journeys across services. Open any result i
 ```sql
 SELECT TraceId, argMax(ServiceName, Duration) AS "Slowest service",
               argMax(SpanName, Duration) AS "Slowest operation",
-              round(max(Duration) / 1e6, 1) AS "Longest span (ms)",
-              round(sum(Duration) / 1e6, 1) AS "Total span time (ms)",
+              round(max(Duration) / 1e6, 2) AS "Longest span (ms)",
+              round(sum(Duration) / 1e6, 2) AS "Total span time (ms)",
               count() AS Spans
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
          AND $__filters
        GROUP BY TraceId
-       ORDER BY "Longest span (ms)" DESC
+               ORDER BY max(Duration) DESC
        LIMIT 100
 ```
 
@@ -463,7 +481,7 @@ SELECT TraceId, argMax(ServiceName, Duration) AS "Slowest service",
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS Service, uniqExact(TraceId) AS Traces, count() AS Spans, round(count() / nullIf(uniqExact(TraceId), 0), 1) AS "Spans / trace", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 span (ms)" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters GROUP BY ServiceName ORDER BY Traces DESC
+SELECT ServiceName AS Service, uniqExact(TraceId) AS Traces, count() AS Spans, round(count() / nullIf(uniqExact(TraceId), 0), 2) AS "Spans / trace", round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 span (ms)" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters GROUP BY ServiceName ORDER BY Traces DESC
 ```
 
 </details>
@@ -478,7 +496,7 @@ Upstream/downstream service relationships, request flow, dependency latency, dep
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS Upstream, coalesce(nullIf(SpanAttributes['peer.service'], ''), nullIf(SpanAttributes['server.address'], ''), nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS "Error rate %", round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 latency (ms)" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Client' AND $__filters GROUP BY Upstream, Downstream ORDER BY "Error rate %" DESC, "P95 latency (ms)" DESC
+SELECT ServiceName AS Upstream, coalesce(nullIf(SpanAttributes['peer.service'], ''), nullIf(SpanAttributes['server.address'], ''), nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream, count() AS Requests, round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS "Error rate %", round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 latency (ms)" FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Client' AND $__filters         GROUP BY Upstream, Downstream ORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, quantile(0.95)(Duration) DESC
 ```
 
 </details>
@@ -496,15 +514,15 @@ SELECT ServiceName AS Upstream,
                        nullIf(SpanAttributes['server.address'], ''),
                        nullIf(SpanAttributes['net.peer.name'], ''), SpanName) AS Downstream,
               count() AS Requests,
-              round(avg(Duration) / 1e6, 1) AS "Average latency (ms)",
-              round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 latency (ms)",
-              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS "Error rate %"
+              round(avg(Duration) / 1e6, 2) AS "Average latency (ms)",
+              round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 latency (ms)",
+              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS "Error rate %"
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
          AND SpanKind = 'Client' AND $__filters
        GROUP BY Upstream, Downstream
-       ORDER BY "Error rate %" DESC, "P95 latency (ms)" DESC
+               ORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, quantile(0.95)(Duration) DESC
 ```
 
 </details>
@@ -553,7 +571,7 @@ SELECT ServiceName AS Service, StatusMessage AS Exception,
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
               ServiceName AS Service, count() AS Errors
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -661,7 +679,7 @@ SELECT countIf(availability < 0.999) AS "SLO violations" FROM (
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
               ServiceName AS Service,
               (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001 AS "Budget consumption"
        FROM default.otel_traces
@@ -689,7 +707,7 @@ SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS 
 ```sql
 WITH 0.001 AS budget
 SELECT window AS "Window",
-       round(error_ratio, 5) AS "Error rate",
+       round(100 * error_ratio, 2) AS "Error rate %",
        round(error_ratio / budget, 2) AS "Burn rate (×)"
 FROM (
   SELECT '1h' AS window, 1 AS ord,
@@ -720,7 +738,17 @@ ORDER BY ord
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ServiceName AS Service, round(100 * countIf(StatusCode != 'Error') / nullIf(count(), 0), 3) AS "Availability %", 99.9 AS "SLO target %", round(100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001), 1) AS "Error budget remaining %", if("Availability %" >= 99.9, 'Compliant', 'Violation') AS Status FROM default.otel_traces WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND SpanKind = 'Server' AND $__filters GROUP BY ServiceName ORDER BY Status DESC, "Availability %"
+SELECT Service, round(availability_pct, 2) AS "Availability %", 99.9 AS "SLO target %", round(error_budget_remaining_pct, 2) AS "Error budget remaining %", if(availability_pct >= 99.9, 'Compliant', 'Violation') AS Status FROM (
+  SELECT ServiceName AS Service,
+         100 * countIf(StatusCode != 'Error') / nullIf(count(), 0) AS availability_pct,
+         100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001) AS error_budget_remaining_pct
+  FROM default.otel_traces
+  WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
+    AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
+    AND SpanKind = 'Server' AND $__filters
+  GROUP BY ServiceName
+)
+ORDER BY Status DESC, availability_pct
 ```
 
 </details>
@@ -811,7 +839,7 @@ SELECT sum(if(value >= previous, value - previous, value)) AS "Refused spans" FR
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS t,
               quantile(0.95)(query_duration_ms) / 1000 AS p95,
               quantile(0.99)(query_duration_ms) / 1000 AS p99
        FROM system.query_log

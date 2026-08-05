@@ -94,7 +94,11 @@
             "where": "",
             "whereLanguage": "sql"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       },
       "y": 11
     },
@@ -109,7 +113,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"Logs / sec\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters"
+        "sqlTemplate": "SELECT count() / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"Logs / sec\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -135,7 +143,11 @@
             "color": "chart-warning",
             "label": "Errors present"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       },
       "y": 11
     },
@@ -149,7 +161,7 @@
         "sourceId": "{{LOGS_SOURCE_ID}}",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         },
         "select": [
           {
@@ -195,7 +207,11 @@
             "color": "chart-error",
             "label": "Fatal logs present"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -209,7 +225,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"Errors / sec\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters"
+        "sqlTemplate": "SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) / greatest(({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}) / 1000, 1) AS \"Errors / sec\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -229,7 +249,11 @@
             "where": "",
             "whereLanguage": "sql"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -249,7 +273,11 @@
             "where": "SeverityNumber:>=17 OR SeverityText:error OR SeverityText:fatal",
             "whereLanguage": "lucene"
           }
-        ]
+        ],
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -263,7 +291,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n            count() AS Logs\n     FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n     WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n       AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       AND $__filters\n     GROUP BY ts\n     ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n            count() AS Logs\n     FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n     WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n       AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       AND $__filters\n     GROUP BY ts\n     ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -277,7 +309,11 @@
         "configType": "sql",
         "connectionId": "{{CONNECTION_ID}}",
         "sourceId": "{{LOGS_SOURCE_ID}}",
-        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,\n            SeverityText AS Severity, count() AS Logs\n     FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n     WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n       AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       AND $__filters\n     GROUP BY ts, Severity\n     ORDER BY ts"
+        "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n            SeverityText AS Severity, count() AS Logs\n     FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n     WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n       AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       AND $__filters\n     GROUP BY ts, Severity\n     ORDER BY ts",
+        "numberFormat": {
+          "output": "number",
+          "mantissa": 2
+        }
       }
     },
     {
@@ -294,7 +330,7 @@
         "sqlTemplate": "SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) / nullIf(count(), 0) AS \"Error share\" FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}} WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND $__filters",
         "numberFormat": {
           "output": "percent",
-          "mantissa": 3
+          "mantissa": 2
         }
       }
     },

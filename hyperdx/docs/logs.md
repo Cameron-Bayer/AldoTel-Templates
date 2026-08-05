@@ -101,7 +101,7 @@ SELECT countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal'))
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
             count() AS Logs
      FROM default.otel_logs
      WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -120,7 +120,7 @@ SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(Timestamp, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
             SeverityText AS Severity, count() AS Logs
      FROM default.otel_logs
      WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})

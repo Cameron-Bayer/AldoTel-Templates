@@ -51,7 +51,7 @@ SELECT if(total = 0, 0, ready / total) AS "Nodes ready" FROM (
 
 ```sql
 SELECT ts, host, avg(busy) AS "CPU" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['cpu'] AS cpu,
          TimeUnix AS t,
@@ -73,7 +73,7 @@ SELECT ts, host, avg(busy) AS "CPU" FROM (
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        ResourceAttributes['host.name'] AS host,
        avgIf(Value, Attributes['state'] = 'used') AS "Memory"
 FROM default.otel_metrics_gauge
@@ -93,7 +93,7 @@ GROUP BY ts, host ORDER BY ts
 
 ```sql
 SELECT ts, volume, used / nullIf(total, 0) AS "Filesystem" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
     concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
     sumIf(Value, Attributes['state'] = 'used') AS used,
     sum(Value) AS total
@@ -148,7 +148,7 @@ Resource consumption broken down by namespace.
 
 ```sql
 SELECT ts, ns, sum(pod_cpu) AS "CPU (cores)" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['k8s.namespace.name'] AS ns,
          ResourceAttributes['k8s.pod.name'] AS pod,
          avg(Value) AS pod_cpu
@@ -172,7 +172,7 @@ ORDER BY ts
 
 ```sql
 SELECT ts, ns, sum(pod_mem) AS "Memory" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['k8s.namespace.name'] AS ns,
          ResourceAttributes['k8s.pod.name'] AS pod,
          avg(Value) AS pod_mem
@@ -325,8 +325,8 @@ s AS (
 SELECT g.ns AS Namespace,
   g.pod AS Pod,
   multiIf(g.phase = 1, 'Pending', g.phase = 2, 'Running', g.phase = 3, 'Succeeded', g.phase = 4, 'Failed', 'Unknown') AS Status,
-  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 1)), '%')) AS "CPU/limit",
-  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 1)), '%')) AS "Mem/limit",
+  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 2)), '%')) AS "CPU/limit",
+  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 2)), '%')) AS "Mem/limit",
   formatReadableSize(g.mem) AS Memory,
   formatReadableTimeDelta(toUInt64(s.uptime)) AS Age,
   toUInt64(g.restarts) AS Restarts
@@ -387,7 +387,7 @@ How close pods and containers are running to their configured CPU and memory lim
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS container,
        avg(Value) AS "CPU vs limit"
 FROM default.otel_metrics_gauge
@@ -407,7 +407,7 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        concat(ResourceAttributes['k8s.namespace.name'], '/', ResourceAttributes['k8s.pod.name'], '/', ResourceAttributes['k8s.container.name']) AS container,
        avg(Value) AS "Mem vs limit"
 FROM default.otel_metrics_gauge
@@ -469,10 +469,10 @@ u AS (
   GROUP BY ns, pod, container
 )
 SELECT g.ns AS Namespace, g.pod AS Pod, g.container AS Container,
-  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 1)), '%')) AS "CPU/limit",
-  if(isNaN(g.cpu_req), '-', concat(toString(round(g.cpu_req * 100, 1)), '%')) AS "CPU/request",
-  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 1)), '%')) AS "Mem/limit",
-  if(isNaN(g.mem_req), '-', concat(toString(round(g.mem_req * 100, 1)), '%')) AS "Mem/request",
+  if(isNaN(g.cpu_lim), '-', concat(toString(round(g.cpu_lim * 100, 2)), '%')) AS "CPU/limit",
+  if(isNaN(g.cpu_req), '-', concat(toString(round(g.cpu_req * 100, 2)), '%')) AS "CPU/request",
+  if(isNaN(g.mem_lim), '-', concat(toString(round(g.mem_lim * 100, 2)), '%')) AS "Mem/limit",
+  if(isNaN(g.mem_req), '-', concat(toString(round(g.mem_req * 100, 2)), '%')) AS "Mem/request",
   if(u.uptime > 0, formatReadableTimeDelta(toUInt64(u.uptime)), '-') AS Uptime
 FROM g LEFT JOIN u USING (ns, pod, container)
 ORDER BY g.cpu_lim DESC

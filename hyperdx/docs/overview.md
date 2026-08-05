@@ -43,10 +43,10 @@ SELECT if(count() > 0, 1, 0) AS "Clusters" FROM default.otel_metrics_gauge WHERE
 
 ```sql
 SELECT if(score IS NULL, NULL, if(score >= 90, 1, 0)) AS "Healthy clusters" FROM (SELECT if(node_total + pod_total = 0, NULL,
-  round(100 * (
+  100 * (
     if(node_total = 0, 0, node_ready / node_total) +
     if(pod_total = 0, 0, pod_ok / pod_total)
-  ) / ((node_total > 0) + (pod_total > 0)), 0)
+  ) / ((node_total > 0) + (pod_total > 0))
 ) AS score
 FROM (
   SELECT
@@ -95,10 +95,10 @@ FROM (
 
 ```sql
 SELECT if(score IS NULL, NULL, if(score >= 75 AND score < 90, 1, 0)) AS "Warning clusters" FROM (SELECT if(node_total + pod_total = 0, NULL,
-  round(100 * (
+  100 * (
     if(node_total = 0, 0, node_ready / node_total) +
     if(pod_total = 0, 0, pod_ok / pod_total)
-  ) / ((node_total > 0) + (pod_total > 0)), 0)
+  ) / ((node_total > 0) + (pod_total > 0))
 ) AS score
 FROM (
   SELECT
@@ -147,10 +147,10 @@ FROM (
 
 ```sql
 SELECT if(score IS NULL, NULL, if(score < 75, 1, 0)) AS "Critical clusters" FROM (SELECT if(node_total + pod_total = 0, NULL,
-  round(100 * (
+  100 * (
     if(node_total = 0, 0, node_ready / node_total) +
     if(pod_total = 0, 0, pod_ok / pod_total)
-  ) / ((node_total > 0) + (pod_total > 0)), 0)
+  ) / ((node_total > 0) + (pod_total > 0))
 ) AS score
 FROM (
   SELECT
@@ -241,7 +241,7 @@ SELECT score AS "Overall platform health score" FROM (SELECT if(node_total + pod
   round(100 * (
     if(node_total = 0, 0, node_ready / node_total) +
     if(pod_total = 0, 0, pod_ok / pod_total)
-  ) / ((node_total > 0) + (pod_total > 0)), 0)
+  ) / ((node_total > 0) + (pod_total > 0)), 2)
 ) AS score
 FROM (
   SELECT
@@ -373,7 +373,7 @@ SELECT score AS "Cluster health score" FROM (SELECT if(node_total + pod_total = 
   round(100 * (
     if(node_total = 0, 0, node_ready / node_total) +
     if(pod_total = 0, 0, pod_ok / pod_total)
-  ) / ((node_total > 0) + (pod_total > 0)), 0)
+  ) / ((node_total > 0) + (pod_total > 0)), 2)
 ) AS score
 FROM (
   SELECT
@@ -579,7 +579,7 @@ SELECT sum(greatest(max_value - min_value, 0)) AS "Network consumption" FROM (
 
 ```sql
 SELECT ts, avg(b) AS "Cluster CPU busy" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,
          sumIf(Value, Attributes['state'] != 'idle') AS b
   FROM default.otel_metrics_gauge
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -597,7 +597,7 @@ SELECT ts, avg(b) AS "Cluster CPU busy" FROM (
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, avgIf(Value, Attributes['state'] = 'used') AS "Cluster memory used"
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, avgIf(Value, Attributes['state'] = 'used') AS "Cluster memory used"
 FROM default.otel_metrics_gauge
 WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization'
@@ -651,14 +651,14 @@ SELECT count() AS "Server requests" FROM default.otel_traces
 
 ```sql
 SELECT ServiceName AS Service, count() AS Requests,
-              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 3) AS "Error rate %",
-              round(quantile(0.95)(Duration) / 1e6, 1) AS "P95 latency (ms)"
+              round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS "Error rate %",
+              round(quantile(0.95)(Duration) / 1e6, 2) AS "P95 latency (ms)"
        FROM default.otel_traces
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
          AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})
          AND SpanKind = 'Server' AND $__filters
        GROUP BY ServiceName
-       ORDER BY "Error rate %" DESC, Requests DESC
+               ORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, Requests DESC
        LIMIT 50
 ```
 
@@ -674,7 +674,7 @@ SELECT ServiceName AS Service, count() AS Requests,
 ```sql
 SELECT ServiceName AS Service, count() AS Logs,
               countIf(SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AS Errors,
-              round(100 * Errors / nullIf(Logs, 0), 3) AS "Error rate %",
+              round(100 * Errors / nullIf(Logs, 0), 2) AS "Error rate %",
               maxIf(Timestamp, SeverityNumber >= 17 OR lower(SeverityText) IN ('error','fatal')) AS "Last error"
        FROM default.otel_logs
        WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -682,7 +682,7 @@ SELECT ServiceName AS Service, count() AS Logs,
          AND $__filters
        GROUP BY ServiceName
        HAVING Errors > 0
-       ORDER BY "Error rate %" DESC, Errors DESC
+               ORDER BY Errors / nullIf(Logs, 0) DESC, Errors DESC
        LIMIT 50
 ```
 
@@ -755,7 +755,7 @@ SELECT value AS "Memory tracked" FROM system.metrics WHERE metric = 'MemoryTrack
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
               countIf(type = 'QueryFinish') AS Queries
        FROM system.query_log
        WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -772,7 +772,7 @@ SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
               countIf(exception_code != 0) AS "Failed queries"
        FROM system.query_log
        WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -789,7 +789,7 @@ SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, sum(written_rows) AS "Inserted rows", formatReadableSize(sum(written_bytes)) AS "Inserted bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, sum(written_rows) AS "Inserted rows", formatReadableSize(sum(written_bytes)) AS "Inserted bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -801,7 +801,7 @@ SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -849,7 +849,7 @@ SELECT if(count() = 0, 0, avg(progress)) AS "Merge progress" FROM system.merges
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT database AS Database, table AS Table, round(progress * 100, 1) AS "Progress %", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS "Elapsed seconds", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC
+SELECT database AS Database, table AS Table, round(progress * 100, 2) AS "Progress %", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS "Elapsed seconds", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC
 ```
 
 </details>
@@ -861,7 +861,7 @@ SELECT database AS Database, table AS Table, round(progress * 100, 1) AS "Progre
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS "From cache", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS "From source" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS "From cache", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS "From source" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -873,7 +873,7 @@ SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS "Async insert bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS "Async insert bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -888,7 +888,7 @@ Cluster/node health, alert pressure, CPU, storage, network consumption, and work
 <details><summary>SQL query</summary>
 
 ```sql
-WITH ready AS (SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.condition_ready' GROUP BY node), cpu AS (SELECT host AS node, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY node), mem AS (SELECT ResourceAttributes['host.name'] AS node, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY node), disk AS (SELECT node, max(used / nullIf(total, 0)) AS disk_used FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['mountpoint'] AS mountpoint, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY node, mountpoint) GROUP BY node), net AS (SELECT node, sum(max_value - min_value) AS bytes FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.network.io' GROUP BY node, interface, direction) GROUP BY node), pods AS (SELECT ResourceAttributes['k8s.node.name'] AS node, uniqExact(ResourceAttributes['k8s.pod.name']) AS workloads FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.phase' GROUP BY node) SELECT 'Appliance cluster' AS Cluster, ready.node AS Node, multiIf(ready.ready != 1, 'Critical', isNull(cpu.cpu_used) AND isNull(mem.memory_used) AND isNull(disk.disk_used), 'Unknown', ifNull(disk.disk_used >= 0.95, 0) OR ifNull(cpu.cpu_used >= 0.9, 0) OR ifNull(mem.memory_used >= 0.9, 0), 'Critical', ifNull(disk.disk_used >= 0.8, 0) OR ifNull(cpu.cpu_used >= 0.75, 0) OR ifNull(mem.memory_used >= 0.8, 0), 'Warning', 'Healthy') AS Health, (ready.ready != 1) + ifNull(cpu.cpu_used >= 0.75, 0) + ifNull(mem.memory_used >= 0.8, 0) + ifNull(disk.disk_used >= 0.8, 0) AS Alerts, round(100 * cpu.cpu_used, 1) AS "CPU %", round(100 * mem.memory_used, 1) AS "Memory %", round(100 * disk.disk_used, 1) AS "Storage %", formatReadableSize(net.bytes) AS "Network consumption", pods.workloads AS Workloads FROM ready LEFT JOIN cpu USING (node) LEFT JOIN mem USING (node) LEFT JOIN disk USING (node) LEFT JOIN net USING (node) LEFT JOIN pods USING (node) ORDER BY multiIf(Health = 'Critical', 1, Health = 'Warning', 2, Health = 'Unknown', 3, 4), Alerts DESC
+WITH ready AS (SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.node.condition_ready' GROUP BY node), cpu AS (SELECT host AS node, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY node), mem AS (SELECT ResourceAttributes['host.name'] AS node, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY node), disk AS (SELECT node, max(used / nullIf(total, 0)) AS disk_used FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['mountpoint'] AS mountpoint, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY node, mountpoint) GROUP BY node), net AS (SELECT node, sum(max_value - min_value) AS bytes FROM (SELECT ResourceAttributes['host.name'] AS node, Attributes['interface'] AS interface, Attributes['direction'] AS direction, max(Value) AS max_value, min(Value) AS min_value FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.network.io' GROUP BY node, interface, direction) GROUP BY node), pods AS (SELECT ResourceAttributes['k8s.node.name'] AS node, uniqExact(ResourceAttributes['k8s.pod.name']) AS workloads FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'k8s.pod.phase' GROUP BY node) SELECT 'Appliance cluster' AS Cluster, ready.node AS Node, multiIf(ready.ready != 1, 'Critical', isNull(cpu.cpu_used) AND isNull(mem.memory_used) AND isNull(disk.disk_used), 'Unknown', ifNull(disk.disk_used >= 0.95, 0) OR ifNull(cpu.cpu_used >= 0.9, 0) OR ifNull(mem.memory_used >= 0.9, 0), 'Critical', ifNull(disk.disk_used >= 0.8, 0) OR ifNull(cpu.cpu_used >= 0.75, 0) OR ifNull(mem.memory_used >= 0.8, 0), 'Warning', 'Healthy') AS Health, (ready.ready != 1) + ifNull(cpu.cpu_used >= 0.75, 0) + ifNull(mem.memory_used >= 0.8, 0) + ifNull(disk.disk_used >= 0.8, 0) AS Alerts, round(100 * cpu.cpu_used, 2) AS "CPU %", round(100 * mem.memory_used, 2) AS "Memory %", round(100 * disk.disk_used, 2) AS "Storage %", formatReadableSize(net.bytes) AS "Network consumption", pods.workloads AS Workloads FROM ready LEFT JOIN cpu USING (node) LEFT JOIN mem USING (node) LEFT JOIN disk USING (node) LEFT JOIN net USING (node) LEFT JOIN pods USING (node) ORDER BY multiIf(Health = 'Critical', 1, Health = 'Warning', 2, Health = 'Unknown', 3, 4), Alerts DESC
 ```
 
 </details>

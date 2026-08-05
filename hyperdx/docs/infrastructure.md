@@ -119,7 +119,7 @@ Per-host CPU, load average, memory, and swap for the machines running the cluste
 
 ```sql
 SELECT ts, host, avg(cpu_busy) AS "CPU busy" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['cpu'] AS cpu,
          TimeUnix,
@@ -143,7 +143,7 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        ResourceAttributes['host.name'] AS host,
        avg(Value) AS "Load (1m)"
 FROM default.otel_metrics_gauge
@@ -163,7 +163,7 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        ResourceAttributes['host.name'] AS host,
        avgIf(Value, Attributes['state'] = 'used') AS "Memory used"
 FROM default.otel_metrics_gauge
@@ -184,7 +184,7 @@ ORDER BY ts
 
 ```sql
 SELECT ts, volume, used / nullIf(total, 0) AS "Inodes used" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
          sumIf(Value, Attributes['state'] = 'used') AS used,
          sum(Value) AS total
@@ -233,8 +233,8 @@ l AS (
   GROUP BY host
 )
 SELECT c.host AS Host,
-  concat(toString(round(c.cpu * 100, 1)), '%') AS "CPU busy",
-  concat(toString(round(m.mem * 100, 1)), '%') AS "Mem used",
+  concat(toString(round(c.cpu * 100, 2)), '%') AS "CPU busy",
+  concat(toString(round(m.mem * 100, 2)), '%') AS "Mem used",
   round(l.load1, 2) AS "Load (1m)"
 FROM c LEFT JOIN m USING (host) LEFT JOIN l USING (host)
 ORDER BY c.cpu DESC
@@ -253,7 +253,7 @@ Filesystem usage and free capacity, disk IOPS, read/write latency, and throughpu
 
 ```sql
 SELECT ts, volume, used / nullIf(total, 0) AS "Filesystem" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
     concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
     sumIf(Value, Attributes['state'] = 'used') AS used,
     sum(Value) AS total
@@ -274,7 +274,7 @@ SELECT ts, volume, used / nullIf(total, 0) AS "Filesystem" FROM (
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
        avgIf(Value, Attributes['state'] = 'free') / 1e9 AS "Free (GB)"
 FROM default.otel_metrics_sum
@@ -293,8 +293,8 @@ GROUP BY ts, volume ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS "IOPS" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS "IOPS" FROM (
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['direction'] AS direction,
          greatest(Value - lagInFrame(Value, 1, Value) OVER (
@@ -319,7 +319,7 @@ ORDER BY ts
 ```sql
 WITH t AS (
   SELECT ts, host, direction, sum(d) AS tsec FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,
            greatest(Value - lagInFrame(Value, 1, Value) OVER (
              PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d
     FROM default.otel_metrics_sum
@@ -329,7 +329,7 @@ WITH t AS (
 ),
 o AS (
   SELECT ts, host, direction, sum(d) AS ops FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['direction'] AS direction,
            greatest(Value - lagInFrame(Value, 1, Value) OVER (
              PARTITION BY ResourceAttributes['host.name'], Attributes['device'], Attributes['direction'] ORDER BY TimeUnix), 0) AS d
     FROM default.otel_metrics_sum
@@ -352,8 +352,8 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS "Bytes/sec" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS "Bytes/sec" FROM (
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['direction'] AS direction,
          greatest(Value - lagInFrame(Value, 1, Value) OVER (
@@ -379,8 +379,8 @@ Per-host network throughput, dropped packets, and interface errors.
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS "Bytes/sec" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS "Bytes/sec" FROM (
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['direction'] AS direction,
          greatest(Value - lagInFrame(Value, 1, Value) OVER (
@@ -403,8 +403,8 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS "Dropped/sec" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS "Dropped/sec" FROM (
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['direction'] AS direction,
          greatest(Value - lagInFrame(Value, 1, Value) OVER (
@@ -427,8 +427,8 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / {intervalSeconds:Int64} AS "Errors/sec" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT ts, concat(host, ' · ', direction) AS series, sum(d) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS "Errors/sec" FROM (
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
          ResourceAttributes['host.name'] AS host,
          Attributes['direction'] AS direction,
          greatest(Value - lagInFrame(Value, 1, Value) OVER (
@@ -455,7 +455,7 @@ Remaining headroom — how much CPU, memory, and disk is still free before satur
 
 ```sql
 SELECT ts, 1 - avg(b) AS "CPU headroom" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,
          sumIf(Value, Attributes['state'] != 'idle') AS b
   FROM default.otel_metrics_gauge
   WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
@@ -473,7 +473,7 @@ SELECT ts, 1 - avg(b) AS "CPU headroom" FROM (
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, 1 - avgIf(Value, Attributes['state'] = 'used') AS "Memory headroom"
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, 1 - avgIf(Value, Attributes['state'] = 'used') AS "Memory headroom"
 FROM default.otel_metrics_gauge
 WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})
     AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters
@@ -489,7 +489,7 @@ GROUP BY ts ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
        ResourceAttributes['host.name'] AS host,
        avgIf(Value, Attributes['state'] = 'free') / 1e9 AS "Free (GB)"
 FROM default.otel_metrics_sum
@@ -509,7 +509,7 @@ GROUP BY ts, host ORDER BY ts
 
 ```sql
 SELECT ts, volume, avail / nullIf(total, 0) AS "Disk free" FROM (
-  SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+  SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
     concat(ResourceAttributes['host.name'], ' ', Attributes['mountpoint']) AS volume,
     sumIf(Value, Attributes['state'] = 'free') AS avail,
     sum(Value) AS total
@@ -533,7 +533,7 @@ Cross-resource consumption, saturation, top consumers, hotspots, and bottlenecks
 <details><summary>SQL query</summary>
 
 ```sql
-WITH cpu AS (SELECT host, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters GROUP BY host) SELECT cpu.host AS Host, round(100 * cpu.cpu_used, 1) AS "CPU %", round(100 * mem.memory_used, 1) AS "Memory %", if(cpu.cpu_used >= 0.9 OR mem.memory_used >= 0.9, 'Critical', if(cpu.cpu_used >= 0.75 OR mem.memory_used >= 0.8, 'Warning', 'Healthy')) AS Status FROM cpu LEFT JOIN mem USING (host) ORDER BY Status ASC, "CPU %" DESC, "Memory %" DESC
+WITH cpu AS (SELECT host, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.cpu.utilization' AND $__filters GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS memory_used FROM default.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.memory.utilization' AND $__filters GROUP BY host) SELECT cpu.host AS Host, round(100 * cpu.cpu_used, 2) AS "CPU %", round(100 * mem.memory_used, 2) AS "Memory %", if(cpu.cpu_used >= 0.9 OR mem.memory_used >= 0.9, 'Critical', if(cpu.cpu_used >= 0.75 OR mem.memory_used >= 0.8, 'Warning', 'Healthy')) AS Status FROM cpu LEFT JOIN mem USING (host)         ORDER BY Status ASC, cpu.cpu_used DESC, mem.memory_used DESC
 ```
 
 </details>
@@ -545,7 +545,7 @@ WITH cpu AS (SELECT host, avg(busy) AS cpu_used FROM (SELECT ResourceAttributes[
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ResourceAttributes['host.name'] AS Host, Attributes['mountpoint'] AS Volume, formatReadableSize(sumIf(Value, Attributes['state'] = 'used')) AS Used, formatReadableSize(sumIf(Value, Attributes['state'] = 'free')) AS Free, round(100 * sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0), 1) AS "Used %" FROM default.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY Host, Volume ORDER BY "Used %" DESC
+SELECT ResourceAttributes['host.name'] AS Host, Attributes['mountpoint'] AS Volume, formatReadableSize(sumIf(Value, Attributes['state'] = 'used')) AS Used, formatReadableSize(sumIf(Value, Attributes['state'] = 'free')) AS Free, round(100 * sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0), 2) AS "Used %" FROM default.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters         GROUP BY Host, Volume ORDER BY sumIf(Value, Attributes['state'] = 'used') / nullIf(sum(Value), 0) DESC
 ```
 
 </details>
@@ -572,7 +572,7 @@ CPU, memory, and storage headroom, growth trends, exhaustion risks, and scale gu
 <details><summary>SQL query</summary>
 
 ```sql
-WITH cpu AS (SELECT host, avg(busy) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS used FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY host), disk AS (SELECT host, max(used / nullIf(total, 0)) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS volume, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY host, volume) GROUP BY host) SELECT cpu.host AS Host, round(100 * (1 - cpu.used), 1) AS "CPU headroom %", round(100 * (1 - mem.used), 1) AS "Memory headroom %", round(100 * (1 - disk.used), 1) AS "Storage headroom %", if(disk.used >= 0.9, 'Expand storage / tighten retention', if(cpu.used >= 0.9, 'Add compute capacity', if(mem.used >= 0.9, 'Add memory capacity', if(cpu.used >= 0.75 OR mem.used >= 0.8 OR disk.used >= 0.8, 'Plan scale-up', 'No scale action')))) AS Recommendation FROM cpu LEFT JOIN mem USING (host) LEFT JOIN disk USING (host) ORDER BY "Storage headroom %", "Memory headroom %", "CPU headroom %"
+WITH cpu AS (SELECT host, avg(busy) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix, sumIf(Value, Attributes['state'] != 'idle') AS busy FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.cpu.utilization' GROUP BY host, cpu, TimeUnix) GROUP BY host), mem AS (SELECT ResourceAttributes['host.name'] AS host, avgIf(Value, Attributes['state'] = 'used') AS used FROM default.otel_metrics_gauge WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.memory.utilization' GROUP BY host), disk AS (SELECT host, max(used / nullIf(total, 0)) AS used FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS volume, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix > now() - INTERVAL 1 HOUR AND MetricName = 'system.filesystem.usage' GROUP BY host, volume) GROUP BY host) SELECT cpu.host AS Host, round(100 * (1 - cpu.used), 2) AS "CPU headroom %", round(100 * (1 - mem.used), 2) AS "Memory headroom %", round(100 * (1 - disk.used), 2) AS "Storage headroom %", if(disk.used >= 0.9, 'Expand storage / tighten retention', if(cpu.used >= 0.9, 'Add compute capacity', if(mem.used >= 0.9, 'Add memory capacity', if(cpu.used >= 0.75 OR mem.used >= 0.8 OR disk.used >= 0.8, 'Plan scale-up', 'No scale action')))) AS Recommendation FROM cpu LEFT JOIN mem USING (host) LEFT JOIN disk USING (host)         ORDER BY disk.used DESC, mem.used DESC, cpu.used DESC
 ```
 
 </details>
@@ -584,7 +584,7 @@ WITH cpu AS (SELECT host, avg(busy) AS used FROM (SELECT ResourceAttributes['hos
 <details><summary>SQL query</summary>
 
 ```sql
-WITH points AS (SELECT host, mountpoint AS volume, toStartOfHour(TimeUnix) AS ts, avg(used / nullIf(total, 0)) AS used_ratio FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, TimeUnix, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY host, mountpoint, TimeUnix) GROUP BY host, volume, ts), slopes AS (SELECT host, volume, argMax(used_ratio, ts) AS current_used, covarPop(toUnixTimestamp(ts), used_ratio) / nullIf(varPop(toUnixTimestamp(ts)), 0) AS slope_per_second FROM points GROUP BY host, volume) SELECT host AS Host, volume AS Volume, round(100 * current_used, 1) AS "Current used %", round(slope_per_second * 86400 * 100, 3) AS "Growth % / day", if(slope_per_second <= 0, 'No exhaustion trend', concat(toString(round((1 - current_used) / slope_per_second / 86400, 1)), ' days')) AS "Estimated time to full" FROM slopes ORDER BY slope_per_second DESC
+WITH points AS (SELECT host, mountpoint AS volume, toStartOfHour(TimeUnix) AS ts, avg(used / nullIf(total, 0)) AS used_ratio FROM (SELECT ResourceAttributes['host.name'] AS host, Attributes['mountpoint'] AS mountpoint, TimeUnix, sumIf(Value, Attributes['state'] = 'used') AS used, sum(Value) AS total FROM default.otel_metrics_sum WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'system.filesystem.usage' AND $__filters GROUP BY host, mountpoint, TimeUnix) GROUP BY host, volume, ts), slopes AS (SELECT host, volume, argMax(used_ratio, ts) AS current_used, covarPop(toUnixTimestamp(ts), used_ratio) / nullIf(varPop(toUnixTimestamp(ts)), 0) AS slope_per_second FROM points GROUP BY host, volume) SELECT host AS Host, volume AS Volume, round(100 * current_used, 2) AS "Current used %", round(slope_per_second * 86400 * 100, 2) AS "Growth % / day", if(slope_per_second <= 0, 'No exhaustion trend', concat(toString(round((1 - current_used) / slope_per_second / 86400, 2)), ' days')) AS "Estimated time to full" FROM slopes ORDER BY slope_per_second DESC
 ```
 
 </details>

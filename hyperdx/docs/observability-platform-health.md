@@ -90,7 +90,7 @@ SELECT sum(d) AS "Refused metrics" FROM (
 SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
   SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
   FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
            ResourceAttributes['service.instance.id'] AS inst,
            multiIf(MetricName = 'otelcol_receiver_accepted_spans_total', 'accepted', MetricName = 'otelcol_receiver_refused_spans_total', 'refused', 'failed') AS kind,
            max(Value) AS cum
@@ -117,7 +117,7 @@ ORDER BY ts
 SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
   SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
   FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
            ResourceAttributes['service.instance.id'] AS inst,
            multiIf(MetricName = 'otelcol_receiver_accepted_log_records_total', 'accepted', MetricName = 'otelcol_receiver_refused_log_records_total', 'refused', 'send-failed') AS kind,
            max(Value) AS cum
@@ -144,7 +144,7 @@ ORDER BY ts
 SELECT ts, kind, sum(greatest(cum - prev, 0)) AS value FROM (
   SELECT ts, inst, kind, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY kind, inst ORDER BY ts) AS prev
   FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
            ResourceAttributes['service.instance.id'] AS inst,
            if(MetricName = 'otelcol_receiver_accepted_metric_points_total', 'accepted', 'refused') AS kind,
            max(Value) AS cum
@@ -202,7 +202,7 @@ SELECT max(util) AS "Queue utilization" FROM (
 SELECT ts, sum(greatest(cum - prev, 0)) AS "sent spans" FROM (
   SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev
   FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
            ResourceAttributes['service.instance.id'] AS inst,
            max(Value) AS cum
     FROM default.otel_metrics_sum
@@ -225,10 +225,10 @@ ORDER BY ts
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT ts, sum(greatest(cum - prev, 0)) / {intervalSeconds:Int64} AS "cores" FROM (
+SELECT ts, sum(greatest(cum - prev, 0)) / greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))) AS "cores" FROM (
   SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev
   FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
            ResourceAttributes['service.instance.id'] AS inst,
            max(Value) AS cum
     FROM default.otel_metrics_sum
@@ -333,7 +333,7 @@ SELECT sum(v) AS "Memory tracked" FROM (
 SELECT ts, sum(greatest(cum - prev, 0)) AS "queries" FROM (
   SELECT ts, inst, cum, lagInFrame(cum, 1, cum) OVER (PARTITION BY inst ORDER BY ts) AS prev
   FROM (
-    SELECT toStartOfInterval(TimeUnix, INTERVAL {intervalSeconds:Int64} SECOND) AS ts,
+    SELECT toStartOfInterval(TimeUnix, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,
            ResourceAttributes['service.instance.id'] AS inst,
            max(Value) AS cum
     FROM default.otel_metrics_sum
@@ -380,7 +380,7 @@ How fast dashboard queries run: p95/p99 duration, failures, and top errors from 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS t,
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS t,
        quantile(0.95)(query_duration_ms) / 1000 AS p95,
        quantile(0.99)(query_duration_ms) / 1000 AS p99
 FROM system.query_log
@@ -444,7 +444,7 @@ Query mix, inserts, active merges/mutations, page-cache reads, and asynchronous 
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, countIf(query_kind = 'Select') AS Selects, countIf(query_kind = 'Insert') AS Inserts FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -456,7 +456,7 @@ SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, sum(written_rows) AS "Inserted rows", formatReadableSize(sum(written_bytes)) AS "Inserted bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, sum(written_rows) AS "Inserted rows", formatReadableSize(sum(written_bytes)) AS "Inserted bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' AND query_kind = 'Insert' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -504,7 +504,7 @@ SELECT if(count() = 0, 0, avg(progress)) AS "Merge progress" FROM system.merges
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT database AS Database, table AS Table, round(progress * 100, 1) AS "Progress %", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS "Elapsed seconds", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC
+SELECT database AS Database, table AS Table, round(progress * 100, 2) AS "Progress %", formatReadableSize(total_size_bytes_compressed) AS Size, elapsed AS "Elapsed seconds", num_parts AS Parts FROM system.merges ORDER BY elapsed DESC
 ```
 
 </details>
@@ -516,7 +516,7 @@ SELECT database AS Database, table AS Table, round(progress * 100, 1) AS "Progre
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS "From cache", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS "From source" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, formatReadableSize(sum(ProfileEvents['PageCacheReadBytes'])) AS "From cache", formatReadableSize(sum(greatest(read_bytes - ProfileEvents['PageCacheReadBytes'], 0))) AS "From source" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>
@@ -528,7 +528,7 @@ SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS
 <details><summary>SQL query</summary>
 
 ```sql
-SELECT toStartOfInterval(event_time, INTERVAL {intervalSeconds:Int64} SECOND) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS "Async insert bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
+SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts, formatReadableSize(sum(ProfileEvents['AsyncInsertBytes'])) AS "Async insert bytes" FROM system.query_log WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND type = 'QueryFinish' GROUP BY ts ORDER BY ts
 ```
 
 </details>

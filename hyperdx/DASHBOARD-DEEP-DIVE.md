@@ -204,7 +204,7 @@ Both styles respect the dashboard filters described below when their underlying 
 
 **Disk IOPS (read / write, per host)** — disk operations per second.
 - **What it reads:** `system.disk.operations` in `default.otel_metrics_sum`, grouped by `host.name`, `Attributes['device']`, and `Attributes['direction']`.
-- **How it is calculated:** Per-device cumulative counters are converted to deltas with `Value - lagInFrame(Value)`, clamped at zero, summed, and divided by `{intervalSeconds}`.
+- **How it is calculated:** Per-device cumulative counters are converted to deltas with `Value - lagInFrame(Value)`, clamped at zero, summed, and divided by a range-derived bucket duration targeting approximately 120 points.
 - **Q: How should I read it?** High IOPS is not bad by itself; it is context for latency. High IOPS with rising disk latency means the storage layer is saturated.
 
 **Disk latency (ms, per host · direction)** — average time per read/write operation.
@@ -615,7 +615,7 @@ paths, exceptions by service, and anomaly timelines.
 
 **Collector CPU (cores)** — collector CPU usage.
 - **What it reads:** `otelcol_process_cpu_seconds_total` in `default.otel_metrics_sum`.
-- **How it is calculated:** The SQL computes counter deltas per interval and divides by `{intervalSeconds}` to express CPU cores.
+- **How it is calculated:** The SQL computes counter deltas per interval and divides by a range-derived bucket duration targeting approximately 120 points to express CPU cores.
 - **Q: Why monitor it?** A CPU-starved collector falls behind, fills queues, and starts refusing data.
 
 **Collector memory (RSS / heap)** — collector process memory.
