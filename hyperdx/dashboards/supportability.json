@@ -149,7 +149,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -175,7 +175,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -226,7 +226,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },

@@ -97,7 +97,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       },
       "y": 11
@@ -146,7 +146,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       },
       "y": 11
@@ -210,7 +210,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -252,7 +252,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -276,7 +276,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -294,7 +294,7 @@
         "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n            count() AS Logs\n     FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n     WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n       AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       AND $__filters\n     GROUP BY ts\n     ORDER BY ts",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -312,7 +312,7 @@
         "sqlTemplate": "SELECT toStartOfInterval(Timestamp, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n            SeverityText AS Severity, count() AS Logs\n     FROM {{LOGS_SCHEMA}}.{{LOGS_TABLE}}\n     WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n       AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       AND $__filters\n     GROUP BY ts, Severity\n     ORDER BY ts",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },

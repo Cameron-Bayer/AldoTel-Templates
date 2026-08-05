@@ -67,7 +67,7 @@
         "sqlTemplate": "SELECT if(count() > 0, 1, 0) AS \"Clusters\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -85,7 +85,7 @@
         "sqlTemplate": "SELECT if(score IS NULL, NULL, if(score >= 90, 1, 0)) AS \"Healthy clusters\" FROM (SELECT if(node_total + pod_total = 0, NULL,\n  100 * (\n    if(node_total = 0, 0, node_ready / node_total) +\n    if(pod_total = 0, 0, pod_ok / pod_total)\n  ) / ((node_total > 0) + (pod_total > 0))\n) AS score\nFROM (\n  SELECT\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_total,\n    (SELECT countIf(r = 1) FROM (\n      SELECT ResourceAttributes['k8s.node.name'] AS n, argMax(Value, TimeUnix) AS r\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.node.condition_ready'\n      GROUP BY n\n    )) AS node_ready,\n    (SELECT count() FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_total,\n    (SELECT countIf(p IN (2, 3)) FROM (\n      SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS p\n      FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n      WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n        AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n        AND MetricName = 'k8s.pod.phase'\n      GROUP BY pod\n    )) AS pod_ok\n))",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -111,7 +111,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -137,7 +137,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -169,7 +169,7 @@
         "sqlTemplate": "SELECT uniqExact(ResourceAttributes['k8s.node.name']) AS \"Nodes\" FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -187,7 +187,7 @@
         "sqlTemplate": "SELECT countIf(phase = 2) AS \"Running workloads\" FROM (SELECT ResourceAttributes['k8s.pod.name'] AS pod, argMax(Value, TimeUnix) AS phase FROM {{METRICS_SCHEMA}}.otel_metrics_gauge WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64}) AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.pod.phase' GROUP BY pod)",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -262,7 +262,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -352,7 +352,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -370,7 +370,7 @@
         "sqlTemplate": "SELECT countIf(ready = 1) AS \"Healthy nodes\" FROM (\n  SELECT ResourceAttributes['k8s.node.name'] AS node, argMax(Value, TimeUnix) AS ready\n  FROM {{METRICS_SCHEMA}}.otel_metrics_gauge\n  WHERE TimeUnix >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n    AND TimeUnix <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64}) AND MetricName = 'k8s.node.condition_ready'\n  GROUP BY node\n)",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -402,7 +402,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -428,7 +428,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -619,7 +619,7 @@
         "sqlTemplate": "SELECT count() AS \"Server requests\" FROM {{TRACES_SCHEMA}}.{{TRACES_TABLE}}\n       WHERE Timestamp >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND Timestamp <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n         AND SpanKind = 'Server' AND $__filters",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -793,7 +793,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -822,7 +822,7 @@
         "sqlTemplate": "SELECT greatest(count() - 1, 0) AS \"Running queries\" FROM system.processes",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -848,7 +848,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -917,7 +917,7 @@
         "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              countIf(type = 'QueryFinish') AS Queries\n       FROM system.query_log\n       WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY ts ORDER BY ts",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -935,7 +935,7 @@
         "sqlTemplate": "SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDiv({endDateMilliseconds:Int64} - {startDateMilliseconds:Int64}, toInt64(120000))))) AS ts,\n              countIf(exception_code != 0) AS \"Failed queries\"\n       FROM system.query_log\n       WHERE event_time >= fromUnixTimestamp64Milli({startDateMilliseconds:Int64})\n         AND event_time <= fromUnixTimestamp64Milli({endDateMilliseconds:Int64})\n       GROUP BY ts ORDER BY ts",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -981,7 +981,7 @@
         "sqlTemplate": "SELECT count() AS \"Active merges\" FROM system.merges",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -999,7 +999,7 @@
         "sqlTemplate": "SELECT countIf(NOT is_done) AS \"Pending mutations\" FROM system.mutations",
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
@@ -1135,7 +1135,7 @@
         ],
         "numberFormat": {
           "output": "number",
-          "mantissa": 2
+          "mantissa": 0
         }
       }
     },
