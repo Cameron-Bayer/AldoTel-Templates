@@ -266,6 +266,18 @@
         {
           "kind": "metric",
           "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.cpu_request_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.memory_request_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
           "metricType": "sum",
           "metricName": "container.uptime"
         },
@@ -274,6 +286,245 @@
           "required": false,
           "label": "cluster events (k8sobjects)",
           "where": "ScopeName:*k8sobjectsreceiver*"
+        }
+      ]
+    },
+    {
+      "file": "metrics.json",
+      "tmpl": "tmpl:metrics",
+      "tier": "default",
+      "name": "Metrics",
+      "receivers": [
+        "Unified metrics experience: hostmetrics receiver; kubeletstats and k8s_cluster receivers; k8sobjects receiver for events; optional process metrics for top process consumers."
+      ],
+      "checks": [
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "system.cpu.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "system.memory.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.filesystem.inodes.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "system.cpu.load_average.1m"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.disk.io"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.disk.operations"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.disk.operation_time"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.network.io"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.network.dropped"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.network.errors"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "k8s.node.condition_ready"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.filesystem.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "system.memory.usage"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "k8s.deployment.available"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "k8s.deployment.desired"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "k8s.pod.phase"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "k8s.container.restarts"
+        },
+        {
+          "kind": "metric",
+          "required": true,
+          "metricType": "gauge",
+          "metricName": "k8s.pod.memory.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.pod.cpu_limit_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.pod.memory_limit_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.pod.cpu.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.namespace.phase"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "k8s.pod.uptime"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "k8s.node.uptime"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.cpu_limit_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.memory_limit_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.cpu_request_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.container.memory_request_utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "container.uptime"
+        },
+        {
+          "kind": "log",
+          "required": false,
+          "label": "cluster events (k8sobjects)",
+          "where": "ScopeName:*k8sobjectsreceiver*"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "system.swap.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "process.cpu.utilization"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "sum",
+          "metricName": "process.memory.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.node.cpu.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.node.memory.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.node.memory.available"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.node.filesystem.usage"
+        },
+        {
+          "kind": "metric",
+          "required": false,
+          "metricType": "gauge",
+          "metricName": "k8s.node.filesystem.capacity"
         }
       ]
     },

@@ -65,6 +65,7 @@ flags, and prerequisites are in [Install](#install) below.
 | `dashboards/overview.json` | Unified landing page: environment/platform health, resource and service health, ClickHouse queries/storage/merges/cache/inserts, impacted clusters/nodes, and recent events | metric + trace + log + ClickHouse SQL |
 | `dashboards/infrastructure.json` | Infrastructure overview: hosts & nodes, compute/memory, per-volume storage, network reliability, utilization hotspots, capacity risks, growth forecasting, and scale recommendations | metric |
 | `dashboards/kubernetes.json` | Kubernetes overview: cluster and node health, inventory, namespaces, deployments, pods, containers, limit utilization, warning events, and impacted resources | metric + log |
+| `dashboards/metrics.json` | Unified Metrics experience: infrastructure health, compute/processes, storage, networking, Kubernetes nodes/namespaces/workloads/containers/events, utilization analysis, and capacity planning | metric + log |
 | `dashboards/traces.json` | Full traces experience: service overview, RED request health, latency analysis, trace search/waterfalls, dependency analysis, error correlation, and SLO compliance | trace |
 | `dashboards/logs.json` | Log overview, full search workspace, service/resource/cluster/host/namespace/pod filters, severity trends, normalized/new patterns, and live streams | log |
 | `dashboards/supportability.json` | Active alert-condition summary and guided ALM/ALRS/resource-provider/Kubernetes/network/storage troubleshooting, plus a recurring-signature known-issues view | log + trace + metric |
@@ -80,7 +81,7 @@ flags, and prerequisites are in [Install](#install) below.
 
 Every dashboard has a per-tile reference page in [`docs/`](docs/) — one page per dashboard listing
 the ClickHouse tables, columns, and queries behind every visual. See the
-[reference index](docs/README.md) for `overview`, `infrastructure`, `kubernetes`,
+[reference index](docs/README.md) for `overview`, `infrastructure`, `kubernetes`, `metrics`,
 `traces`, `logs`, `supportability`, and the advanced `observability-platform-health` board. For
 the "which and why" and the tile-by-tile Q&A, see [`DASHBOARD-CATALOG.md`](DASHBOARD-CATALOG.md)
 and [`DASHBOARD-DEEP-DIVE.md`](DASHBOARD-DEEP-DIVE.md).
@@ -138,7 +139,7 @@ The importer resolves those at install time, so the JSON stays portable.
 1. A running OSS ClickStack with the three default sources created in HyperDX:
    a **Logs** (kind `log`), **Traces** (kind `trace`), and **Metrics** (kind `metric`) source.
 2. Telemetry flowing in via the standard OTel collector:
-   - `hostmetrics` receiver (`system.*`) + `kubeletstats` + `k8s_cluster` receivers for `infrastructure` and `kubernetes` (add `k8sobjects` for the cluster-events tiles)
+   - `hostmetrics` receiver (`system.*`) + `kubeletstats` + `k8s_cluster` receivers for `infrastructure`, `kubernetes`, and the unified `metrics` dashboard (add `k8sobjects` for the cluster-events tiles)
    - app traces for `traces`; app/container logs for `logs`
    - collector `:8888` self-telemetry + ClickHouse metrics + `SELECT` on `system.*` for the advanced `observability-platform-health`
    - `overview` and `supportability` roll up whatever is flowing (they degrade gracefully)
@@ -275,6 +276,7 @@ Authoritative, machine-readable version: [`requirements.json`](./requirements.js
 | `overview` | metric + trace + log + ClickHouse SQL | None hard-required for the cross-signal sections; ClickHouse workload panels require read access to `system.*` tables | environment/platform health, CPU/memory/storage/network, request/log health, ClickHouse queries/inserts/merges/cache, impacted clusters, and events |
 | `infrastructure` | metric | `hostmetrics` receiver — `system.cpu.utilization`, `system.memory.utilization`; `kubeletstats` + `k8s_cluster` — `k8s.node.condition_ready` | `system.cpu.load_average.1m`, `system.filesystem.{usage,inodes.usage}`, `system.memory.usage`, `system.disk.{operations,operation_time,io}`, `system.network.{io,dropped,errors}`, `k8s.node.uptime` |
 | `kubernetes` | metric + log | `kubeletstats` + `k8s_cluster` receivers — `k8s.node.condition_ready`, `k8s.deployment.{available,desired}`, `k8s.pod.{phase,cpu,memory}`, `k8s.container.restarts`; `hostmetrics` — `system.{cpu,memory}.utilization` | `system.filesystem.usage`; container-vs-limit tiles use `k8s.container.{cpu,memory}_limit_utilization` / request utilization + `container.uptime`; cluster tables need the `k8sobjects` receiver |
+| `metrics` | metric + log | Unified hostmetrics + Kubernetes view: `system.{cpu,memory}.utilization`, `k8s.node.condition_ready`, deployment/pod/container metrics | swap/process metrics, direct `k8s.node.{cpu,memory,filesystem}.*`, disk/network performance, capacity forecasts, and `k8sobjects` events |
 | `traces` | trace + optional metric/SQL | Application traces (OTLP) — server spans (`SpanKind:Server`) | error/client spans; HTTP/RPC/peer attributes; route tiles use `http.route`; platform panels use collector self-telemetry and ClickHouse `system.*`; Keeper latency needs separate Keeper scraping |
 | `logs` | log | Application/container logs (filelog or OTLP) — any log volume | error logs (`SeverityNumber>=17` or `SeverityText:error/fatal`) |
 | `supportability` | log + trace + metric | None hard-required — incident-triage roll-up; each section degrades to whatever signal is present | traces (error %), logs (error %, signatures, sources), k8s metrics (pods not Running, restarts), `k8sobjects` events |
@@ -300,12 +302,15 @@ re-scope. What each exposes:
   **Log Service** scopes logs.
 - **Namespace** — `kubernetes`, `overview`, `supportability`.
 - **Host** — `infrastructure`.
+- **Event Namespace** — `metrics` (event/log panels only).
 - **Severity** — `logs`, `supportability`.
 - **Collector** — `observability-platform-health` (`service.instance.id`).
 
 > Filters bind to one source. On `overview`, **Service** scopes trace tiles, **Log Service** scopes
 > log tiles, and **Namespace** scopes metric tiles. On `supportability`, Service and Namespace remain
-> source-specific; tiles from other sources are unaffected.
+> source-specific; tiles from other sources are unaffected. Metrics intentionally avoids global
+> Host/Namespace metric filters because one would hide the other telemetry domain; its Event
+> Namespace filter applies only to Kubernetes event logs.
 
 ## Customizing
 

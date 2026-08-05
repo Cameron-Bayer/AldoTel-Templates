@@ -8,7 +8,7 @@ A visual-by-visual reference for every dashboard in this pack. For each chart yo
 >
 > New to the pack? Read the **[Core Concepts](#core-concepts)** section first — it explains the handful of ideas that every dashboard builds on.
 
-Imported dashboard display names are prefixed **`ClickStack -`**; this guide uses the shorter names below. Six dashboards are default-tier. The single advanced dashboard, **Observability Platform Health**, lives under `hyperdx/dashboards/advanced/` and is optional, but the importer recurses into that subfolder when you import the full pack.
+Imported dashboard display names are prefixed **`ClickStack -`**; this guide uses the shorter names below. Seven dashboards are default-tier. The single advanced dashboard, **Observability Platform Health**, lives under `hyperdx/dashboards/advanced/` and is optional, but the importer recurses into that subfolder when you import the full pack.
 
 ---
 
@@ -18,6 +18,7 @@ Imported dashboard display names are prefixed **`ClickStack -`**; this guide use
 - [1. Overview](#1-overview)
 - [2. Infrastructure](#2-infrastructure)
 - [3. Kubernetes](#3-kubernetes)
+- [Metrics](#metrics)
 - [4. Traces](#4-traces)
 - [5. Logs](#5-logs)
 - [6. Supportability](#6-supportability)
@@ -28,7 +29,7 @@ Imported dashboard display names are prefixed **`ClickStack -`**; this guide use
 
 ## Core Concepts
 
-A few ideas underpin every dashboard. Understanding them once makes all seven easy to read.
+A few ideas underpin every dashboard. Understanding them once makes all eight easy to read.
 
 ### The three data sources
 
@@ -332,6 +333,43 @@ Both styles respect the dashboard filters described below when their underlying 
 - **Q: What should I do next?** Containers near 100% of limit need tuning or more capacity. Containers far above request but below limit may be noisy neighbors and should have requests adjusted.
 
 ---
+## Metrics
+
+**Data source:** Host, process/runtime, Kubernetes, and event metrics/logs  ·  **Filters:** Event Namespace  ·  **Tier:** Default
+**Purpose:** The unified infrastructure and Kubernetes operations page. It combines real-time health, historical trends, utilization analysis, troubleshooting, and capacity planning. The generated [`docs/metrics.md`](docs/metrics.md) is the exact reference for every tile.
+
+> Core panels use `hostmetrics`, `kubeletstats`, and `k8s_cluster`. Process/swap/direct-node panels are optional; event panels require `k8sobjects`.
+
+### Infrastructure overview
+
+**Infrastructure health score**, **Cluster health - nodes ready %**, **Current infrastructure issues**,
+and **Capacity risks** summarize current platform health. The score combines host CPU, memory,
+maximum filesystem usage, and node readiness; issue count combines current NotReady nodes,
+non-running pods, and under-available deployments. Use the adjacent resource and host summaries to
+identify the unhealthy domain.
+
+### Compute, storage, and networking
+
+Compute covers host CPU busy %, load, headroom, process consumption, memory, swap, free memory,
+saturation, and host inventory. Storage covers filesystem/inode capacity, free space, IOPS,
+throughput, latency, health status, and consumers. Networking covers bandwidth, drops, interface
+errors, a network health score, and host/interface bottlenecks.
+
+### Kubernetes resources
+
+The node section shows readiness, CPU cores versus observed host cores, memory used versus observed
+capacity, filesystem usage, status, and uptime. Namespace, deployment, pod, and container sections
+add phase, availability, restarts, failed workloads, resource usage, and utilization versus
+limits/requests.
+
+### Events, utilization, and capacity
+
+Warning and critical Kubernetes events expose reasons and impacted resources. Cross-resource
+hotspots rank host and pod saturation together. Capacity panels show CPU/memory/storage headroom,
+growth trends, storage exhaustion estimates, and scale recommendations.
+
+---
+
 ## 4. Traces
 
 **Data source:** Traces  ·  **Filters:** Service  ·  **Tier:** Default

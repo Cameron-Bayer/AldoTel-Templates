@@ -4,11 +4,11 @@ A plain-language guide to every dashboard in this pack: **what it's for, why you
 exactly what telemetry it needs, and how to read it.** Use this to decide *which* dashboards to
 import for *your* setup — so nothing lands empty and nothing confuses your team.
 
-> **TL;DR** — There are **7 dashboards** covering your telemetry domains (your apps, your hosts, your
-> Kubernetes cluster, the OpenTelemetry Collector, and ClickHouse itself). The **6 default** dashboards
+> **TL;DR** — There are **8 dashboards** covering your telemetry domains (your apps, your hosts, your
+> Kubernetes cluster, the OpenTelemetry Collector, and ClickHouse itself). The **7 default** dashboards
 > live in `hyperdx/dashboards/`; the single **advanced** deep dive lives in
 > `hyperdx/dashboards/advanced/`. `./import.ps1` recurses into `advanced/`, so it still imports all
-> 7 unless you choose a subset. SLO lives as a compact strip inside **Traces**.
+> 8 unless you choose a subset. SLO lives as a compact strip inside **Traces**.
 
 ---
 
@@ -32,9 +32,9 @@ Imported display names are prefixed **`ClickStack ·`**; filenames and stable ta
 
 ## Dashboard locations
 
-- **`hyperdx/dashboards/`** — the **6 default** dashboards every customer should import; they
+- **`hyperdx/dashboards/`** — the **7 default** dashboards every customer should import; they
   populate on a standard appliance deploy: `overview`, `infrastructure`, `kubernetes`,
-  `traces`, `logs`, and `supportability`.
+  `metrics`, `traces`, `logs`, and `supportability`.
 - **`hyperdx/dashboards/advanced/`** — **1 opt-in** dashboard (import with `--advanced`),
   `observability-platform-health`, which needs data a standard deploy doesn't ingest by default:
   the collector's own `:8888` self-telemetry, ClickHouse server metrics, and `SELECT` on ClickHouse
@@ -50,8 +50,8 @@ Each dashboard reads from one (or, for the roll-ups, all) of them:
 | Domain | What produces the data | Dashboards |
 |--------|------------------------|------------|
 | **Your applications** | Your services emit OTLP **traces** and **logs** | `traces` (RED + SLO strip), `logs` |
-| **Your hosts / OS** | Collector `hostmetrics` receiver (`system.*`) | `infrastructure` |
-| **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` + `k8sobjects` receivers | `infrastructure`, `kubernetes` |
+| **Your hosts / OS** | Collector `hostmetrics` receiver (`system.*`) | `infrastructure`, `metrics` |
+| **Kubernetes infrastructure** | Collector `kubeletstats` + `k8s_cluster` + `k8sobjects` receivers | `infrastructure`, `kubernetes`, `metrics` |
 | **The OTel Collector itself** | Collector self-telemetry (`:8888`) scraped back in | `observability-platform-health` |
 | **ClickHouse (the database)** | `system.*` tables (Raw SQL) and/or scraped CH metrics | `overview`, `observability-platform-health` |
 | **Everything (roll-up)** | All of the above; degrades gracefully | `overview`, `supportability` |
@@ -88,6 +88,8 @@ Your OTel Collector must be deployed with the right receivers (and, for Kubernet
   **and** the `kubeletstats` + `k8s_cluster` receivers (`k8s.node.*` for node/cluster health and filesystem).
 - **`kubernetes`** — needs `kubeletstats` **and** `k8s_cluster` receivers (`k8s.*` metrics); the
   cluster-events tiles also need the `k8sobjects` receiver.
+- **`metrics`** — the unified infrastructure/Kubernetes experience; needs the combined
+  `hostmetrics`, `kubeletstats`, and `k8s_cluster` signals, with `k8sobjects` for events.
 - **`observability-platform-health`** *(advanced — the ingestion & pipeline sections)* — needs the
   collector's **own** `:8888` self-telemetry scraped back into OTel.
 
@@ -107,7 +109,7 @@ but a bare cluster with un-instrumented apps won't populate these.
 
 > **The easy path:** if you deploy the **standard ClickStack distribution** (its Helm chart / the
 > reference OTel collector config), it wires up the host, k8s, collector-self, and ClickHouse receivers
-> for you — so all **7 dashboards** can light up. The tiers above matter mainly for hand-rolled or
+> for you — so all **8 dashboards** can light up. The tiers above matter mainly for hand-rolled or
 > partial setups.
 
 ---
@@ -254,6 +256,37 @@ for OOMKills, throttling, and crash loops (containers without a limit set show 0
 
 ---
 
+### 🟠 Metrics — `metrics.json`
+*Source: metric + log (events) · Tier 3 (needs hostmetrics + Kubernetes receivers)*
+
+**What it's for.** A single, comprehensive workspace for infrastructure health, compute and process
+consumption, storage, networking, Kubernetes nodes/namespaces/workloads/containers, events,
+cross-resource utilization, and capacity planning.
+
+**Why use it / who it's for.** For platform, infrastructure, Kubernetes, and capacity engineers who
+want real-time status and historical trends in one ordered page instead of switching between the
+specialized Infrastructure and Kubernetes dashboards.
+
+**What you need.** `hostmetrics`, `kubeletstats`, and `k8s_cluster`; `k8sobjects` adds warning and
+critical event context. Process/runtime, swap, and direct node-capacity panels degrade when their
+optional metrics are not emitted.
+
+**What you'll see.**
+- **Infrastructure overview:** health score, node readiness, current issue count, host health, utilization,
+  and capacity risks.
+- **Compute, storage, and networking:** CPU/load/processes, memory/swap, filesystems, IOPS,
+  throughput, latency, packet loss, errors, health, and top consumers.
+- **Kubernetes:** nodes, namespaces, deployments, pods, containers, limits/requests, restarts,
+  saturation, inventory, and events.
+- **Utilization and capacity:** cross-resource hotspots, headroom trends, storage forecasting,
+  exhaustion risks, and scale recommendations.
+
+**How to read it.** Start with the overview score and issue count, follow the unhealthy domain into
+its section, then use the final utilization and capacity sections to distinguish an active hotspot
+from a longer-term scaling risk.
+
+---
+
 ### 🔵 Traces — `traces.json`
 *Source: trace · Tier 4 (needs app traces)*
 
@@ -390,16 +423,16 @@ dashboards themselves are straining the store.
 
 ## Which dashboards should *I* import?
 
-Pick by role — but remember the **6 default dashboards** are the safe first import for everyone.
+Pick by role — but remember the **7 default dashboards** are the safe first import for everyone.
 
 | If you're a… | Start with |
 |--------------|-----------|
 | **Data scientist / analyst** | `overview`, `traces`, `logs` — the app-signal dashboards you'll build analysis on |
-| **Platform / Kubernetes admin** | `infrastructure`, `kubernetes`, `overview`, and `observability-platform-health` |
+| **Platform / Kubernetes admin** | `metrics`, `infrastructure`, `kubernetes`, `overview`, and `observability-platform-health` |
 | **SRE / reliability owner** | `traces` (RED + SLO strip), `logs`, `supportability`, `overview` |
 | **On-call / support** | `supportability` and `overview` first, then the domain board the alert points at |
 | **ClickHouse / pipeline operator** | `observability-platform-health` (advanced) |
-| **Just kicking the tires (any cluster)** | the 6 defaults — they show what is flowing today and degrade gracefully as you add data |
+| **Just kicking the tires (any cluster)** | the 7 defaults — they show what is flowing today and degrade gracefully as you add data |
 
 ---
 
