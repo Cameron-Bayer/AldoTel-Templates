@@ -95,7 +95,7 @@ ORDER BY multiIf(Health = 'Critical', 0, Health = 'Warning', 1, 2), error_rate_p
 
 </details>
 
-## RED Metrics Overview
+## 1.1. RED Metrics Overview
 Request volume and error-rate trends by service. RED means Rate, Errors, and Duration.
 
 ### Request volume trends by service — line

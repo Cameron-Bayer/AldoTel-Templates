@@ -19,7 +19,7 @@ These apply to every compatible tile on the dashboard.
 ## Kubernetes Overview
 Cluster, nodes, namespaces, pods/workloads, containers, resource utilization, and events/issues. Filter by Namespace and use the inventory and troubleshooting tables to move from cluster health to the affected resource.
 
-## Cluster overview
+## 1. Cluster Overview
 Node readiness and per-node CPU, memory, and filesystem usage against capacity.
 
 ### Kubernetes nodes ready % — number · Raw SQL
@@ -137,7 +137,7 @@ ORDER BY Status DESC, s.uptime ASC
 
 </details>
 
-## Namespace overview
+## 2. Namespace Overview
 Resource consumption broken down by namespace.
 
 ### Namespace CPU usage (cores) — line · Raw SQL
@@ -223,7 +223,7 @@ ORDER BY agg.cpu DESC
 
 </details>
 
-## Workload health
+## 3. Workload Health
 Deployment availability, pod phases, restarts, and the pods using the most resources.
 
 ### Deployment availability (ready / desired) — line
@@ -361,7 +361,7 @@ LIMIT 50
 
 </details>
 
-## Cluster utilization (vs limits)
+## 4. Cluster Utilization
 How close pods and containers are running to their configured CPU and memory limits.
 
 ### Pod CPU vs limit % — line
@@ -481,7 +481,7 @@ LIMIT 100
 
 </details>
 
-## Cluster Inventory
+## 5. Cluster Inventory
 Deployed nodes, namespaces, workloads, pods, and containers observed in the selected time range.
 
 ### Observed namespaces — number · Raw SQL
@@ -532,7 +532,7 @@ SELECT uniqExact(tuple(ResourceAttributes['k8s.namespace.name'], ResourceAttribu
 
 </details>
 
-## Events & Issues
+## 6. Events & Issues
 Central Kubernetes troubleshooting view for warning/critical events, top reasons, recent events, and impacted resources.
 
 ### Recent Kubernetes warning events — table · Raw SQL

@@ -47,16 +47,16 @@
       "x": 0,
       "y": 5,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Environment Summary\nDeployed cluster inventory and overall environment state."
+        "markdown": "## 1. Environment Summary\nDeployed cluster inventory and overall environment state."
       }
     },
     {
       "name": "Total clusters",
       "x": 0,
-      "y": 9,
+      "y": 11,
       "w": 6,
       "h": 5,
       "config": {
@@ -74,7 +74,7 @@
     {
       "name": "Healthy clusters",
       "x": 6,
-      "y": 9,
+      "y": 11,
       "w": 6,
       "h": 5,
       "config": {
@@ -92,7 +92,7 @@
     {
       "name": "Warning clusters",
       "x": 12,
-      "y": 9,
+      "y": 11,
       "w": 6,
       "h": 5,
       "config": {
@@ -118,7 +118,7 @@
     {
       "name": "Critical clusters",
       "x": 18,
-      "y": 9,
+      "y": 11,
       "w": 6,
       "h": 5,
       "config": {
@@ -144,7 +144,7 @@
     {
       "name": "Appliance version",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 8,
       "h": 5,
       "config": {
@@ -158,7 +158,7 @@
     {
       "name": "Total nodes",
       "x": 8,
-      "y": 14,
+      "y": 16,
       "w": 8,
       "h": 5,
       "config": {
@@ -176,7 +176,7 @@
     {
       "name": "Running workloads",
       "x": 16,
-      "y": 14,
+      "y": 16,
       "w": 8,
       "h": 5,
       "config": {
@@ -194,18 +194,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 19,
+      "y": 22,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Platform Health\nOverall health score, active conditions, node readiness, and workload availability."
+        "markdown": "## 2. Platform Health\nOverall health score, active conditions, node readiness, and workload availability."
       }
     },
     {
       "name": "Overall platform health score",
       "x": 0,
-      "y": 23,
+      "y": 28,
       "w": 6,
       "h": 5,
       "config": {
@@ -237,7 +237,7 @@
     {
       "name": "Active alert conditions (recomputed)",
       "x": 6,
-      "y": 23,
+      "y": 28,
       "w": 6,
       "h": 5,
       "config": {
@@ -269,7 +269,7 @@
     {
       "name": "Kubernetes nodes ready %",
       "x": 12,
-      "y": 23,
+      "y": 28,
       "w": 6,
       "h": 5,
       "config": {
@@ -301,7 +301,7 @@
     {
       "name": "Cluster health score",
       "x": 18,
-      "y": 23,
+      "y": 28,
       "w": 6,
       "h": 5,
       "config": {
@@ -333,7 +333,7 @@
     {
       "name": "Pods not Running",
       "x": 0,
-      "y": 28,
+      "y": 33,
       "w": 6,
       "h": 5,
       "config": {
@@ -359,7 +359,7 @@
     {
       "name": "Healthy nodes",
       "x": 6,
-      "y": 28,
+      "y": 33,
       "w": 6,
       "h": 5,
       "config": {
@@ -377,7 +377,7 @@
     {
       "name": "Unhealthy nodes (NotReady)",
       "x": 12,
-      "y": 28,
+      "y": 33,
       "w": 6,
       "h": 5,
       "config": {
@@ -409,7 +409,7 @@
     {
       "name": "Container restarts (selected range)",
       "x": 18,
-      "y": 28,
+      "y": 33,
       "w": 6,
       "h": 5,
       "config": {
@@ -435,18 +435,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 33,
+      "y": 39,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Resource Consumption\nCurrent compute, memory, storage, and network consumption followed by CPU and memory trends."
+        "markdown": "## 3. Resource Consumption\nCurrent compute, memory, storage, and network consumption followed by CPU and memory trends."
       }
     },
     {
       "name": "Compute usage - Cluster CPU busy % (avg of hosts)",
       "x": 0,
-      "y": 37,
+      "y": 45,
       "w": 6,
       "h": 5,
       "config": {
@@ -478,7 +478,7 @@
     {
       "name": "Memory usage - Cluster memory used % (avg of hosts)",
       "x": 6,
-      "y": 37,
+      "y": 45,
       "w": 6,
       "h": 5,
       "config": {
@@ -510,7 +510,7 @@
     {
       "name": "Storage usage - Cluster disk used % (nodes / volumes)",
       "x": 12,
-      "y": 37,
+      "y": 45,
       "w": 6,
       "h": 5,
       "config": {
@@ -542,7 +542,7 @@
     {
       "name": "Network consumption",
       "x": 18,
-      "y": 37,
+      "y": 45,
       "w": 6,
       "h": 5,
       "config": {
@@ -561,7 +561,7 @@
     {
       "name": "Cluster CPU busy % over time",
       "x": 0,
-      "y": 42,
+      "y": 50,
       "w": 12,
       "h": 6,
       "config": {
@@ -579,7 +579,7 @@
     {
       "name": "Cluster memory used % over time",
       "x": 12,
-      "y": 42,
+      "y": 50,
       "w": 12,
       "h": 6,
       "config": {
@@ -597,18 +597,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 48,
+      "y": 57,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Service Health\nRequest volume, reliability, latency, log health, and the services contributing the most errors."
+        "markdown": "## 4. Service Health\nRequest volume, reliability, latency, log health, and the services contributing the most errors."
       }
     },
     {
       "name": "Request volume - Server requests (selected range)",
       "x": 0,
-      "y": 52,
+      "y": 63,
       "w": 6,
       "h": 5,
       "config": {
@@ -626,7 +626,7 @@
     {
       "name": "Error rate - Server error rate (%)",
       "x": 6,
-      "y": 52,
+      "y": 63,
       "w": 6,
       "h": 5,
       "config": {
@@ -663,7 +663,7 @@
     {
       "name": "P95 latency - 95th-percentile server latency",
       "x": 12,
-      "y": 52,
+      "y": 63,
       "w": 6,
       "h": 5,
       "config": {
@@ -687,7 +687,7 @@
     {
       "name": "Log error rate (%)",
       "x": 18,
-      "y": 52,
+      "y": 63,
       "w": 6,
       "h": 5,
       "config": {
@@ -724,7 +724,7 @@
     {
       "name": "Services by error rate - click a row to open traces",
       "x": 0,
-      "y": 57,
+      "y": 68,
       "w": 12,
       "h": 7,
       "config": {
@@ -747,7 +747,7 @@
     {
       "name": "Services by log error - click a row to open logs",
       "x": 12,
-      "y": 57,
+      "y": 68,
       "w": 12,
       "h": 7,
       "config": {
@@ -770,7 +770,7 @@
     {
       "name": "Request & error counts over time (traces)",
       "x": 0,
-      "y": 64,
+      "y": 75,
       "w": 24,
       "h": 6,
       "config": {
@@ -800,18 +800,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 70,
+      "y": 82,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### ClickHouse Workload & Storage\nDatabase workload, failures, disk/memory health, query mix, inserts, merges, mutations, cache efficiency, and async inserts."
+        "markdown": "## 5. ClickHouse Workload & Storage\nDatabase workload, failures, disk/memory health, query mix, inserts, merges, mutations, cache efficiency, and async inserts."
       }
     },
     {
       "name": "Running queries",
       "x": 0,
-      "y": 74,
+      "y": 88,
       "w": 6,
       "h": 5,
       "config": {
@@ -829,7 +829,7 @@
     {
       "name": "Failed queries",
       "x": 6,
-      "y": 74,
+      "y": 88,
       "w": 6,
       "h": 5,
       "config": {
@@ -855,7 +855,7 @@
     {
       "name": "Disk free %",
       "x": 12,
-      "y": 74,
+      "y": 88,
       "w": 6,
       "h": 5,
       "config": {
@@ -887,7 +887,7 @@
     {
       "name": "Current tracked memory",
       "x": 18,
-      "y": 74,
+      "y": 88,
       "w": 6,
       "h": 5,
       "config": {
@@ -906,7 +906,7 @@
     {
       "name": "Queries (per interval)",
       "x": 0,
-      "y": 79,
+      "y": 93,
       "w": 12,
       "h": 6,
       "config": {
@@ -924,7 +924,7 @@
     {
       "name": "Failed queries (per interval)",
       "x": 12,
-      "y": 79,
+      "y": 93,
       "w": 12,
       "h": 6,
       "config": {
@@ -942,7 +942,7 @@
     {
       "name": "Inserted rows (per interval)",
       "x": 0,
-      "y": 85,
+      "y": 99,
       "w": 12,
       "h": 7,
       "config": {
@@ -956,7 +956,7 @@
     {
       "name": "Select vs insert queries (per interval)",
       "x": 12,
-      "y": 85,
+      "y": 99,
       "w": 12,
       "h": 7,
       "config": {
@@ -970,7 +970,7 @@
     {
       "name": "Active merges",
       "x": 0,
-      "y": 92,
+      "y": 106,
       "w": 8,
       "h": 5,
       "config": {
@@ -988,7 +988,7 @@
     {
       "name": "Pending mutations",
       "x": 8,
-      "y": 92,
+      "y": 106,
       "w": 8,
       "h": 5,
       "config": {
@@ -1006,7 +1006,7 @@
     {
       "name": "Merges in progress (average progress)",
       "x": 16,
-      "y": 92,
+      "y": 106,
       "w": 8,
       "h": 5,
       "config": {
@@ -1024,7 +1024,7 @@
     {
       "name": "Merges in progress (detail)",
       "x": 0,
-      "y": 97,
+      "y": 111,
       "w": 24,
       "h": 7,
       "config": {
@@ -1038,7 +1038,7 @@
     {
       "name": "Page-cache read bytes: cache vs source (per interval)",
       "x": 0,
-      "y": 104,
+      "y": 118,
       "w": 12,
       "h": 7,
       "config": {
@@ -1052,7 +1052,7 @@
     {
       "name": "Async insert bytes (per interval)",
       "x": 12,
-      "y": 104,
+      "y": 118,
       "w": 12,
       "h": 7,
       "config": {
@@ -1066,18 +1066,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 111,
+      "y": 126,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Top Impacted Clusters\nCluster/node health, alert pressure, CPU, storage, network consumption, and workloads."
+        "markdown": "## 6. Top Impacted Clusters\nCluster/node health, alert pressure, CPU, storage, network consumption, and workloads."
       }
     },
     {
       "name": "Top impacted clusters / nodes",
       "x": 0,
-      "y": 115,
+      "y": 132,
       "w": 24,
       "h": 7,
       "config": {
@@ -1091,7 +1091,7 @@
     {
       "name": "Detailed environment inventory",
       "x": 0,
-      "y": 122,
+      "y": 139,
       "w": 24,
       "h": 6,
       "config": {
@@ -1105,18 +1105,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 128,
+      "y": 146,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Recent Activity\nWarning count, recurring Kubernetes event reasons, and chronological event detail."
+        "markdown": "## 7. Recent Activity\nWarning count, recurring Kubernetes event reasons, and chronological event detail."
       }
     },
     {
       "name": "Warning events (in range)",
       "x": 0,
-      "y": 132,
+      "y": 152,
       "w": 8,
       "h": 6,
       "config": {
@@ -1142,7 +1142,7 @@
     {
       "name": "Top event reasons",
       "x": 8,
-      "y": 132,
+      "y": 152,
       "w": 16,
       "h": 6,
       "config": {
@@ -1156,7 +1156,7 @@
     {
       "name": "Recent events",
       "x": 0,
-      "y": 138,
+      "y": 158,
       "w": 24,
       "h": 8,
       "config": {
@@ -1170,12 +1170,12 @@
     {
       "name": "",
       "x": 0,
-      "y": 146,
+      "y": 167,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Related Control Plane & Data Plane Views\nUse **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Traces** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows."
+        "markdown": "## 8. Related Control Plane & Data Plane Views\nUse **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Traces** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows."
       }
     }
   ]

@@ -32,16 +32,16 @@
       "x": 0,
       "y": 6,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 1. Service Overview\nHigh-level health of all monitored services: request rate, error rate, latency, health score, and the most impacted services."
+        "markdown": "## 1. Service Overview\nHigh-level health of all monitored services: request rate, error rate, latency, health score, and the most impacted services."
       }
     },
     {
       "name": "Request rate (RPS)",
       "x": 0,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -59,7 +59,7 @@
     {
       "name": "Current error rate %",
       "x": 6,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -91,7 +91,7 @@
     {
       "name": "Avg server latency",
       "x": 12,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -115,7 +115,7 @@
     {
       "name": "Success rate",
       "x": 18,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -139,7 +139,7 @@
     {
       "name": "Service health summary / top impacted services",
       "x": 0,
-      "y": 16,
+      "y": 17,
       "w": 24,
       "h": 7,
       "config": {
@@ -153,18 +153,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 23,
+      "y": 25,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### RED Metrics Overview\nRequest volume and error-rate trends by service. RED means Rate, Errors, and Duration."
+        "markdown": "## 1.1. RED Metrics Overview\nRequest volume and error-rate trends by service. RED means Rate, Errors, and Duration."
       }
     },
     {
       "name": "Request volume trends by service",
       "x": 0,
-      "y": 28,
+      "y": 31,
       "w": 12,
       "h": 6,
       "config": {
@@ -188,7 +188,7 @@
     {
       "name": "Error rate %",
       "x": 12,
-      "y": 28,
+      "y": 31,
       "w": 12,
       "h": 6,
       "config": {
@@ -219,18 +219,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 34,
+      "y": 38,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 2. Latency Analysis\nPerformance bottlenecks and latency trends across server, client, HTTP, RPC, service, operation, routes, and the full latency distribution."
+        "markdown": "## 2. Latency Analysis\nPerformance bottlenecks and latency trends across server, client, HTTP, RPC, service, operation, routes, and the full latency distribution."
       }
     },
     {
       "name": "Average server latency",
       "x": 0,
-      "y": 39,
+      "y": 44,
       "w": 6,
       "h": 5,
       "config": {
@@ -254,7 +254,7 @@
     {
       "name": "Average client latency",
       "x": 6,
-      "y": 39,
+      "y": 44,
       "w": 6,
       "h": 5,
       "config": {
@@ -278,7 +278,7 @@
     {
       "name": "Avg HTTP server latency",
       "x": 12,
-      "y": 39,
+      "y": 44,
       "w": 6,
       "h": 5,
       "config": {
@@ -296,7 +296,7 @@
     {
       "name": "Avg HTTP client latency",
       "x": 18,
-      "y": 39,
+      "y": 44,
       "w": 6,
       "h": 5,
       "config": {
@@ -314,7 +314,7 @@
     {
       "name": "HTTP server latency by service",
       "x": 0,
-      "y": 44,
+      "y": 49,
       "w": 8,
       "h": 7,
       "config": {
@@ -337,7 +337,7 @@
     {
       "name": "HTTP client latency by service",
       "x": 8,
-      "y": 44,
+      "y": 49,
       "w": 8,
       "h": 7,
       "config": {
@@ -360,7 +360,7 @@
     {
       "name": "RPC server latency by service",
       "x": 16,
-      "y": 44,
+      "y": 49,
       "w": 8,
       "h": 7,
       "config": {
@@ -383,7 +383,7 @@
     {
       "name": "Server latency percentiles (p50 / p95 / p99)",
       "x": 0,
-      "y": 51,
+      "y": 56,
       "w": 12,
       "h": 6,
       "config": {
@@ -424,7 +424,7 @@
     {
       "name": "Average server latency by service (ms)",
       "x": 12,
-      "y": 51,
+      "y": 56,
       "w": 12,
       "h": 6,
       "config": {
@@ -442,7 +442,7 @@
     {
       "name": "Latency by service & operation",
       "x": 0,
-      "y": 57,
+      "y": 62,
       "w": 24,
       "h": 7,
       "config": {
@@ -456,7 +456,7 @@
     {
       "name": "Slowest routes (p95) - min 20 requests",
       "x": 0,
-      "y": 64,
+      "y": 69,
       "w": 24,
       "h": 6,
       "config": {
@@ -470,7 +470,7 @@
     {
       "name": "P95 latency anomaly — last 24h vs 8-day baseline (±3σ band)",
       "x": 0,
-      "y": 70,
+      "y": 75,
       "w": 24,
       "h": 7,
       "config": {
@@ -488,7 +488,7 @@
     {
       "name": "Server latency distribution (heatmap, seconds)",
       "x": 0,
-      "y": 77,
+      "y": 82,
       "w": 24,
       "h": 7,
       "config": {
@@ -514,7 +514,7 @@
     {
       "name": "Keeper operation latency percentiles",
       "x": 0,
-      "y": 84,
+      "y": 89,
       "w": 24,
       "h": 5,
       "config": {
@@ -528,18 +528,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 89,
+      "y": 95,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 3. Request Health (RED Metrics)\nRequest volume, throughput, reliability, status errors, failed requests, and success rate."
+        "markdown": "## 3. Request Health (RED Metrics)\nRequest volume, throughput, reliability, status errors, failed requests, and success rate."
       }
     },
     {
       "name": "Server request rate by service (per interval)",
       "x": 0,
-      "y": 94,
+      "y": 101,
       "w": 12,
       "h": 6,
       "config": {
@@ -557,7 +557,7 @@
     {
       "name": "Server request count over time, by service",
       "x": 12,
-      "y": 94,
+      "y": 101,
       "w": 12,
       "h": 6,
       "config": {
@@ -581,7 +581,7 @@
     {
       "name": "Errors by status message",
       "x": 0,
-      "y": 100,
+      "y": 107,
       "w": 8,
       "h": 6,
       "config": {
@@ -605,7 +605,7 @@
     {
       "name": "Failed request analysis",
       "x": 8,
-      "y": 100,
+      "y": 107,
       "w": 16,
       "h": 7,
       "config": {
@@ -619,7 +619,7 @@
     {
       "name": "Server requests / sec",
       "x": 0,
-      "y": 107,
+      "y": 114,
       "w": 8,
       "h": 5,
       "config": {
@@ -637,7 +637,7 @@
     {
       "name": "Server requests (selected range)",
       "x": 8,
-      "y": 107,
+      "y": 114,
       "w": 8,
       "h": 5,
       "config": {
@@ -660,7 +660,7 @@
     {
       "name": "Request success rate",
       "x": 16,
-      "y": 107,
+      "y": 114,
       "w": 8,
       "h": 5,
       "config": {
@@ -684,18 +684,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 112,
+      "y": 120,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 4. End-to-End Request Tracing\nDistributed trace search and request journeys across services. Open any result in HyperDX for the trace waterfall, critical path, and full request visualization."
+        "markdown": "## 4. End-to-End Request Tracing\nDistributed trace search and request journeys across services. Open any result in HyperDX for the trace waterfall, critical path, and full request visualization."
       }
     },
     {
       "name": "Distributed trace search",
       "x": 0,
-      "y": 117,
+      "y": 126,
       "w": 24,
       "h": 8,
       "config": {
@@ -709,7 +709,7 @@
     {
       "name": "Slow request traces",
       "x": 0,
-      "y": 125,
+      "y": 134,
       "w": 12,
       "h": 8,
       "config": {
@@ -723,7 +723,7 @@
     {
       "name": "Failed request traces",
       "x": 12,
-      "y": 125,
+      "y": 134,
       "w": 12,
       "h": 8,
       "config": {
@@ -737,7 +737,7 @@
     {
       "name": "Critical path candidates by trace",
       "x": 0,
-      "y": 133,
+      "y": 142,
       "w": 12,
       "h": 7,
       "config": {
@@ -760,7 +760,7 @@
     {
       "name": "Trace sampling analytics",
       "x": 12,
-      "y": 133,
+      "y": 142,
       "w": 12,
       "h": 7,
       "config": {
@@ -774,18 +774,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 140,
+      "y": 150,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 5. Service Dependency Mapping\nUpstream/downstream service relationships, request flow, dependency latency, dependency error rate, and the most impacted dependencies."
+        "markdown": "## 5. Service Dependency Mapping\nUpstream/downstream service relationships, request flow, dependency latency, dependency error rate, and the most impacted dependencies."
       }
     },
     {
       "name": "Service dependency map / most impacted dependencies",
       "x": 0,
-      "y": 145,
+      "y": 156,
       "w": 24,
       "h": 7,
       "config": {
@@ -799,7 +799,7 @@
     {
       "name": "Upstream and downstream dependencies",
       "x": 0,
-      "y": 152,
+      "y": 163,
       "w": 24,
       "h": 7,
       "config": {
@@ -822,18 +822,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 159,
+      "y": 171,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 6. Error Correlation & Root Cause Analysis\nError correlation across services and traces, propagation paths, exceptions, spikes, root-cause candidates, and the error timeline."
+        "markdown": "## 6. Error Correlation & Root Cause Analysis\nError correlation across services and traces, propagation paths, exceptions, spikes, root-cause candidates, and the error timeline."
       }
     },
     {
       "name": "Root cause candidate services / error propagation",
       "x": 0,
-      "y": 164,
+      "y": 177,
       "w": 24,
       "h": 7,
       "config": {
@@ -847,7 +847,7 @@
     {
       "name": "Exceptions by service",
       "x": 0,
-      "y": 171,
+      "y": 184,
       "w": 12,
       "h": 7,
       "config": {
@@ -870,7 +870,7 @@
     {
       "name": "Error timeline by service",
       "x": 12,
-      "y": 171,
+      "y": 184,
       "w": 12,
       "h": 6,
       "config": {
@@ -888,7 +888,7 @@
     {
       "name": "Error spikes & anomalies - last 24h vs 8-day baseline",
       "x": 0,
-      "y": 178,
+      "y": 191,
       "w": 24,
       "h": 6,
       "config": {
@@ -906,18 +906,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 184,
+      "y": 198,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 7. SLO & Reliability\nAvailability SLI, error budget remaining and consumption, multi-window burn rate, availability trend, compliance, violations, and alert-backed reliability."
+        "markdown": "## 7. SLO & Reliability\nAvailability SLI, error budget remaining and consumption, multi-window burn rate, availability trend, compliance, violations, and alert-backed reliability."
       }
     },
     {
       "name": "Availability (SLI = success rate)",
       "x": 0,
-      "y": 189,
+      "y": 204,
       "w": 6,
       "h": 4,
       "config": {
@@ -955,7 +955,7 @@
     {
       "name": "Error budget remaining (window, SLO 99.9%)",
       "x": 6,
-      "y": 189,
+      "y": 204,
       "w": 6,
       "h": 4,
       "config": {
@@ -987,7 +987,7 @@
     {
       "name": "Error budget consumed (window)",
       "x": 12,
-      "y": 189,
+      "y": 204,
       "w": 6,
       "h": 5,
       "config": {
@@ -1005,7 +1005,7 @@
     {
       "name": "SLO violations",
       "x": 18,
-      "y": 189,
+      "y": 204,
       "w": 6,
       "h": 5,
       "config": {
@@ -1031,7 +1031,7 @@
     {
       "name": "Error budget consumption trend",
       "x": 0,
-      "y": 194,
+      "y": 209,
       "w": 12,
       "h": 6,
       "config": {
@@ -1049,7 +1049,7 @@
     {
       "name": "Availability over time (target 99.9%)",
       "x": 12,
-      "y": 194,
+      "y": 209,
       "w": 12,
       "h": 6,
       "config": {
@@ -1079,7 +1079,7 @@
     {
       "name": "Multi-window burn rate (SLO 99.9%)",
       "x": 0,
-      "y": 200,
+      "y": 215,
       "w": 12,
       "h": 6,
       "config": {
@@ -1093,7 +1093,7 @@
     {
       "name": "SLO compliance dashboard / violations",
       "x": 12,
-      "y": 200,
+      "y": 215,
       "w": 12,
       "h": 7,
       "config": {
@@ -1107,18 +1107,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 207,
+      "y": 223,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 8. Infrastructure & Platform Performance\nUnderlying ClickHouse, Keeper, collector, and OTel pipeline health. These panels are optional and depend on platform telemetry; use **Overview**, **Infrastructure**, and advanced **Observability Platform Health** for deeper investigation."
+        "markdown": "## 8. Infrastructure & Platform Performance\nUnderlying ClickHouse, Keeper, collector, and OTel pipeline health. These panels are optional and depend on platform telemetry; use **Overview**, **Infrastructure**, and advanced **Observability Platform Health** for deeper investigation."
       }
     },
     {
       "name": "ClickHouse running queries",
       "x": 0,
-      "y": 212,
+      "y": 229,
       "w": 6,
       "h": 5,
       "config": {
@@ -1136,7 +1136,7 @@
     {
       "name": "Storage utilization",
       "x": 6,
-      "y": 212,
+      "y": 229,
       "w": 6,
       "h": 5,
       "config": {
@@ -1154,7 +1154,7 @@
     {
       "name": "Collector queue utilization",
       "x": 12,
-      "y": 212,
+      "y": 229,
       "w": 6,
       "h": 5,
       "config": {
@@ -1172,7 +1172,7 @@
     {
       "name": "OTel pipeline refused spans",
       "x": 18,
-      "y": 212,
+      "y": 229,
       "w": 6,
       "h": 5,
       "config": {
@@ -1198,7 +1198,7 @@
     {
       "name": "ClickHouse query performance (p95 / p99)",
       "x": 0,
-      "y": 217,
+      "y": 234,
       "w": 12,
       "h": 6,
       "config": {
@@ -1216,7 +1216,7 @@
     {
       "name": "ClickHouse Keeper latency",
       "x": 12,
-      "y": 217,
+      "y": 234,
       "w": 12,
       "h": 6,
       "config": {

@@ -70,6 +70,9 @@ flags, and prerequisites are in [Install](#install) below.
 | `dashboards/logs.json` | Log overview, full search workspace, service/resource/cluster/host/namespace/pod filters, severity trends, normalized/new patterns, and live streams | log |
 | `dashboards/supportability.json` | Active alert-condition summary and guided ALM/ALRS/resource-provider/Kubernetes/network/storage troubleshooting, plus a recurring-signature known-issues view | log + trace + metric |
 
+Each dashboard uses numbered, full-width section headers with deliberate vertical spacing between
+major blocks so long operational views remain easy to scan.
+
 **Advanced dashboards** (`dashboards/advanced/` — opt-in with `--advanced`; each needs an
 **optional data source** that a standard appliance deploy does not ingest by default):
 

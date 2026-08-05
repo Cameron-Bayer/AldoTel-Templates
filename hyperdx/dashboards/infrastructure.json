@@ -33,16 +33,16 @@
       "x": 0,
       "y": 5,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Cluster health\nAre all nodes Ready? Healthy vs. NotReady counts and per-node status, CPU, memory, and uptime."
+        "markdown": "## 1. Cluster Health\nAre all nodes Ready? Healthy vs. NotReady counts and per-node status, CPU, memory, and uptime."
       }
     },
     {
       "name": "Kubernetes nodes ready %",
       "x": 0,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 5,
       "config": {
@@ -74,7 +74,7 @@
     {
       "name": "Healthy nodes",
       "x": 8,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 5,
       "config": {
@@ -92,7 +92,7 @@
     {
       "name": "Unhealthy nodes (NotReady)",
       "x": 16,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 5,
       "config": {
@@ -124,7 +124,7 @@
     {
       "name": "Nodes - status & uptime",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 24,
       "h": 6,
       "config": {
@@ -138,18 +138,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 20,
+      "y": 23,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Node health (hosts)\nPer-host CPU, load average, memory, and swap for the machines running the cluster."
+        "markdown": "## 2. Host Health\nPer-host CPU, load average, memory, and swap for the machines running the cluster."
       }
     },
     {
       "name": "Host CPU busy %",
       "x": 0,
-      "y": 24,
+      "y": 29,
       "w": 12,
       "h": 6,
       "config": {
@@ -167,7 +167,7 @@
     {
       "name": "1-minute load average (vs CPU cores)",
       "x": 12,
-      "y": 24,
+      "y": 29,
       "w": 12,
       "h": 6,
       "config": {
@@ -185,7 +185,7 @@
     {
       "name": "Host memory used %",
       "x": 0,
-      "y": 30,
+      "y": 35,
       "w": 12,
       "h": 6,
       "config": {
@@ -203,7 +203,7 @@
     {
       "name": "Inode used % per volume",
       "x": 12,
-      "y": 30,
+      "y": 35,
       "w": 12,
       "h": 6,
       "config": {
@@ -221,7 +221,7 @@
     {
       "name": "Hosts - CPU, memory, load",
       "x": 0,
-      "y": 36,
+      "y": 41,
       "w": 24,
       "h": 7,
       "config": {
@@ -235,18 +235,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 43,
+      "y": 49,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Storage health\nFilesystem usage and free capacity, disk IOPS, read/write latency, and throughput per node."
+        "markdown": "## 3. Storage Health\nFilesystem usage and free capacity, disk IOPS, read/write latency, and throughput per node."
       }
     },
     {
       "name": "Filesystem used % per volume",
       "x": 0,
-      "y": 47,
+      "y": 55,
       "w": 24,
       "h": 6,
       "config": {
@@ -264,7 +264,7 @@
     {
       "name": "Free filesystem capacity per volume (GB)",
       "x": 0,
-      "y": 53,
+      "y": 61,
       "w": 12,
       "h": 6,
       "config": {
@@ -282,7 +282,7 @@
     {
       "name": "Disk IOPS (read / write, per host)",
       "x": 12,
-      "y": 53,
+      "y": 61,
       "w": 12,
       "h": 6,
       "config": {
@@ -300,7 +300,7 @@
     {
       "name": "Disk latency (ms, per host · direction)",
       "x": 0,
-      "y": 59,
+      "y": 67,
       "w": 12,
       "h": 6,
       "config": {
@@ -318,7 +318,7 @@
     {
       "name": "Disk I/O (bytes/sec)",
       "x": 12,
-      "y": 59,
+      "y": 67,
       "w": 12,
       "h": 6,
       "config": {
@@ -336,18 +336,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 65,
+      "y": 74,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Network health\nPer-host network throughput, dropped packets, and interface errors."
+        "markdown": "## 4. Network Health\nPer-host network throughput, dropped packets, and interface errors."
       }
     },
     {
       "name": "Network I/O (bytes/sec)",
       "x": 0,
-      "y": 69,
+      "y": 80,
       "w": 12,
       "h": 6,
       "config": {
@@ -365,7 +365,7 @@
     {
       "name": "Network packets dropped / sec (per host)",
       "x": 12,
-      "y": 69,
+      "y": 80,
       "w": 12,
       "h": 6,
       "config": {
@@ -383,7 +383,7 @@
     {
       "name": "Network interface errors / sec (per host)",
       "x": 0,
-      "y": 75,
+      "y": 86,
       "w": 24,
       "h": 6,
       "config": {
@@ -401,18 +401,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 81,
+      "y": 93,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Capacity planning\nRemaining headroom — how much CPU, memory, and disk is still free before saturation."
+        "markdown": "## 5. Resource Headroom\nRemaining headroom — how much CPU, memory, and disk is still free before saturation."
       }
     },
     {
       "name": "CPU headroom % (100 - cluster busy)",
       "x": 0,
-      "y": 85,
+      "y": 99,
       "w": 12,
       "h": 6,
       "config": {
@@ -430,7 +430,7 @@
     {
       "name": "Memory headroom % (100 - used)",
       "x": 12,
-      "y": 85,
+      "y": 99,
       "w": 12,
       "h": 6,
       "config": {
@@ -448,7 +448,7 @@
     {
       "name": "Free memory per host (GB)",
       "x": 0,
-      "y": 91,
+      "y": 105,
       "w": 12,
       "h": 6,
       "config": {
@@ -466,7 +466,7 @@
     {
       "name": "Disk free % per volume over time",
       "x": 12,
-      "y": 91,
+      "y": 105,
       "w": 12,
       "h": 6,
       "config": {
@@ -484,18 +484,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 97,
+      "y": 112,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Utilization Analysis\nCross-resource consumption, saturation, top consumers, hotspots, and bottlenecks."
+        "markdown": "## 6. Utilization Analysis\nCross-resource consumption, saturation, top consumers, hotspots, and bottlenecks."
       }
     },
     {
       "name": "Top CPU and memory consumers",
       "x": 0,
-      "y": 102,
+      "y": 118,
       "w": 24,
       "h": 7,
       "config": {
@@ -509,7 +509,7 @@
     {
       "name": "Top storage consumers",
       "x": 0,
-      "y": 109,
+      "y": 125,
       "w": 24,
       "h": 7,
       "config": {
@@ -523,7 +523,7 @@
     {
       "name": "Top network consumers and reliability",
       "x": 0,
-      "y": 116,
+      "y": 132,
       "w": 24,
       "h": 7,
       "config": {
@@ -537,18 +537,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 123,
+      "y": 140,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Capacity Planning\nCPU, memory, and storage headroom, growth trends, exhaustion risks, and scale guidance. The time-series panels above provide historical trends; the risk table turns current headroom into actionable recommendations."
+        "markdown": "## 7. Capacity Planning\nCPU, memory, and storage headroom, growth trends, exhaustion risks, and scale guidance. The time-series panels above provide historical trends; the risk table turns current headroom into actionable recommendations."
       }
     },
     {
       "name": "Capacity risk summary & scale recommendations",
       "x": 0,
-      "y": 128,
+      "y": 146,
       "w": 24,
       "h": 7,
       "config": {
@@ -562,7 +562,7 @@
     {
       "name": "Storage growth forecast / estimated exhaustion risk",
       "x": 0,
-      "y": 135,
+      "y": 153,
       "w": 24,
       "h": 7,
       "config": {

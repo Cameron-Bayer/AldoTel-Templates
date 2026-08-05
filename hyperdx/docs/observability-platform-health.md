@@ -20,7 +20,7 @@ Health of the telemetry pipeline itself: OpenTelemetry collector ingestion & que
 
 This board also covers the requested ClickHouse workload panels. ClickHouse Keeper operation latency is shown only when Keeper metrics are scraped; the standard appliance telemetry currently does not emit that signal, so the dashboard does not fabricate a latency value.
 
-## Telemetry ingestion
+## 1. Telemetry Ingestion
 Accepted vs. refused spans, logs, and metric points at the collector. Refusals mean data is being dropped.
 
 ### Refused spans (window) — number · Raw SQL
@@ -161,7 +161,7 @@ ORDER BY ts
 
 </details>
 
-## Pipeline health
+## 2. Pipeline Health
 Exporter queue utilization, throughput, and collector CPU/memory. A full queue signals backpressure.
 
 ### Exporter queue utilization % — number · Raw SQL
@@ -251,7 +251,7 @@ ORDER BY ts
 - **Measure(s):** max(`Value`) as `rss`; max(`Value`) as `heap alloc`
 - **Columns used:** `Value`, `MetricName`, `TimeUnix`
 
-## ClickHouse storage & availability
+## 3. ClickHouse Storage & Availability
 Backend database health: running/failed queries, free disk, memory, and retention.
 
 ### Running queries — number · Raw SQL
@@ -370,7 +370,7 @@ ORDER BY sum(bytes_on_disk) DESC
 
 </details>
 
-## Dashboard query performance
+## 4. Dashboard Query Performance
 How fast dashboard queries run: p95/p99 duration, failures, and top errors from the query log.
 
 ### Query duration - p95 / p99 — line · Raw SQL
@@ -434,7 +434,7 @@ LIMIT 20
 
 </details>
 
-## ClickHouse Workload & Merge Activity
+## 5. ClickHouse Workload & Merge Activity
 Query mix, inserts, active merges/mutations, page-cache reads, and asynchronous insert activity from ClickHouse system tables. These advanced panels require query_log and system-table access.
 
 ### Select vs insert queries (per interval) — table · Raw SQL

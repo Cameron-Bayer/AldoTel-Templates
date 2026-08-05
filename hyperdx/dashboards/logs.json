@@ -74,10 +74,10 @@
       "x": 0,
       "y": 6,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 1. Log Overview\nHigh-level understanding of log health and volume across the selected time range."
+        "markdown": "## 1. Log Overview\nHigh-level understanding of log health and volume across the selected time range."
       }
     },
     {
@@ -100,12 +100,12 @@
           "mantissa": 0
         }
       },
-      "y": 11
+      "y": 12
     },
     {
       "name": "Average logs / sec",
       "x": 4,
-      "y": 11,
+      "y": 12,
       "w": 4,
       "h": 5,
       "config": {
@@ -149,7 +149,7 @@
           "mantissa": 0
         }
       },
-      "y": 11
+      "y": 12
     },
     {
       "name": "Log error rate %",
@@ -186,12 +186,12 @@
           }
         ]
       },
-      "y": 11
+      "y": 12
     },
     {
       "name": "Fatal log count",
       "x": 16,
-      "y": 11,
+      "y": 12,
       "w": 4,
       "h": 5,
       "config": {
@@ -217,7 +217,7 @@
     {
       "name": "Average error + fatal logs / sec",
       "x": 20,
-      "y": 11,
+      "y": 12,
       "w": 4,
       "h": 5,
       "config": {
@@ -235,7 +235,7 @@
     {
       "name": "Log volume by severity",
       "x": 0,
-      "y": 16,
+      "y": 17,
       "w": 12,
       "h": 6,
       "config": {
@@ -259,7 +259,7 @@
     {
       "name": "Error & fatal log count over time, by service",
       "x": 12,
-      "y": 16,
+      "y": 17,
       "w": 12,
       "h": 6,
       "config": {
@@ -283,7 +283,7 @@
     {
       "name": "Log volume trends",
       "x": 0,
-      "y": 22,
+      "y": 23,
       "w": 12,
       "h": 6,
       "config": {
@@ -301,7 +301,7 @@
     {
       "name": "Log count per time bucket by severity",
       "x": 12,
-      "y": 22,
+      "y": 23,
       "w": 12,
       "h": 6,
       "config": {
@@ -319,7 +319,7 @@
     {
       "name": "Error + fatal share of logs",
       "x": 0,
-      "y": 28,
+      "y": 29,
       "w": 6,
       "h": 5,
       "config": {
@@ -337,7 +337,7 @@
     {
       "name": "Services generating the most error and fatal logs",
       "x": 6,
-      "y": 28,
+      "y": 29,
       "w": 18,
       "h": 6,
       "config": {
@@ -360,18 +360,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 34,
+      "y": 36,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 2. Log Search & Exploration\nPrimary workspace for full-text investigation. Enter text or structured expressions in HyperDX search; combine the dashboard filters with the global time picker. Native HyperDX supplies the Log Query Builder, Saved Searches, Bookmarks & Favorites, Export Results, and log correlation actions."
+        "markdown": "## 2. Log Search & Exploration\nPrimary workspace for full-text investigation. Enter text or structured expressions in HyperDX search; combine the dashboard filters with the global time picker. Native HyperDX supplies the Log Query Builder, Saved Searches, Bookmarks & Favorites, Export Results, and log correlation actions."
       }
     },
     {
       "name": "Full-text log search - click a row for full details",
       "x": 0,
-      "y": 39,
+      "y": 42,
       "w": 24,
       "h": 9,
       "config": {
@@ -385,7 +385,7 @@
     {
       "name": "Top error signatures (normalized) - click a row to open Logs",
       "x": 0,
-      "y": 48,
+      "y": 51,
       "w": 12,
       "h": 6,
       "config": {
@@ -408,7 +408,7 @@
     {
       "name": "New error patterns in the past 24h",
       "x": 12,
-      "y": 48,
+      "y": 51,
       "w": 12,
       "h": 7,
       "config": {
@@ -422,7 +422,7 @@
     {
       "name": "Errors & fatals by service (last 24h) - click a row to open Logs",
       "x": 0,
-      "y": 55,
+      "y": 58,
       "w": 12,
       "h": 6,
       "config": {
@@ -445,7 +445,7 @@
     {
       "name": "Top Kubernetes error sources (namespace / pod) - click a row to open Logs",
       "x": 12,
-      "y": 55,
+      "y": 58,
       "w": 12,
       "h": 6,
       "config": {
@@ -468,7 +468,7 @@
     {
       "name": "100 most recent error and fatal logs",
       "x": 0,
-      "y": 62,
+      "y": 65,
       "w": 24,
       "h": 9,
       "config": {
@@ -491,29 +491,29 @@
     {
       "name": "",
       "x": 0,
-      "y": 71,
+      "y": 75,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Log Query Builder, Saved Searches & Correlation\nUse the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Traces**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace."
+        "markdown": "## 2.1. Investigation Tools & Correlation\nUse the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Traces**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace."
       }
     },
     {
       "name": "",
       "x": 0,
-      "y": 76,
+      "y": 82,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 3. Live Log Streaming\nRecent logs automatically refresh with the dashboard. Click a row to open the native HyperDX search workspace for true live-tail monitoring, Pause & Resume, full log details, and continued filtering by service, namespace, or pod."
+        "markdown": "## 3. Live Log Streaming\nRecent logs automatically refresh with the dashboard. Click a row to open the native HyperDX search workspace for true live-tail monitoring, Pause & Resume, full log details, and continued filtering by service, namespace, or pod."
       }
     },
     {
       "name": "Live log stream (dashboard refresh)",
       "x": 0,
-      "y": 81,
+      "y": 88,
       "w": 12,
       "h": 9,
       "config": {
@@ -527,7 +527,7 @@
     {
       "name": "Live error stream (dashboard refresh) - click a row for full detail",
       "x": 12,
-      "y": 81,
+      "y": 88,
       "w": 12,
       "h": 9,
       "config": {
@@ -541,7 +541,7 @@
     {
       "name": "Stream by service - click a row to open logs",
       "x": 0,
-      "y": 90,
+      "y": 97,
       "w": 12,
       "h": 8,
       "config": {
@@ -564,7 +564,7 @@
     {
       "name": "Stream by namespace / pod - click a row to open logs",
       "x": 12,
-      "y": 90,
+      "y": 97,
       "w": 12,
       "h": 8,
       "config": {

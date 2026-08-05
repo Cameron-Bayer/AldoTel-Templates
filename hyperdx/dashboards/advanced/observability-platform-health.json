@@ -33,16 +33,16 @@
       "x": 0,
       "y": 5,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Telemetry ingestion\nAccepted vs. refused spans, logs, and metric points at the collector. Refusals mean data is being dropped."
+        "markdown": "## 1. Telemetry Ingestion\nAccepted vs. refused spans, logs, and metric points at the collector. Refusals mean data is being dropped."
       }
     },
     {
       "name": "Refused spans (window)",
       "x": 0,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 5,
       "config": {
@@ -68,7 +68,7 @@
     {
       "name": "Refused log records (window)",
       "x": 8,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 5,
       "config": {
@@ -94,7 +94,7 @@
     {
       "name": "Refused metric points (window)",
       "x": 16,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 5,
       "config": {
@@ -120,7 +120,7 @@
     {
       "name": "Spans: accepted vs refused vs failed (per interval)",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -138,7 +138,7 @@
     {
       "name": "Logs: accepted vs refused vs send-failed (per interval)",
       "x": 12,
-      "y": 14,
+      "y": 16,
       "w": 12,
       "h": 6,
       "config": {
@@ -156,7 +156,7 @@
     {
       "name": "Metric points: accepted vs refused (per interval)",
       "x": 0,
-      "y": 20,
+      "y": 22,
       "w": 24,
       "h": 6,
       "config": {
@@ -174,18 +174,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 26,
+      "y": 29,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Pipeline health\nExporter queue utilization, throughput, and collector CPU/memory. A full queue signals backpressure."
+        "markdown": "## 2. Pipeline Health\nExporter queue utilization, throughput, and collector CPU/memory. A full queue signals backpressure."
       }
     },
     {
       "name": "Exporter queue utilization %",
       "x": 0,
-      "y": 30,
+      "y": 35,
       "w": 8,
       "h": 6,
       "config": {
@@ -217,7 +217,7 @@
     {
       "name": "Exporter queue size vs capacity",
       "x": 8,
-      "y": 30,
+      "y": 35,
       "w": 16,
       "h": 6,
       "config": {
@@ -252,7 +252,7 @@
     {
       "name": "Exporter sent spans (per interval)",
       "x": 0,
-      "y": 36,
+      "y": 41,
       "w": 12,
       "h": 6,
       "config": {
@@ -270,7 +270,7 @@
     {
       "name": "Collector CPU (cores)",
       "x": 12,
-      "y": 36,
+      "y": 41,
       "w": 12,
       "h": 6,
       "config": {
@@ -288,7 +288,7 @@
     {
       "name": "Collector memory (RSS / heap)",
       "x": 0,
-      "y": 42,
+      "y": 47,
       "w": 24,
       "h": 6,
       "config": {
@@ -324,18 +324,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 48,
+      "y": 54,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### ClickHouse storage & availability\nBackend database health: running/failed queries, free disk, memory, and retention."
+        "markdown": "## 3. ClickHouse Storage & Availability\nBackend database health: running/failed queries, free disk, memory, and retention."
       }
     },
     {
       "name": "Running queries",
       "x": 0,
-      "y": 52,
+      "y": 60,
       "w": 6,
       "h": 5,
       "config": {
@@ -353,7 +353,7 @@
     {
       "name": "Failed queries (window)",
       "x": 6,
-      "y": 52,
+      "y": 60,
       "w": 6,
       "h": 5,
       "config": {
@@ -379,7 +379,7 @@
     {
       "name": "Disk free %",
       "x": 12,
-      "y": 52,
+      "y": 60,
       "w": 6,
       "h": 5,
       "config": {
@@ -411,7 +411,7 @@
     {
       "name": "Current tracked memory",
       "x": 18,
-      "y": 52,
+      "y": 60,
       "w": 6,
       "h": 5,
       "config": {
@@ -430,7 +430,7 @@
     {
       "name": "Queries (per interval)",
       "x": 0,
-      "y": 57,
+      "y": 65,
       "w": 24,
       "h": 6,
       "config": {
@@ -448,7 +448,7 @@
     {
       "name": "Data retention & size by table (system.parts)",
       "x": 0,
-      "y": 63,
+      "y": 71,
       "w": 24,
       "h": 7,
       "config": {
@@ -462,18 +462,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 70,
+      "y": 79,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Dashboard query performance\nHow fast dashboard queries run: p95/p99 duration, failures, and top errors from the query log."
+        "markdown": "## 4. Dashboard Query Performance\nHow fast dashboard queries run: p95/p99 duration, failures, and top errors from the query log."
       }
     },
     {
       "name": "Query duration - p95 / p99",
       "x": 0,
-      "y": 74,
+      "y": 85,
       "w": 14,
       "h": 6,
       "config": {
@@ -491,7 +491,7 @@
     {
       "name": "Failed queries (selected window)",
       "x": 14,
-      "y": 74,
+      "y": 85,
       "w": 10,
       "h": 6,
       "config": {
@@ -517,7 +517,7 @@
     {
       "name": "Top errors (from query_log)",
       "x": 0,
-      "y": 80,
+      "y": 91,
       "w": 24,
       "h": 6,
       "config": {
@@ -531,18 +531,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 86,
+      "y": 98,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### ClickHouse Workload & Merge Activity\nQuery mix, inserts, active merges/mutations, page-cache reads, and asynchronous insert activity from ClickHouse system tables. These advanced panels require query_log and system-table access."
+        "markdown": "## 5. ClickHouse Workload & Merge Activity\nQuery mix, inserts, active merges/mutations, page-cache reads, and asynchronous insert activity from ClickHouse system tables. These advanced panels require query_log and system-table access."
       }
     },
     {
       "name": "Select vs insert queries (per interval)",
       "x": 0,
-      "y": 91,
+      "y": 104,
       "w": 24,
       "h": 7,
       "config": {
@@ -556,7 +556,7 @@
     {
       "name": "Inserted rows (per interval)",
       "x": 0,
-      "y": 98,
+      "y": 111,
       "w": 24,
       "h": 7,
       "config": {
@@ -570,7 +570,7 @@
     {
       "name": "Active merges",
       "x": 0,
-      "y": 105,
+      "y": 118,
       "w": 8,
       "h": 5,
       "config": {
@@ -588,7 +588,7 @@
     {
       "name": "Pending mutations",
       "x": 8,
-      "y": 105,
+      "y": 118,
       "w": 8,
       "h": 5,
       "config": {
@@ -606,7 +606,7 @@
     {
       "name": "Merges in progress (average progress)",
       "x": 16,
-      "y": 105,
+      "y": 118,
       "w": 8,
       "h": 5,
       "config": {
@@ -624,7 +624,7 @@
     {
       "name": "Merges in progress (detail)",
       "x": 0,
-      "y": 110,
+      "y": 123,
       "w": 24,
       "h": 7,
       "config": {
@@ -638,7 +638,7 @@
     {
       "name": "Page-cache read bytes: cache vs source (per interval)",
       "x": 0,
-      "y": 117,
+      "y": 130,
       "w": 24,
       "h": 7,
       "config": {
@@ -652,7 +652,7 @@
     {
       "name": "Async insert bytes (per interval)",
       "x": 0,
-      "y": 124,
+      "y": 137,
       "w": 24,
       "h": 7,
       "config": {

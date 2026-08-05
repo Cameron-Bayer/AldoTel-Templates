@@ -18,7 +18,7 @@ These apply to every compatible tile on the dashboard.
 ## Infrastructure Overview
 Overall infrastructure health plus compute, memory, hosts, storage, networking, utilization analysis, and capacity planning. Values come from appliance hostmetrics and Kubernetes node health.
 
-## Cluster health
+## 1. Cluster Health
 Are all nodes Ready? Healthy vs. NotReady counts and per-node status, CPU, memory, and uptime.
 
 ### Kubernetes nodes ready % — number · Raw SQL
@@ -108,7 +108,7 @@ ORDER BY Status DESC, s.uptime ASC
 
 </details>
 
-## Node health (hosts)
+## 2. Host Health
 Per-host CPU, load average, memory, and swap for the machines running the cluster.
 
 ### Host CPU busy % — line · Raw SQL
@@ -242,7 +242,7 @@ ORDER BY c.cpu DESC
 
 </details>
 
-## Storage health
+## 3. Storage Health
 Filesystem usage and free capacity, disk IOPS, read/write latency, and throughput per node.
 
 ### Filesystem used % per volume — line · Raw SQL
@@ -369,7 +369,7 @@ ORDER BY ts
 
 </details>
 
-## Network health
+## 4. Network Health
 Per-host network throughput, dropped packets, and interface errors.
 
 ### Network I/O (bytes/sec) — line · Raw SQL
@@ -444,7 +444,7 @@ ORDER BY ts
 
 </details>
 
-## Capacity planning
+## 5. Resource Headroom
 Remaining headroom — how much CPU, memory, and disk is still free before saturation.
 
 ### CPU headroom % (100 - cluster busy) — line · Raw SQL
@@ -523,7 +523,7 @@ SELECT ts, volume, avail / nullIf(total, 0) AS "Disk free" FROM (
 
 </details>
 
-## Utilization Analysis
+## 6. Utilization Analysis
 Cross-resource consumption, saturation, top consumers, hotspots, and bottlenecks.
 
 ### Top CPU and memory consumers — table · Raw SQL
@@ -562,7 +562,7 @@ WITH io AS (SELECT host, interface, sum(max_value - min_value) AS bytes FROM (SE
 
 </details>
 
-## Capacity Planning
+## 7. Capacity Planning
 CPU, memory, and storage headroom, growth trends, exhaustion risks, and scale guidance. The time-series panels above provide historical trends; the risk table turns current headroom into actionable recommendations.
 
 ### Capacity risk summary & scale recommendations — table · Raw SQL

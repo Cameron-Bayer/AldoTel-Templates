@@ -283,7 +283,7 @@ LIMIT 100
 
 </details>
 
-## Log Query Builder, Saved Searches & Correlation
+## 2.1. Investigation Tools & Correlation
 Use the native HyperDX query builder above the search results to create full-text or structured queries. Save reusable queries, bookmark/favorite investigations, export result sets, and open correlated traces. Alert and metric context is available through the **Supportability**, **Overview**, **Traces**, and **Infrastructure** dashboards. For true live tail and Pause & Resume, open any stream row in the native Logs search workspace.
 
 ## 3. Live Log Streaming

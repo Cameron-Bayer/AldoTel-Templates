@@ -20,7 +20,7 @@ These apply to every compatible tile on the dashboard.
 ## Overview
 High-level snapshot of the entire environment, arranged for a top-to-bottom operational read: environment summary, platform health, resource consumption, service health, ClickHouse workload, impacted clusters/nodes, and recent events. Amber/red values identify conditions that need investigation.
 
-## Environment Summary
+## 1. Environment Summary
 Deployed cluster inventory and overall environment state.
 
 ### Total clusters — number · Raw SQL
@@ -227,7 +227,7 @@ SELECT countIf(phase = 2) AS "Running workloads" FROM (SELECT ResourceAttributes
 
 </details>
 
-## Platform Health
+## 2. Platform Health
 Overall health score, active conditions, node readiness, and workload availability.
 
 ### Overall platform health score — number · Raw SQL
@@ -490,7 +490,7 @@ SELECT sum(d) AS "New restarts" FROM (
 
 </details>
 
-## Resource Consumption
+## 3. Resource Consumption
 Current compute, memory, storage, and network consumption followed by CPU and memory trends.
 
 ### Compute usage - Cluster CPU busy % (avg of hosts) — number · Raw SQL
@@ -606,7 +606,7 @@ GROUP BY ts ORDER BY ts
 
 </details>
 
-## Service Health
+## 4. Service Health
 Request volume, reliability, latency, log health, and the services contributing the most errors.
 
 ### Request volume - Server requests (selected range) — number · Raw SQL
@@ -694,7 +694,7 @@ SELECT ServiceName AS Service, count() AS Logs,
 - **Measure(s):** count(*) as `requests`  — where `SpanKind = 'Server'` (sql); sum(`if(StatusCode = 'Error', 1, 0)`) as `errors`  — where `SpanKind = 'Server'` (sql)
 - **Columns used:** `StatusCode`, `SpanKind`
 
-## ClickHouse Workload & Storage
+## 5. ClickHouse Workload & Storage
 Database workload, failures, disk/memory health, query mix, inserts, merges, mutations, cache efficiency, and async inserts.
 
 ### Running queries — number · Raw SQL
@@ -878,7 +878,7 @@ SELECT toStartOfInterval(event_time, toIntervalSecond(greatest(toInt64(1), intDi
 
 </details>
 
-## Top Impacted Clusters
+## 6. Top Impacted Clusters
 Cluster/node health, alert pressure, CPU, storage, network consumption, and workloads.
 
 ### Top impacted clusters / nodes — table · Raw SQL
@@ -918,7 +918,7 @@ SELECT 'Appliance cluster' AS "Cluster name",
 
 </details>
 
-## Recent Activity
+## 7. Recent Activity
 Warning count, recurring Kubernetes event reasons, and chronological event detail.
 
 ### Warning events (in range) — number · Raw SQL
@@ -980,5 +980,5 @@ LIMIT 200
 
 </details>
 
-## Related Control Plane & Data Plane Views
+## 8. Related Control Plane & Data Plane Views
 Use **Infrastructure** for host/storage/network detail, **Kubernetes** for nodes/namespaces/workloads, **Traces** for trace and dependency analysis, **Logs** for full-text investigation, and **Supportability** for guided incident workflows.

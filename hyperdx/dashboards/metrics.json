@@ -32,16 +32,16 @@
       "x": 0,
       "y": 6,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 1. Infrastructure Overview\nOverall infrastructure health, cluster readiness, active issues, current resource utilization, host health, and capacity risk."
+        "markdown": "## 1. Infrastructure Overview\nOverall infrastructure health, cluster readiness, active issues, current resource utilization, host health, and capacity risk."
       }
     },
     {
       "name": "Infrastructure health score",
       "x": 0,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -73,7 +73,7 @@
     {
       "name": "Cluster health - nodes ready %",
       "x": 6,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -105,7 +105,7 @@
     {
       "name": "Current infrastructure issues",
       "x": 12,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -137,7 +137,7 @@
     {
       "name": "Capacity risks",
       "x": 18,
-      "y": 11,
+      "y": 12,
       "w": 6,
       "h": 5,
       "config": {
@@ -169,7 +169,7 @@
     {
       "name": "Resource utilization summary",
       "x": 0,
-      "y": 16,
+      "y": 17,
       "w": 12,
       "h": 7,
       "config": {
@@ -183,7 +183,7 @@
     {
       "name": "Host health summary",
       "x": 12,
-      "y": 16,
+      "y": 17,
       "w": 12,
       "h": 7,
       "config": {
@@ -197,18 +197,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 23,
+      "y": 25,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 2. Compute\nHost and node CPU, load, process consumption, memory, swap, saturation, headroom, inventory, status, and uptime."
+        "markdown": "## 2. Compute\nHost and node CPU, load, process consumption, memory, swap, saturation, headroom, inventory, status, and uptime."
       }
     },
     {
       "name": "Host CPU busy %",
       "x": 0,
-      "y": 28,
+      "y": 31,
       "w": 12,
       "h": 6,
       "config": {
@@ -226,7 +226,7 @@
     {
       "name": "1-minute load average (vs CPU cores)",
       "x": 12,
-      "y": 28,
+      "y": 31,
       "w": 12,
       "h": 6,
       "config": {
@@ -244,7 +244,7 @@
     {
       "name": "Current CPU headroom %",
       "x": 0,
-      "y": 34,
+      "y": 37,
       "w": 6,
       "h": 5,
       "config": {
@@ -262,7 +262,7 @@
     {
       "name": "Current memory headroom %",
       "x": 6,
-      "y": 34,
+      "y": 37,
       "w": 6,
       "h": 5,
       "config": {
@@ -280,7 +280,7 @@
     {
       "name": "Observed hosts",
       "x": 12,
-      "y": 34,
+      "y": 37,
       "w": 6,
       "h": 5,
       "config": {
@@ -298,7 +298,7 @@
     {
       "name": "Process / service instances observed",
       "x": 18,
-      "y": 34,
+      "y": 37,
       "w": 6,
       "h": 5,
       "config": {
@@ -316,7 +316,7 @@
     {
       "name": "Host memory used %",
       "x": 0,
-      "y": 39,
+      "y": 42,
       "w": 12,
       "h": 6,
       "config": {
@@ -334,7 +334,7 @@
     {
       "name": "Host swap used %",
       "x": 12,
-      "y": 39,
+      "y": 42,
       "w": 12,
       "h": 6,
       "config": {
@@ -352,7 +352,7 @@
     {
       "name": "Free memory per host (GB)",
       "x": 0,
-      "y": 45,
+      "y": 48,
       "w": 8,
       "h": 6,
       "config": {
@@ -370,7 +370,7 @@
     {
       "name": "Host memory saturation %",
       "x": 8,
-      "y": 45,
+      "y": 48,
       "w": 8,
       "h": 5,
       "config": {
@@ -402,7 +402,7 @@
     {
       "name": "Top process / service consumers",
       "x": 16,
-      "y": 45,
+      "y": 48,
       "w": 8,
       "h": 7,
       "config": {
@@ -416,7 +416,7 @@
     {
       "name": "Hosts - CPU, memory, load",
       "x": 0,
-      "y": 52,
+      "y": 55,
       "w": 24,
       "h": 7,
       "config": {
@@ -430,18 +430,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 59,
+      "y": 63,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 3. Storage\nFilesystem capacity and availability, inode pressure, IOPS, throughput, latency, disk health, top consumers, trends, and growth risk."
+        "markdown": "## 3. Storage\nFilesystem capacity and availability, inode pressure, IOPS, throughput, latency, disk health, top consumers, trends, and growth risk."
       }
     },
     {
       "name": "Filesystem used % per volume",
       "x": 0,
-      "y": 64,
+      "y": 69,
       "w": 12,
       "h": 6,
       "config": {
@@ -459,7 +459,7 @@
     {
       "name": "Free filesystem capacity per volume (GB)",
       "x": 12,
-      "y": 64,
+      "y": 69,
       "w": 12,
       "h": 6,
       "config": {
@@ -477,7 +477,7 @@
     {
       "name": "Inode used % per volume",
       "x": 0,
-      "y": 70,
+      "y": 75,
       "w": 24,
       "h": 6,
       "config": {
@@ -495,7 +495,7 @@
     {
       "name": "Disk IOPS (read / write, per host)",
       "x": 0,
-      "y": 76,
+      "y": 81,
       "w": 8,
       "h": 6,
       "config": {
@@ -513,7 +513,7 @@
     {
       "name": "Disk latency (ms, per host · direction)",
       "x": 8,
-      "y": 76,
+      "y": 81,
       "w": 8,
       "h": 6,
       "config": {
@@ -531,7 +531,7 @@
     {
       "name": "Disk I/O (bytes/sec)",
       "x": 16,
-      "y": 76,
+      "y": 81,
       "w": 8,
       "h": 6,
       "config": {
@@ -549,7 +549,7 @@
     {
       "name": "Storage health & alerts",
       "x": 0,
-      "y": 82,
+      "y": 87,
       "w": 24,
       "h": 7,
       "config": {
@@ -563,18 +563,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 89,
+      "y": 95,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 4. Networking\nBandwidth usage, traffic trends, per-host throughput, top consumers, packet loss, interface errors, reliability, and bottlenecks."
+        "markdown": "## 4. Networking\nBandwidth usage, traffic trends, per-host throughput, top consumers, packet loss, interface errors, reliability, and bottlenecks."
       }
     },
     {
       "name": "Network I/O (bytes/sec)",
       "x": 0,
-      "y": 94,
+      "y": 101,
       "w": 16,
       "h": 6,
       "config": {
@@ -592,7 +592,7 @@
     {
       "name": "Network health score",
       "x": 16,
-      "y": 94,
+      "y": 101,
       "w": 8,
       "h": 5,
       "config": {
@@ -624,7 +624,7 @@
     {
       "name": "Network packets dropped / sec (per host)",
       "x": 0,
-      "y": 100,
+      "y": 107,
       "w": 12,
       "h": 6,
       "config": {
@@ -642,7 +642,7 @@
     {
       "name": "Network interface errors / sec (per host)",
       "x": 12,
-      "y": 100,
+      "y": 107,
       "w": 12,
       "h": 6,
       "config": {
@@ -660,7 +660,7 @@
     {
       "name": "Top network consumers and reliability",
       "x": 0,
-      "y": 106,
+      "y": 113,
       "w": 24,
       "h": 7,
       "config": {
@@ -674,18 +674,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 113,
+      "y": 121,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 5. Kubernetes Overview & Nodes\nCluster health and inventory, Ready/NotReady nodes, CPU versus observed host cores, memory versus observed capacity, filesystem usage, status, and uptime."
+        "markdown": "## 5. Kubernetes Overview & Nodes\nCluster health and inventory, Ready/NotReady nodes, CPU versus observed host cores, memory versus observed capacity, filesystem usage, status, and uptime."
       }
     },
     {
       "name": "Kubernetes nodes ready %",
       "x": 0,
-      "y": 118,
+      "y": 127,
       "w": 6,
       "h": 5,
       "config": {
@@ -717,7 +717,7 @@
     {
       "name": "Healthy nodes",
       "x": 6,
-      "y": 118,
+      "y": 127,
       "w": 6,
       "h": 5,
       "config": {
@@ -735,7 +735,7 @@
     {
       "name": "Unhealthy nodes (NotReady)",
       "x": 12,
-      "y": 118,
+      "y": 127,
       "w": 6,
       "h": 5,
       "config": {
@@ -767,7 +767,7 @@
     {
       "name": "Cluster inventory",
       "x": 18,
-      "y": 118,
+      "y": 127,
       "w": 6,
       "h": 5,
       "config": {
@@ -785,7 +785,7 @@
     {
       "name": "Node CPU usage (cores vs observed host cores)",
       "x": 0,
-      "y": 123,
+      "y": 132,
       "w": 8,
       "h": 7,
       "config": {
@@ -799,7 +799,7 @@
     {
       "name": "Node memory used (vs observed capacity)",
       "x": 8,
-      "y": 123,
+      "y": 132,
       "w": 8,
       "h": 7,
       "config": {
@@ -813,7 +813,7 @@
     {
       "name": "Node filesystem usage %",
       "x": 16,
-      "y": 123,
+      "y": 132,
       "w": 8,
       "h": 7,
       "config": {
@@ -827,7 +827,7 @@
     {
       "name": "Nodes - status, CPU, memory, uptime",
       "x": 0,
-      "y": 130,
+      "y": 139,
       "w": 24,
       "h": 7,
       "config": {
@@ -841,18 +841,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 137,
+      "y": 147,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 6. Namespaces\nNamespace CPU and memory usage, historical resource trends, phase/status, and the highest-consuming namespaces."
+        "markdown": "## 6. Namespaces\nNamespace CPU and memory usage, historical resource trends, phase/status, and the highest-consuming namespaces."
       }
     },
     {
       "name": "Namespace CPU usage (cores)",
       "x": 0,
-      "y": 142,
+      "y": 153,
       "w": 12,
       "h": 6,
       "config": {
@@ -870,7 +870,7 @@
     {
       "name": "Namespace memory usage",
       "x": 12,
-      "y": 142,
+      "y": 153,
       "w": 12,
       "h": 6,
       "config": {
@@ -889,7 +889,7 @@
     {
       "name": "Namespaces - phase, CPU, memory",
       "x": 0,
-      "y": 148,
+      "y": 159,
       "w": 24,
       "h": 6,
       "config": {
@@ -903,18 +903,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 155,
+      "y": 167,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 7. Pods & Workloads\nDeployment availability, pod phases and status, pods not running, restarts, failed containers, workload resources, and restart hotspots."
+        "markdown": "## 7. Pods & Workloads\nDeployment availability, pod phases and status, pods not running, restarts, failed containers, workload resources, and restart hotspots."
       }
     },
     {
       "name": "Deployment availability (ready / desired)",
       "x": 0,
-      "y": 160,
+      "y": 173,
       "w": 12,
       "h": 6,
       "config": {
@@ -951,7 +951,7 @@
     {
       "name": "Pods by phase (count)",
       "x": 12,
-      "y": 160,
+      "y": 173,
       "w": 12,
       "h": 6,
       "config": {
@@ -965,7 +965,7 @@
     {
       "name": "Pods not Running",
       "x": 0,
-      "y": 166,
+      "y": 179,
       "w": 6,
       "h": 5,
       "config": {
@@ -991,7 +991,7 @@
     {
       "name": "Container restarts (selected range)",
       "x": 6,
-      "y": 166,
+      "y": 179,
       "w": 6,
       "h": 5,
       "config": {
@@ -1017,7 +1017,7 @@
     {
       "name": "Failed pods",
       "x": 12,
-      "y": 166,
+      "y": 179,
       "w": 6,
       "h": 5,
       "config": {
@@ -1043,7 +1043,7 @@
     {
       "name": "Observed deployments",
       "x": 18,
-      "y": 166,
+      "y": 179,
       "w": 6,
       "h": 5,
       "config": {
@@ -1061,7 +1061,7 @@
     {
       "name": "Pods - status & resources",
       "x": 0,
-      "y": 171,
+      "y": 184,
       "w": 16,
       "h": 6,
       "config": {
@@ -1075,7 +1075,7 @@
     {
       "name": "Top pods by restarts",
       "x": 16,
-      "y": 171,
+      "y": 184,
       "w": 8,
       "h": 6,
       "config": {
@@ -1089,18 +1089,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 178,
+      "y": 192,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 8. Container Resource Utilization\nPod and container CPU/memory versus limits and requests, saturation, utilization details, and resource-pressure troubleshooting."
+        "markdown": "## 8. Container Resource Utilization\nPod and container CPU/memory versus limits and requests, saturation, utilization details, and resource-pressure troubleshooting."
       }
     },
     {
       "name": "Pod CPU vs limit %",
       "x": 0,
-      "y": 183,
+      "y": 198,
       "w": 12,
       "h": 6,
       "config": {
@@ -1127,7 +1127,7 @@
     {
       "name": "Pod memory vs limit %",
       "x": 12,
-      "y": 183,
+      "y": 198,
       "w": 12,
       "h": 6,
       "config": {
@@ -1154,7 +1154,7 @@
     {
       "name": "Container CPU vs limit %",
       "x": 0,
-      "y": 189,
+      "y": 204,
       "w": 12,
       "h": 6,
       "config": {
@@ -1172,7 +1172,7 @@
     {
       "name": "Container memory vs limit %",
       "x": 12,
-      "y": 189,
+      "y": 204,
       "w": 12,
       "h": 6,
       "config": {
@@ -1190,7 +1190,7 @@
     {
       "name": "Node memory saturation %",
       "x": 0,
-      "y": 195,
+      "y": 210,
       "w": 6,
       "h": 5,
       "config": {
@@ -1222,7 +1222,7 @@
     {
       "name": "Observed pods",
       "x": 6,
-      "y": 195,
+      "y": 210,
       "w": 6,
       "h": 5,
       "config": {
@@ -1240,7 +1240,7 @@
     {
       "name": "Observed containers",
       "x": 12,
-      "y": 195,
+      "y": 210,
       "w": 6,
       "h": 5,
       "config": {
@@ -1258,7 +1258,7 @@
     {
       "name": "Observed namespaces",
       "x": 18,
-      "y": 195,
+      "y": 210,
       "w": 6,
       "h": 5,
       "config": {
@@ -1276,7 +1276,7 @@
     {
       "name": "Containers - utilization vs limit / request",
       "x": 0,
-      "y": 200,
+      "y": 215,
       "w": 24,
       "h": 7,
       "config": {
@@ -1290,18 +1290,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 207,
+      "y": 223,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 9. Events & Issues\nWarning and critical events, top reasons, impacted resources, and recent event details for central troubleshooting."
+        "markdown": "## 9. Events & Issues\nWarning and critical events, top reasons, impacted resources, and recent event details for central troubleshooting."
       }
     },
     {
       "name": "Warning events (in range)",
       "x": 0,
-      "y": 212,
+      "y": 229,
       "w": 8,
       "h": 5,
       "config": {
@@ -1319,7 +1319,7 @@
     {
       "name": "Critical events (in range)",
       "x": 8,
-      "y": 212,
+      "y": 229,
       "w": 8,
       "h": 5,
       "config": {
@@ -1345,7 +1345,7 @@
     {
       "name": "Impacted resources",
       "x": 16,
-      "y": 212,
+      "y": 229,
       "w": 8,
       "h": 5,
       "config": {
@@ -1363,7 +1363,7 @@
     {
       "name": "Top Kubernetes event reasons / impacted resources",
       "x": 0,
-      "y": 217,
+      "y": 234,
       "w": 12,
       "h": 7,
       "config": {
@@ -1377,7 +1377,7 @@
     {
       "name": "Recent Kubernetes warning events",
       "x": 12,
-      "y": 217,
+      "y": 234,
       "w": 12,
       "h": 8,
       "config": {
@@ -1391,18 +1391,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 225,
+      "y": 243,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 10. Utilization Analysis\nCross-resource consumption, saturation, top consumers, hotspots, and bottlenecks across compute, storage, networking, and Kubernetes."
+        "markdown": "## 10. Utilization Analysis\nCross-resource consumption, saturation, top consumers, hotspots, and bottlenecks across compute, storage, networking, and Kubernetes."
       }
     },
     {
       "name": "Top CPU and memory consumers",
       "x": 0,
-      "y": 230,
+      "y": 249,
       "w": 12,
       "h": 7,
       "config": {
@@ -1416,7 +1416,7 @@
     {
       "name": "Top storage consumers",
       "x": 12,
-      "y": 230,
+      "y": 249,
       "w": 12,
       "h": 7,
       "config": {
@@ -1430,7 +1430,7 @@
     {
       "name": "Cross-resource hotspots & bottlenecks",
       "x": 0,
-      "y": 237,
+      "y": 256,
       "w": 24,
       "h": 7,
       "config": {
@@ -1444,18 +1444,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 244,
+      "y": 264,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### 11. Capacity Planning\nCPU, memory, and storage headroom; growth trends; capacity forecasts; exhaustion risks; and scale recommendations."
+        "markdown": "## 11. Capacity Planning\nCPU, memory, and storage headroom; growth trends; capacity forecasts; exhaustion risks; and scale recommendations."
       }
     },
     {
       "name": "CPU headroom % (100 - cluster busy)",
       "x": 0,
-      "y": 249,
+      "y": 270,
       "w": 8,
       "h": 6,
       "config": {
@@ -1473,7 +1473,7 @@
     {
       "name": "Memory headroom % (100 - used)",
       "x": 8,
-      "y": 249,
+      "y": 270,
       "w": 8,
       "h": 6,
       "config": {
@@ -1491,7 +1491,7 @@
     {
       "name": "Disk free % per volume over time",
       "x": 16,
-      "y": 249,
+      "y": 270,
       "w": 8,
       "h": 6,
       "config": {
@@ -1509,7 +1509,7 @@
     {
       "name": "Storage growth forecast / estimated exhaustion risk",
       "x": 0,
-      "y": 255,
+      "y": 276,
       "w": 12,
       "h": 7,
       "config": {
@@ -1523,7 +1523,7 @@
     {
       "name": "Capacity risk summary & scale recommendations",
       "x": 12,
-      "y": 255,
+      "y": 276,
       "w": 12,
       "h": 7,
       "config": {

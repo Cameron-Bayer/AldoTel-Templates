@@ -68,6 +68,10 @@ Both styles respect the dashboard filters described below when their underlying 
 **Data source:** Traces, Logs, Kubernetes/Host metrics, ClickHouse system tables  ·  **Filters:** Service, Log Service, Namespace  ·  **Tier:** Default
 **Purpose:** The unified landing page for a status check. It rolls environment and platform health, resources, services, ClickHouse workload/storage, impacted clusters, and Kubernetes events into one ordered screen. The generated [`docs/overview.md`](docs/overview.md) is the exact reference for every Overview tile.
 
+**Dashboard sections:** **1. Environment Summary**, **2. Platform Health**, **3. Resource Consumption**,
+**4. Service Health**, **5. ClickHouse Workload & Storage**, **6. Top Impacted Clusters**,
+**7. Recent Activity**, and **8. Related Control Plane & Data Plane Views**.
+
 > Every tile degrades independently. If traces are absent, the service tiles are empty; if `k8sobjects` events are absent, the recent-activity tiles are empty; the remaining signals still work.
 
 ### Cluster health
@@ -154,9 +158,13 @@ Both styles respect the dashboard filters described below when their underlying 
 **Data source:** Host metrics and Kubernetes node metrics  ·  **Filters:** Host  ·  **Tier:** Default
 **Purpose:** The foundation view: hosts, Kubernetes nodes, filesystems, disks, network interfaces, and remaining capacity. Use it when the Overview shows saturation, NotReady nodes, disk growth, or unexplained application latency.
 
+**Dashboard sections:** **1. Cluster Health**, **2. Host Health**, **3. Storage Health**,
+**4. Network Health**, **5. Resource Headroom**, **6. Utilization Analysis**, and
+**7. Capacity Planning**.
+
 > This dashboard needs the collector `hostmetrics` receiver (`system.*` scrapers: CPU, memory, load, filesystem, paging, disk, network) plus Kubernetes node metrics from `kubeletstats` and `k8s_cluster`.
 
-### Cluster health
+### 1. Cluster Health
 
 **Kubernetes nodes ready %**, **Healthy nodes**, and **Unhealthy nodes (NotReady)** — the same readiness roll-up shown in Overview.
 - **What they read:** `k8s.node.condition_ready` in `default.otel_metrics_gauge`.
@@ -168,7 +176,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Over the last hour, the SQL takes latest readiness and uptime per node, formats status as Ready/Not Ready and uptime as a readable duration.
 - **Q: What should I look for?** Not Ready first, then suspiciously short uptime. Short uptime often explains recent pod churn. For per-node CPU and memory, use the **Hosts - CPU, memory, load** table below — the appliance reports those as host metrics, not node metrics.
 
-### Node health (hosts)
+### 2. Host Health
 
 **Host CPU busy %** — per-host non-idle CPU over time.
 - **What it reads:** `system.cpu.utilization` with `Attributes['state']` and `Attributes['cpu']`.
@@ -195,7 +203,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Separate CPU, memory, and load subqueries are joined by host, formatted as percentages/load, and ordered by CPU busy descending.
 - **Q: What is it for?** A fleet scan. Pick the hottest host, then check disk and network on that same host.
 
-### Storage health
+### 3. Storage Health
 
 **Filesystem used % per volume** and **Free filesystem capacity per volume (GB)** — disk space by mounted volume.
 - **What they read:** `system.filesystem.usage` in `default.otel_metrics_sum`.
@@ -217,7 +225,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Counter deltas are grouped by host and direction, summed, and divided by the interval length.
 - **Q: How should I use it?** Throughput at a sustained ceiling indicates a bandwidth-bound disk. Throughput low but latency high points to device contention or errors.
 
-### Network health
+### 4. Network Health
 
 **Network I/O (bytes/sec)** — receive/transmit throughput.
 - **What it reads:** `system.network.io` in `default.otel_metrics_sum` by host, device, and direction.
@@ -229,7 +237,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How they are calculated:** Both use the same counter-delta pattern as Network I/O, grouped by host and direction.
 - **Q: What is unhealthy?** Dropped packets or interface errors above zero during an incident are strong evidence of network trouble. Correlate with application latency and Kubernetes events.
 
-### Capacity planning
+### 5. Resource Headroom
 
 **CPU headroom % (100 - cluster busy)** and **Memory headroom % (100 - used)** — remaining cluster-level compute capacity.
 - **What they read:** `system.cpu.utilization` and `system.memory.utilization` in `default.otel_metrics_gauge`.
@@ -246,15 +254,28 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Per host+mountpoint and interval, `sumIf(Value, state='free') / sum(Value)`.
 - **Q: What should I watch?** A steady downward slope is the planning signal. A cliff means a workload or ClickHouse table started writing much faster than expected.
 
+### 6. Utilization Analysis
+
+The top-consumer tables rank hosts and volumes by raw CPU, memory, filesystem, and network usage.
+Use them to identify which resource is driving a low-headroom or saturation signal.
+
+### 7. Capacity Planning
+
+The risk summary converts current CPU, memory, and storage headroom into scale recommendations.
+The storage forecast estimates growth rate and time to exhaustion from the selected historical range.
+
 ---
 ## 3. Kubernetes
 
 **Data source:** Kubernetes metrics  ·  **Filters:** Namespace  ·  **Tier:** Default
 **Purpose:** Cluster, namespace, workload, and limit-utilization health. Use it when pods are unhealthy, restarts are rising, a namespace is noisy, or containers are close to CPU/memory limits.
 
+**Dashboard sections:** **1. Cluster Overview**, **2. Namespace Overview**, **3. Workload Health**,
+**4. Cluster Utilization**, **5. Cluster Inventory**, and **6. Events & Issues**.
+
 > This dashboard needs `kubeletstats` and `k8s_cluster` metrics. The Namespace filter applies to compatible pod, namespace, and container tiles.
 
-### Cluster overview
+### 1. Cluster Overview
 
 **Kubernetes nodes ready %** — percentage of nodes reporting Ready.
 - **What it reads:** `k8s.node.condition_ready` in `default.otel_metrics_gauge`.
@@ -276,7 +297,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Latest values from the last hour are grouped by node and formatted.
 - **Q: What should I do next?** Investigate Not Ready nodes first, then nodes with very short uptime.
 
-### Namespace overview
+### 2. Namespace Overview
 
 **Namespace CPU usage (cores)** and **Namespace memory usage** — aggregate pod resources by namespace.
 - **What they read:** `k8s.pod.cpu.usage` and `k8s.pod.memory.usage` in `default.otel_metrics_gauge`.
@@ -288,7 +309,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Pod CPU and memory are summed by namespace over the last hour; namespace phase is the latest `k8s.namespace.phase` value and is displayed as Active, Terminating, or Unknown.
 - **Q: How should I read it?** Terminating namespaces that still consume CPU or memory can indicate stuck resources. The CPU ordering shows where to start capacity investigations.
 
-### Workload health
+### 3. Workload Health
 
 **Deployment availability (ready / desired)** — ready replicas versus desired replicas.
 - **What it reads:** `k8s.deployment.available` and `k8s.deployment.desired` in `default.otel_metrics_gauge`.
@@ -310,7 +331,7 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Latest values from the last hour are grouped by pod, phase is translated to text, CPU/memory limit utilization are formatted as percentages, memory is formatted as bytes, uptime as age, and rows are ordered by restarts then CPU/limit.
 - **Q: Which columns matter most?** Restarts, then CPU/limit and Mem/limit. High restarts plus short age confirms a crash loop; memory near 100% predicts an OOM kill.
 
-### Cluster utilization (vs limits)
+### 4. Cluster Utilization
 
 **Pod CPU vs limit %** and **Pod memory vs limit %** — pod-level pressure against configured limits.
 - **What they read:** `k8s.pod.cpu_limit_utilization` and `k8s.pod.memory_limit_utilization`.
@@ -332,11 +353,26 @@ Both styles respect the dashboard filters described below when their underlying 
 - **How it is calculated:** Latest values from the last hour are grouped by namespace/pod/container, joined to latest uptime, formatted as percentages, and ordered by CPU/limit.
 - **Q: What should I do next?** Containers near 100% of limit need tuning or more capacity. Containers far above request but below limit may be noisy neighbors and should have requests adjusted.
 
+### 5. Cluster Inventory
+
+The inventory cards count observed namespaces, pods, containers, and deployments so missing or
+unexpected workload coverage is visible immediately.
+
+### 6. Events & Issues
+
+Recent Kubernetes Warning events and top event reasons identify the resources currently experiencing
+scheduling, image, storage, readiness, or lifecycle problems.
+
 ---
 ## Metrics
 
 **Data source:** Host, process/runtime, Kubernetes, and event metrics/logs  ·  **Filters:** Event Namespace  ·  **Tier:** Default
 **Purpose:** The unified infrastructure and Kubernetes operations page. It combines real-time health, historical trends, utilization analysis, troubleshooting, and capacity planning. The generated [`docs/metrics.md`](docs/metrics.md) is the exact reference for every tile.
+
+**Dashboard sections:** **1. Infrastructure Overview**, **2. Compute**, **3. Storage**,
+**4. Networking**, **5. Kubernetes Overview & Nodes**, **6. Namespaces**, **7. Pods & Workloads**,
+**8. Container Resource Utilization**, **9. Events & Issues**, **10. Utilization Analysis**, and
+**11. Capacity Planning**.
 
 > Core panels use `hostmetrics`, `kubeletstats`, and `k8s_cluster`. Process/swap/direct-node panels are optional; event panels require `k8sobjects`.
 
@@ -374,6 +410,11 @@ growth trends, storage exhaustion estimates, and scale recommendations.
 
 **Data source:** Traces  ·  **Filters:** Service  ·  **Tier:** Default
 **Purpose:** The application reliability and performance view. RED stands for **Rate**, **Errors**, and **Duration**. Eight ordered sections cover service overview, latency analysis, request health, end-to-end tracing, dependency mapping, root-cause analysis, SLO reliability, and optional ClickHouse/collector platform health. The generated [`docs/traces.md`](docs/traces.md) is the exact reference for every tile.
+
+**Dashboard sections:** **1. Service Overview** with **1.1. RED Metrics Overview**,
+**2. Latency Analysis**, **3. Request Health (RED Metrics)**, **4. End-to-End Request Tracing**,
+**5. Service Dependency Mapping**, **6. Error Correlation & Root Cause Analysis**,
+**7. SLO & Reliability**, and **8. Infrastructure & Platform Performance**.
 
 > This dashboard requires application traces with OpenTelemetry server spans in `default.otel_traces`.
 > HTTP, RPC, client-dependency, and platform panels degrade when those optional attributes/signals are absent. Keeper latency is intentionally shown as unavailable until Keeper metrics scraping is enabled.
@@ -455,6 +496,9 @@ paths, exceptions by service, and anomaly timelines.
 **Data source:** Logs  ·  **Filters:** Service, Resource, Cluster, Host, Namespace, Pod, Severity  ·  **Tier:** Default
 **Purpose:** Log overview, full-text search/exploration, normalized and newly appearing patterns, Kubernetes error sources, and both all-log and error live streams. Native HyperDX adds saved searches, bookmarks/favorites, exports, and log/trace correlation. See [`docs/logs.md`](docs/logs.md) for every tile.
 
+**Dashboard sections:** **1. Log Overview**, **2. Log Search & Exploration** with
+**2.1. Investigation Tools & Correlation**, and **3. Live Log Streaming**.
+
 > This dashboard reads application/container logs from `default.otel_logs`. Kubernetes namespace and pod columns are populated when those resource attributes are present.
 
 ### Volume & error rate
@@ -504,6 +548,9 @@ paths, exceptions by service, and anomaly timelines.
 
 **Data source:** Traces, Logs, Kubernetes metrics/events  ·  **Filters:** Service, Namespace, Severity  ·  **Tier:** Default
 **Purpose:** A support and CSS triage board. It recomputes active conditions across traces, logs, pods, CPU, memory, and filesystems, then provides guided ALM/ALRS/resource-provider/Kubernetes/network/storage workflows and a live recurring-signature known-issues view. See [`docs/supportability.md`](docs/supportability.md) for every tile.
+
+**Dashboard sections:** **1. Alert Conditions**, **2. Failure Tracking**, **3. Troubleshooting**,
+and **4. Guided Workflows**.
 
 > There is no separate alert-state store. The original alert-condition tiles are live calculations
 > over the selected range. The combined **Global active alert conditions (15m / 1h)** table deliberately
@@ -571,6 +618,10 @@ paths, exceptions by service, and anomaly timelines.
 
 **Data source:** Collector self-metrics, ClickHouse metrics, ClickHouse system tables  ·  **Filters:** Collector  ·  **Tier:** Advanced
 **Purpose:** The health of the observability stack itself: OpenTelemetry Collector ingestion and queues, ClickHouse storage/availability, and dashboard query performance. Use it when other dashboards are unexpectedly empty, delayed, or slow.
+
+**Dashboard sections:** **1. Telemetry Ingestion**, **2. Pipeline Health**,
+**3. ClickHouse Storage & Availability**, **4. Dashboard Query Performance**, and
+**5. ClickHouse Workload & Merge Activity**.
 
 > This is the only advanced-tier dashboard. It requires the metrics-scraper add-on: collector self-telemetry scraped from the collector `:8888` endpoint, ClickHouse server metrics scraped into OTel, and permission for the HyperDX ClickHouse user to read `system.query_log` when query-performance tiles are used. If this dashboard is empty, that optional scraping is probably not enabled.
 

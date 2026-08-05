@@ -20,7 +20,7 @@ These apply to every compatible tile on the dashboard.
 ## Active Alerts & Guided Troubleshooting
 Live alert-condition status plus guided workflows for ALM, ALRS, resource providers, Kubernetes, networking, and storage. HyperDX does not store Grafana alert state here, so the Active Alerts table recomputes the same observable conditions from current telemetry and links investigation to logs, traces, metrics, and events.
 
-## Alert conditions (global fixed windows)
+## 1. Alert Conditions
 Global appliance conditions recomputed over fixed 15-minute request/log/CPU/memory windows and 1-hour pod/filesystem windows. Dashboard filters and the time picker intentionally do not scope this mixed-signal table; use the domain tiles below for filtered investigation.
 
 ### Server error rate (%) — number
@@ -75,7 +75,7 @@ SELECT sum(d) AS "New restarts" FROM (
 
 </details>
 
-## Failure tracking
+## 2. Failure Tracking
 Crash loops, resource exhaustion, and warning-level Kubernetes events.
 
 ### Top pods by restarts — table · Raw SQL
@@ -139,7 +139,7 @@ LIMIT 50
 
 </details>
 
-## Troubleshooting
+## 3. Troubleshooting
 Top error signatures, errors by service, error sources by namespace/pod, and a live error stream. Click a row to open Logs.
 
 ### Top error signatures (normalized) - click a row to open Logs — table · Raw SQL
@@ -228,7 +228,7 @@ SELECT * FROM (SELECT 'Server error rate' AS Condition, if(value >= 0.05, 'Criti
 
 </details>
 
-## Guided Workflows
+## 4. Guided Workflows
 **ALM / ALRS / Resource Providers:** start with Overview → identify the unhealthy node/service → inspect Services traces and Logs signatures.<br>**Kubernetes:** check node readiness, deployment availability, pods not running, restarts, then recent events.<br>**Networking:** check throughput, drops, and interface errors by host before correlating service/client-span latency.<br>**Storage:** check per-volume utilization, free capacity, IOPS, and latency; for ClickHouse pressure open advanced Observability Platform Health.<br>The normalized error-signature table below acts as the live known-issues index: recurring signatures can be matched to support documentation while new signatures are prioritized for investigation.
 
 ### Known issues repository - recurring error signatures — table · Raw SQL

@@ -40,16 +40,16 @@
       "x": 0,
       "y": 5,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Cluster overview\nNode readiness and per-node CPU, memory, and filesystem usage against capacity."
+        "markdown": "## 1. Cluster Overview\nNode readiness and per-node CPU, memory, and filesystem usage against capacity."
       }
     },
     {
       "name": "Kubernetes nodes ready %",
       "x": 0,
-      "y": 9,
+      "y": 11,
       "w": 8,
       "h": 6,
       "config": {
@@ -81,7 +81,7 @@
     {
       "name": "Host CPU utilization %",
       "x": 8,
-      "y": 9,
+      "y": 11,
       "w": 16,
       "h": 6,
       "config": {
@@ -99,7 +99,7 @@
     {
       "name": "Host memory utilization %",
       "x": 0,
-      "y": 15,
+      "y": 17,
       "w": 24,
       "h": 6,
       "config": {
@@ -117,7 +117,7 @@
     {
       "name": "Filesystem used % per volume",
       "x": 0,
-      "y": 21,
+      "y": 23,
       "w": 24,
       "h": 6,
       "config": {
@@ -135,7 +135,7 @@
     {
       "name": "Nodes - status & uptime",
       "x": 0,
-      "y": 27,
+      "y": 29,
       "w": 24,
       "h": 6,
       "config": {
@@ -149,18 +149,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 33,
+      "y": 36,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Namespace overview\nResource consumption broken down by namespace."
+        "markdown": "## 2. Namespace Overview\nResource consumption broken down by namespace."
       }
     },
     {
       "name": "Namespace CPU usage (cores)",
       "x": 0,
-      "y": 37,
+      "y": 42,
       "w": 12,
       "h": 6,
       "config": {
@@ -178,7 +178,7 @@
     {
       "name": "Namespace memory usage",
       "x": 12,
-      "y": 37,
+      "y": 42,
       "w": 12,
       "h": 6,
       "config": {
@@ -197,7 +197,7 @@
     {
       "name": "Namespaces - phase, CPU, memory",
       "x": 0,
-      "y": 43,
+      "y": 48,
       "w": 24,
       "h": 6,
       "config": {
@@ -211,18 +211,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 49,
+      "y": 55,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Workload health\nDeployment availability, pod phases, restarts, and the pods using the most resources."
+        "markdown": "## 3. Workload Health\nDeployment availability, pod phases, restarts, and the pods using the most resources."
       }
     },
     {
       "name": "Deployment availability (ready / desired)",
       "x": 0,
-      "y": 53,
+      "y": 61,
       "w": 12,
       "h": 6,
       "config": {
@@ -259,7 +259,7 @@
     {
       "name": "Pods by phase (count)",
       "x": 12,
-      "y": 53,
+      "y": 61,
       "w": 12,
       "h": 6,
       "config": {
@@ -273,7 +273,7 @@
     {
       "name": "Pods not Running",
       "x": 0,
-      "y": 59,
+      "y": 67,
       "w": 12,
       "h": 5,
       "config": {
@@ -299,7 +299,7 @@
     {
       "name": "Container restarts (selected range)",
       "x": 12,
-      "y": 59,
+      "y": 67,
       "w": 12,
       "h": 5,
       "config": {
@@ -325,7 +325,7 @@
     {
       "name": "Pods - status & resources",
       "x": 0,
-      "y": 64,
+      "y": 72,
       "w": 24,
       "h": 6,
       "config": {
@@ -339,7 +339,7 @@
     {
       "name": "Top pods by restarts",
       "x": 0,
-      "y": 70,
+      "y": 78,
       "w": 24,
       "h": 6,
       "config": {
@@ -353,18 +353,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 76,
+      "y": 85,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Cluster utilization (vs limits)\nHow close pods and containers are running to their configured CPU and memory limits."
+        "markdown": "## 4. Cluster Utilization\nHow close pods and containers are running to their configured CPU and memory limits."
       }
     },
     {
       "name": "Pod CPU vs limit %",
       "x": 0,
-      "y": 80,
+      "y": 91,
       "w": 12,
       "h": 6,
       "config": {
@@ -391,7 +391,7 @@
     {
       "name": "Pod memory vs limit %",
       "x": 12,
-      "y": 80,
+      "y": 91,
       "w": 12,
       "h": 6,
       "config": {
@@ -418,7 +418,7 @@
     {
       "name": "Container CPU vs limit %",
       "x": 0,
-      "y": 86,
+      "y": 97,
       "w": 12,
       "h": 6,
       "config": {
@@ -436,7 +436,7 @@
     {
       "name": "Container memory vs limit %",
       "x": 12,
-      "y": 86,
+      "y": 97,
       "w": 12,
       "h": 6,
       "config": {
@@ -454,7 +454,7 @@
     {
       "name": "Host memory saturation %",
       "x": 0,
-      "y": 92,
+      "y": 103,
       "w": 24,
       "h": 5,
       "config": {
@@ -486,7 +486,7 @@
     {
       "name": "Containers - utilization vs limit / request",
       "x": 0,
-      "y": 97,
+      "y": 108,
       "w": 24,
       "h": 7,
       "config": {
@@ -500,18 +500,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 104,
+      "y": 116,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Cluster Inventory\nDeployed nodes, namespaces, workloads, pods, and containers observed in the selected time range."
+        "markdown": "## 5. Cluster Inventory\nDeployed nodes, namespaces, workloads, pods, and containers observed in the selected time range."
       }
     },
     {
       "name": "Observed namespaces",
       "x": 0,
-      "y": 109,
+      "y": 122,
       "w": 6,
       "h": 5,
       "config": {
@@ -529,7 +529,7 @@
     {
       "name": "Observed pods",
       "x": 6,
-      "y": 109,
+      "y": 122,
       "w": 6,
       "h": 5,
       "config": {
@@ -547,7 +547,7 @@
     {
       "name": "Observed containers",
       "x": 12,
-      "y": 109,
+      "y": 122,
       "w": 6,
       "h": 5,
       "config": {
@@ -565,7 +565,7 @@
     {
       "name": "Observed deployments",
       "x": 18,
-      "y": 109,
+      "y": 122,
       "w": 6,
       "h": 5,
       "config": {
@@ -583,18 +583,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 114,
+      "y": 128,
       "w": 24,
-      "h": 5,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Events & Issues\nCentral Kubernetes troubleshooting view for warning/critical events, top reasons, recent events, and impacted resources."
+        "markdown": "## 6. Events & Issues\nCentral Kubernetes troubleshooting view for warning/critical events, top reasons, recent events, and impacted resources."
       }
     },
     {
       "name": "Recent Kubernetes warning events",
       "x": 0,
-      "y": 119,
+      "y": 134,
       "w": 24,
       "h": 8,
       "config": {
@@ -608,7 +608,7 @@
     {
       "name": "Top Kubernetes event reasons / impacted resources",
       "x": 0,
-      "y": 127,
+      "y": 142,
       "w": 24,
       "h": 7,
       "config": {

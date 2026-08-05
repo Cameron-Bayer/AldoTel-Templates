@@ -47,16 +47,16 @@
       "x": 0,
       "y": 5,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Alert conditions (global fixed windows)\nGlobal appliance conditions recomputed over fixed 15-minute request/log/CPU/memory windows and 1-hour pod/filesystem windows. Dashboard filters and the time picker intentionally do not scope this mixed-signal table; use the domain tiles below for filtered investigation."
+        "markdown": "## 1. Alert Conditions\nGlobal appliance conditions recomputed over fixed 15-minute request/log/CPU/memory windows and 1-hour pod/filesystem windows. Dashboard filters and the time picker intentionally do not scope this mixed-signal table; use the domain tiles below for filtered investigation."
       }
     },
     {
       "name": "Server error rate (%)",
       "x": 0,
-      "y": 9,
+      "y": 11,
       "w": 7,
       "h": 5,
       "config": {
@@ -93,7 +93,7 @@
     {
       "name": "Log error rate (%)",
       "x": 7,
-      "y": 9,
+      "y": 11,
       "w": 7,
       "h": 5,
       "config": {
@@ -130,7 +130,7 @@
     {
       "name": "Pods not Running",
       "x": 14,
-      "y": 9,
+      "y": 11,
       "w": 10,
       "h": 5,
       "config": {
@@ -156,7 +156,7 @@
     {
       "name": "Container restarts (selected range)",
       "x": 0,
-      "y": 14,
+      "y": 16,
       "w": 24,
       "h": 5,
       "config": {
@@ -182,18 +182,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 19,
+      "y": 22,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Failure tracking\nCrash loops, resource exhaustion, and warning-level Kubernetes events."
+        "markdown": "## 2. Failure Tracking\nCrash loops, resource exhaustion, and warning-level Kubernetes events."
       }
     },
     {
       "name": "Top pods by restarts",
       "x": 0,
-      "y": 23,
+      "y": 28,
       "w": 24,
       "h": 6,
       "config": {
@@ -207,7 +207,7 @@
     {
       "name": "Warning events (in range)",
       "x": 0,
-      "y": 29,
+      "y": 34,
       "w": 8,
       "h": 6,
       "config": {
@@ -233,7 +233,7 @@
     {
       "name": "Top event reasons",
       "x": 8,
-      "y": 29,
+      "y": 34,
       "w": 16,
       "h": 6,
       "config": {
@@ -247,18 +247,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 35,
+      "y": 41,
       "w": 24,
-      "h": 4,
+      "h": 6,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Troubleshooting\nTop error signatures, errors by service, error sources by namespace/pod, and a live error stream. Click a row to open Logs."
+        "markdown": "## 3. Troubleshooting\nTop error signatures, errors by service, error sources by namespace/pod, and a live error stream. Click a row to open Logs."
       }
     },
     {
       "name": "Top error signatures (normalized) - click a row to open Logs",
       "x": 0,
-      "y": 39,
+      "y": 47,
       "w": 24,
       "h": 6,
       "config": {
@@ -281,7 +281,7 @@
     {
       "name": "Errors & fatals by service (last 24h) - click a row to open Logs",
       "x": 0,
-      "y": 45,
+      "y": 53,
       "w": 24,
       "h": 7,
       "config": {
@@ -304,7 +304,7 @@
     {
       "name": "Top Kubernetes error sources (namespace / pod) - click a row to open Logs",
       "x": 0,
-      "y": 52,
+      "y": 60,
       "w": 24,
       "h": 6,
       "config": {
@@ -327,7 +327,7 @@
     {
       "name": "Live error stream - click a row for full log detail",
       "x": 0,
-      "y": 58,
+      "y": 66,
       "w": 24,
       "h": 7,
       "config": {
@@ -341,7 +341,7 @@
     {
       "name": "Global active alert conditions (15m / 1h)",
       "x": 0,
-      "y": 65,
+      "y": 73,
       "w": 24,
       "h": 7,
       "config": {
@@ -355,18 +355,18 @@
     {
       "name": "",
       "x": 0,
-      "y": 72,
+      "y": 81,
       "w": 24,
       "h": 9,
       "config": {
         "displayType": "markdown",
-        "markdown": "#### Guided Workflows\n**ALM / ALRS / Resource Providers:** start with Overview → identify the unhealthy node/service → inspect Services traces and Logs signatures.<br>**Kubernetes:** check node readiness, deployment availability, pods not running, restarts, then recent events.<br>**Networking:** check throughput, drops, and interface errors by host before correlating service/client-span latency.<br>**Storage:** check per-volume utilization, free capacity, IOPS, and latency; for ClickHouse pressure open advanced Observability Platform Health.<br>The normalized error-signature table below acts as the live known-issues index: recurring signatures can be matched to support documentation while new signatures are prioritized for investigation."
+        "markdown": "## 4. Guided Workflows\n**ALM / ALRS / Resource Providers:** start with Overview → identify the unhealthy node/service → inspect Services traces and Logs signatures.<br>**Kubernetes:** check node readiness, deployment availability, pods not running, restarts, then recent events.<br>**Networking:** check throughput, drops, and interface errors by host before correlating service/client-span latency.<br>**Storage:** check per-volume utilization, free capacity, IOPS, and latency; for ClickHouse pressure open advanced Observability Platform Health.<br>The normalized error-signature table below acts as the live known-issues index: recurring signatures can be matched to support documentation while new signatures are prioritized for investigation."
       }
     },
     {
       "name": "Known issues repository - recurring error signatures",
       "x": 0,
-      "y": 81,
+      "y": 90,
       "w": 24,
       "h": 8,
       "config": {
