@@ -210,8 +210,23 @@ data is actually flowing. Each dashboard is rated:
 - **OK** — all required *and* optional checks have data.
 - **DEGRADED** — all required checks pass; some optional tiles will be empty.
 - **FAIL** — a required check has no data; don't import as-is (your collector isn't sending it).
+- **UNKNOWN** — a probe still failed after retries; rerun preflight rather than treating it as
+  missing telemetry.
 
 It then prints a `--only` command listing the dashboards whose **OTel source data** is present.
+
+Preflight keeps probes lightweight: high-frequency metrics use only the latest **60 minutes**,
+identical checks shared by multiple dashboards are queried once and cached, and transient query
+failures are retried twice. Logs and traces retain the default 24-hour lookback because they may be
+sparse. Tune the bounds when needed:
+
+```powershell
+./preflight.ps1 -MetricProbeMinutes 15 -LookbackHours 6 -QueryRetries 3
+```
+
+```bash
+./preflight.sh --metric-minutes 15 --hours 6 --retries 3
+```
 
 > **Scope — what preflight does and does not check.** Preflight verifies only that the
 > **OTel telemetry** each dashboard reads (metrics / traces / logs) is flowing. It does **not**
