@@ -114,7 +114,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "At a glance",
+      "title": "1. Service Overview",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -160,7 +160,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "text"
@@ -307,7 +307,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -424,7 +424,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Traffic, errors & latency trends",
+      "title": "2. Request Health & Latency Trends",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -470,6 +470,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -545,6 +546,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -620,6 +622,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -695,6 +698,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -737,7 +741,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Service comparison",
+      "title": "3. Service Comparison",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -769,7 +773,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error %\",\n       round(quantile(0.50)(Duration) / 1e6, 1) AS \"p50 ms\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\",\n       round(quantile(0.99)(Duration) / 1e6, 1) AS \"p99 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() / dateDiff('second', $__fromTime, $__toTime) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS \"Error %\",\n       quantile(0.50)(Duration) / 1e6 AS \"p50 ms\",\n       quantile(0.95)(Duration) / 1e6 AS \"p95 ms\",\n       quantile(0.99)(Duration) / 1e6 AS \"p99 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nORDER BY count() DESC",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -835,7 +839,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               }
             ]
           },
@@ -851,7 +855,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               }
             ]
           },
@@ -867,7 +871,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               }
             ]
           },
@@ -972,7 +976,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "99.9% availability target & error budget",
+      "title": "4. SLO & Error Budget",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1004,7 +1008,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Requests\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * (1 - countIf(StatusCode = 'Error') / nullIf(count(), 0)), 3) AS \"Availability %\",\n       round(100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001), 1) AS \"Budget left %\",\n       round((countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001, 2) AS \"Burn rate\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nHAVING count() >= 20\nORDER BY \"Burn rate\" DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Requests\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       100 * (1 - countIf(StatusCode = 'Error') / nullIf(count(), 0)) AS \"Availability %\",\n       100 * (1 - (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001) AS \"Budget left %\",\n       (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001 AS \"Burn rate\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server' AND ServiceName IN (${service:sqlstring})\nGROUP BY ServiceName\nHAVING count() >= 20\nORDER BY (countIf(StatusCode = 'Error') / nullIf(count(), 0)) / 0.001 DESC",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1038,7 +1042,7 @@
               },
               {
                 "id": "decimals",
-                "value": 3
+                "value": 2
               }
             ]
           },
@@ -1054,7 +1058,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               }
             ]
           },
@@ -1172,6 +1176,10 @@
               {
                 "id": "unit",
                 "value": "none"
+              },
+              {
+                "id": "decimals",
+                "value": 2
               }
             ]
           },

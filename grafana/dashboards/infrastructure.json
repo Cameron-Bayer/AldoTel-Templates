@@ -114,7 +114,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Cluster health",
+      "title": "1. Cluster Health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -160,7 +160,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -522,7 +522,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Node health (hosts)",
+      "title": "2. Host Health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -568,7 +568,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -645,7 +645,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -792,7 +792,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -869,6 +869,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -944,6 +945,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1019,6 +1021,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "none",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1094,6 +1097,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1155,7 +1159,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT c.host AS \"Host\",\n       round(c.cpu, 1) AS \"CPU %\",\n       round(m.mem, 1) AS \"Mem %\",\n       round(m.load, 2) AS \"Load 1m\",\n       round(m.load15, 2) AS \"Load 15m\"\nFROM (\n  SELECT host, 100 * avg(busy) AS cpu FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix)\n  GROUP BY host) c\nLEFT JOIN (\n  SELECT ResourceAttributes['host.name'] AS host,\n         100 * avgIf(Value, MetricName = 'system.memory.utilization' AND Attributes['state'] = 'used') AS mem,\n         avgIf(Value, MetricName = 'system.cpu.load_average.1m') AS load,\n         avgIf(Value, MetricName = 'system.cpu.load_average.15m') AS load15\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName IN ('system.memory.utilization', 'system.cpu.load_average.1m', 'system.cpu.load_average.15m') AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host) m ON c.host = m.host\nORDER BY \"CPU %\" DESC",
+          "rawSql": "SELECT c.host AS \"Host\",\n       c.cpu AS \"CPU %\",\n       m.mem AS \"Mem %\",\n       m.load AS \"Load 1m\",\n       m.load15 AS \"Load 15m\"\nFROM (\n  SELECT host, 100 * avg(busy) AS cpu FROM (\n    SELECT ResourceAttributes['host.name'] AS host, Attributes['cpu'] AS cpu, TimeUnix,\n         sumIf(Value, Attributes['state'] != 'idle') AS busy\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName = 'system.cpu.utilization' AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host, cpu, TimeUnix)\n  GROUP BY host) c\nLEFT JOIN (\n  SELECT ResourceAttributes['host.name'] AS host,\n         100 * avgIf(Value, MetricName = 'system.memory.utilization' AND Attributes['state'] = 'used') AS mem,\n         avgIf(Value, MetricName = 'system.cpu.load_average.1m') AS load,\n         avgIf(Value, MetricName = 'system.cpu.load_average.15m') AS load15\n  FROM ${database}.otel_metrics_gauge\n  WHERE MetricName IN ('system.memory.utilization', 'system.cpu.load_average.1m', 'system.cpu.load_average.15m') AND $__timeFilter(TimeUnix) AND ResourceAttributes['host.name'] IN (${host:sqlstring})\n  GROUP BY host) m ON c.host = m.host\nORDER BY c.cpu DESC",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1189,7 +1193,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               },
               {
                 "id": "thresholds",
@@ -1231,7 +1235,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               },
               {
                 "id": "thresholds",
@@ -1307,7 +1311,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Storage health",
+      "title": "3. Storage Health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1353,6 +1357,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1428,6 +1433,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "decbytes",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1503,6 +1509,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1578,6 +1585,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1653,6 +1661,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "decbytes",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1695,7 +1704,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Network health",
+      "title": "4. Network Health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1741,6 +1750,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "decbytes",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1816,6 +1826,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1891,6 +1902,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1933,7 +1945,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Capacity planning",
+      "title": "5. Resource Headroom",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1979,7 +1991,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -2056,7 +2068,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -2133,7 +2145,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -2210,7 +2222,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "decbytes",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "text"
@@ -2280,6 +2292,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -2355,6 +2368,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",

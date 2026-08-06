@@ -114,7 +114,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "At a glance",
+      "title": "1. At a Glance",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -160,7 +160,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -237,7 +237,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "text"
@@ -307,7 +307,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -351,7 +351,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Trends by service",
+      "title": "2. Trends by Service",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -397,6 +397,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -472,6 +473,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -514,7 +516,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Service & request type",
+      "title": "3. Service & Request Type",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -546,7 +548,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT service AS \"Service\", metric AS \"Metric\",\n       round(sum(dsum) / greatest(sum(dcount), 1), 2) AS \"Avg ms\",\n       toUInt64(sum(dcount)) AS \"Requests\"\nFROM (\n  SELECT ServiceName AS service, MetricName AS metric,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration', 'http.client.duration', 'rpc.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, metric, ResourceAttributes['service.instance.id'], toString(Attributes))\nGROUP BY service, metric\nHAVING \"Requests\" > 0\nORDER BY \"Requests\" DESC\nLIMIT 30",
+          "rawSql": "SELECT service AS \"Service\", metric AS \"Metric\",\n       sum(dsum) / greatest(sum(dcount), 1) AS \"Avg ms\",\n       toUInt64(sum(dcount)) AS \"Requests\"\nFROM (\n  SELECT ServiceName AS service, MetricName AS metric,\n         max(Sum) - min(Sum) AS dsum, max(Count) - min(Count) AS dcount\n  FROM ${database}.otel_metrics_histogram\n  WHERE MetricName IN ('http.server.duration', 'http.client.duration', 'rpc.server.duration') AND $__timeFilter(TimeUnix) AND ServiceName IN (${service:sqlstring})\n  GROUP BY service, metric, ResourceAttributes['service.instance.id'], toString(Attributes))\nGROUP BY service, metric\nHAVING \"Requests\" > 0\nORDER BY \"Requests\" DESC\nLIMIT 30",
           "queryType": "table",
           "format": 1,
           "meta": {

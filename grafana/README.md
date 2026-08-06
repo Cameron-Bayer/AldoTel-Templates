@@ -95,7 +95,7 @@ Grafana API.
 
 | File | Dashboard | Reads from | Answers |
 |------|-----------|-----------|---------|
-| `dashboards/operations-center.json` | **Operations Center** | all three | Is anything wrong right now, and where? Requests, Kubernetes, resource utilization, logs, and recent cluster events — top signals only. |
+| `dashboards/operations-center.json` | **Overview** | all three | Is anything wrong right now, and where? Requests, Kubernetes, resource utilization, logs, and recent cluster events — top signals only. |
 | `dashboards/service-health-golden-signals.json` | **Service Health** | `otel_traces` | Are my services up, fast, and error-free? (Rate / Errors / Duration per service) |
 | `dashboards/kubernetes-cluster-overview.json` | **Kubernetes Cluster Overview** | `otel_metrics_gauge` | Are nodes/pods healthy? CPU, memory, restarts, deployment availability. |
 | `dashboards/logs-errors-overview.json` | **Logs & Errors Overview** | `otel_logs` | How much are we logging, what's erroring, and what do the latest errors say? |
@@ -113,8 +113,11 @@ ClickStack / HyperDX deployment with no extra data sources.
 
 **Filters:** the Service Health, Kubernetes, Logs, and Infrastructure dashboards include a
 **Service**, **Namespace**, or **Host** drop-down (multi-select, defaults to *All*) at the top, so
-you can narrow every panel to the workloads you care about. The Operations Center is intentionally
+you can narrow every panel to the workloads you care about. The Overview dashboard is intentionally
 unfiltered — it's the always-on overview.
+
+Every dashboard uses numbered Grafana rows as collapsible visual separators. Continuous values use
+two decimal places; inherently discrete counts display as whole numbers.
 
 **Alerts:** a companion set of Grafana unified-alerting rules (error rate, latency,
 SLO fast-burn, ingestion stalled, pods not running, container restarts, error/fatal
@@ -131,7 +134,7 @@ the telemetry you actually send. Use this to predict what will have data before 
 
 | Dashboard | Needs | Stays empty if… |
 |-----------|-------|-----------------|
-| **Operations Center** | any of the signals below | nothing is flowing into ClickStack yet |
+| **Overview** | any of the signals below | nothing is flowing into ClickStack yet |
 | **Service Health** | trace spans in `otel_traces` (apps instrumented with OTel tracing) | your services don't emit server spans |
 | **Kubernetes Cluster Overview** | `otel_metrics_gauge` from the OTel **k8s cluster receiver** + **kubelet stats receiver** (ClickStack's infra collectors ship these) | those receivers aren't enabled or scraping |
 | **Logs & Errors Overview** | log rows in `otel_logs` (container logs and/or app OTLP logs) | no log pipeline is wired up |
@@ -238,12 +241,12 @@ providers:
 Captured against a live ClickStack cluster — this is what lands after you import. Click any
 image for full size.
 
-> **Note:** these screenshots predate the Operations Center / Infrastructure rebuild, so panel
+> **Note:** these screenshots predate the Overview / Infrastructure rebuild, so panel
 > layouts differ from the current JSON. The data sources and thresholds are unchanged.
 
-**Operations Center** — the one-pane health wall:
+**Overview** — the one-pane health wall:
 
-[![Operations Center](screenshots/operations-center.png)](screenshots/operations-center.png)
+[![Overview](screenshots/operations-center.png)](screenshots/operations-center.png)
 
 <table>
 <tr>
@@ -260,33 +263,34 @@ image for full size.
 
 ## Dashboard details
 
-### Operations Center (all three sources)
-- **Application request health:** average server request rate, server request error rate,
+### Overview (all three sources)
+- **1. Application Request Health:** average server request rate, server request error rate,
   95th-percentile server latency, and a services-receiving-requests count; plus
   server-requests and server-error-rate trends per chart interval.
-- **Kubernetes workload health:** ready nodes, running pods, pods pending/failed/unknown,
+- **2. Kubernetes Workload Health:** ready nodes, running pods, pods pending/failed/unknown,
   and container restarts during the selected range.
-- **Resource utilization:** cluster CPU utilization, cluster memory utilization, lowest node
+- **3. Resource Utilization:** cluster CPU utilization, cluster memory utilization, lowest node
   disk free %, and a **cluster health score** (share of nodes Ready × share of pods
   Running-or-Succeeded, both from their latest sample — 100% means everything is where it
   should be).
-- **Application logs:** average log record rate, average error-and-fatal log rate,
+- **4. Application Logs:** average log record rate, average error-and-fatal log rate,
   error-and-fatal share of logs, fatal-log count; plus log-records-by-severity and
   error-logs-by-service trends.
-- **Service health details:** every service ranked by error percentage, color-coded.
-- **Recent cluster events:** the 50 newest Kubernetes events — usually the fastest
+- **5. Service Health Details:** every service ranked by error percentage, color-coded.
+- **6. Recent Cluster Events:** the 50 newest Kubernetes events — usually the fastest
   explanation for a status change you just saw above.
 - *A single at-a-glance page for status pages, war-rooms, or a leadership screen. No filters.
   Drill into Infrastructure, Kubernetes, Service Health, or Logs for detail.*
 
 ### Service Health (`otel_traces`)
 - **Filter:** `Service` (multi-select, default All).
-- **At a glance:** average requests/sec, request error %, 95th-percentile latency, and a
+- **1. Service Overview:** average requests/sec, request error %, 95th-percentile latency, and a
   **Services below 99.9% availability** count (all over the whole selected range).
-- **Trends:** request count per time bucket by service, request latency percentiles
+- **2. Request Health & Latency Trends:** request count per time bucket by service, request latency percentiles
   (p50/p95/p99), request error % over time, error count per time bucket by service.
-- **Tables:** a per-service RED breakdown (Req/s, Errors, Error %, p50/p95/p99) with a
-  color-coded Error % column; and a **99.9% availability & error-budget** table
+- **3. Service Comparison:** a per-service RED breakdown (Req/s, Errors, Error %, p50/p95/p99)
+  with a color-coded Error % column.
+- **4. SLO & Error Budget:** a **99.9% availability & error-budget** table
   (availability %, error-budget use, burn rate — burn rate ≥14.4 is page-worthy).
 - *Only inbound "server" spans are counted (`SpanKind = 'Server'`), so numbers reflect
   requests the service handled — not every internal/outbound span.*
@@ -294,15 +298,15 @@ image for full size.
 ### Kubernetes Cluster Overview (`otel_metrics_gauge`)
 - **Filter:** `Namespace` (multi-select, default All) — applies to pod/deployment/container
   panels; node-level and event panels always show the whole cluster.
-- **Cluster & workload health:** ready nodes, running pods, pods pending/failed/unknown
+- **1. Cluster & Workload Health:** ready nodes, running pods, pods pending/failed/unknown
   (excludes completed `Succeeded` Job pods), container restarts **during the selected range**.
-- **Resource usage:** node CPU (cores), node memory (IEC bytes), top 10 pods by CPU,
+- **2. Host & Workload Resource Usage:** node CPU (cores), node memory (IEC bytes), top 10 pods by CPU,
   deployment replica availability (available/desired replicas).
-- **Workload details:** top 20 pods by active memory, and containers with restarts in range
+- **3. Workload Details:** top 20 pods by active memory, and containers with restarts in range
   (color-coded).
-- **Container use vs limits:** top 10 containers by CPU- and by memory-limit utilization,
+- **4. Container Resource Use Versus Configured Limits:** top 10 containers by CPU- and by memory-limit utilization,
   plus a latest-utilization table color-coded against each container's configured limits.
-- **Kubernetes events:** warning-event count, most frequent event reasons, and the most
+- **5. Kubernetes Events:** warning-event count, most frequent event reasons, and the most
   recent events (cluster-wide).
 - *Requires the OpenTelemetry **k8s cluster receiver** + **kubelet stats receiver**
   (ClickStack's infrastructure collectors ship these). Pod phase `2` = Running, `3` = Succeeded.*
@@ -313,11 +317,11 @@ image for full size.
 
 ### Logs & Errors Overview (`otel_logs`)
 - **Filter:** `Service` (multi-select, default All).
-- **At a glance:** average logs/sec, average error-and-fatal logs/sec, error-and-fatal share
+- **1. Log Overview:** average logs/sec, average error-and-fatal logs/sec, error-and-fatal share
   of logs, fatal-log count.
-- **Log trends:** log count per time bucket by normalized severity, error-and-fatal logs
+- **2. Log Trends:** log count per time bucket by normalized severity, error-and-fatal logs
   by service.
-- **Error details:** services generating the most error/fatal logs, and the 100 most recent
+- **3. Error Details:** services generating the most error/fatal logs, and the 100 most recent
   error/fatal logs (with message body).
 - *"Error and fatal" means `SeverityNumber >= 17` (error/fatal), falling back to lowercased
   `SeverityText` — robust to pipelines that set only the number or only the text.
@@ -329,16 +333,16 @@ image for full size.
 - **Filter:** `Host` (multi-select, default All) — applies to host-level `system.*` panels.
   Node-level `k8s.node.*` panels always show the whole cluster, because `k8s.node.name` and
   `host.name` are different dimensions.
-- **Cluster health:** Kubernetes nodes Ready %, healthy nodes, unhealthy (Not Ready) nodes,
+- **1. Cluster Health:** Kubernetes nodes Ready %, healthy nodes, unhealthy (Not Ready) nodes,
   hosts reporting metrics, and a per-node table of status and uptime.
-- **Node health (hosts):** average CPU, memory and 1-minute load plus the highest inode usage %;
+- **2. Host Health:** average CPU, memory and 1-minute load plus the highest inode usage %;
   CPU, memory, load and paging activity as per-host time series; plus a per-host averages table
   color-coded against thresholds.
-- **Storage health:** filesystem used % **by volume**, free filesystem capacity by volume, disk
+- **3. Storage Health:** filesystem used % **by volume**, free filesystem capacity by volume, disk
   operations per chart interval (the IOPS signal), **average disk latency in ms/op**, and disk
   I/O volume per host.
-- **Network health:** network I/O volume, packets dropped, and interface errors per host.
-- **Capacity planning:** CPU headroom, memory headroom, lowest volume free %, total free
+- **4. Network Health:** network I/O volume, packets dropped, and interface errors per host.
+- **5. Resource Headroom:** CPU headroom, memory headroom, lowest volume free %, total free
   memory; plus CPU-and-memory headroom over time and free % by volume over time.
 - *Requires the OpenTelemetry **hostmetrics receiver** (`system.*`) and **kubeletstats
   receiver** (`k8s.node.*`).*
@@ -353,10 +357,10 @@ image for full size.
 
 ### Services — Latency Histograms (`otel_metrics_histogram`, advanced)
 - **Filter:** `Service` (multi-select, default All).
-- **At a glance:** average incoming HTTP latency, average incoming HTTP requests/sec, and
+- **1. At a Glance:** average incoming HTTP latency, average incoming HTTP requests/sec, and
   average outgoing HTTP latency.
-- **Trends by service:** average incoming HTTP latency and request count per time bucket.
-- **Service & request type:** average latency and request count for the 30 highest-volume
+- **2. Trends by Service:** average incoming HTTP latency and request count per time bucket.
+- **3. Service & Request Type:** average latency and request count for the 30 highest-volume
   service × request-type combinations (incoming HTTP, outgoing HTTP, incoming RPC).
 - *These are request-weighted **means** derived from the change in histogram `Sum` and
   `Count` — they do **not** show the distribution or tail percentiles. For p95/p99 use

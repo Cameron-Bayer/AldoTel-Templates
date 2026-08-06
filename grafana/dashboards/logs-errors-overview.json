@@ -114,7 +114,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "At a glance",
+      "title": "1. Log Overview",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -160,7 +160,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "cps",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "text"
@@ -424,7 +424,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Log trends",
+      "title": "2. Log Trends",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -470,6 +470,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -651,6 +652,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -693,7 +695,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Error details",
+      "title": "3. Error Details",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -725,7 +727,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Error logs\",\n       round(100 * count() / nullIf((SELECT count() FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))), 0), 1) AS \"% of errors\"\nFROM ${database}.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\nGROUP BY 1 ORDER BY 2 DESC LIMIT 15",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() AS \"Error logs\",\n       100 * count() / nullIf((SELECT count() FROM ${database}.otel_logs WHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))), 0) AS \"% of errors\"\nFROM ${database}.otel_logs\nWHERE $__timeFilter(Timestamp) AND ServiceName IN (${service:sqlstring}) AND (SeverityNumber >= 17 OR lower(SeverityText) IN ('error', 'fatal'))\nGROUP BY 1 ORDER BY 2 DESC LIMIT 15",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -759,7 +761,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               },
               {
                 "id": "displayName",

@@ -1,6 +1,6 @@
 {
   "uid": "clickstack-exec-summary",
-  "title": "ClickStack - Operations Center",
+  "title": "ClickStack - Overview",
   "description": "The single pane to open first: application request health, Kubernetes workload health, cluster resource utilization, log error signals, and recent cluster events — top signals from every ClickStack Grafana dashboard.",
   "tags": [
     "clickstack",
@@ -70,14 +70,14 @@
       },
       "options": {
         "mode": "markdown",
-        "content": "## Operations Center\nThe single pane to open first: **is anything wrong right now, and where?** Top signals for application requests, Kubernetes health, resource utilization, logs, and recent cluster events — collected by the OpenTelemetry Collector and queried from ClickHouse. All panels honor the selected time range: **rates and percentiles cover the full range**, Kubernetes and utilization status use the **latest sample**, and time-series counts are **per chart interval**. Drill into **Infrastructure**, **Kubernetes**, **Service Health**, or **Logs** for detail. No data usually means telemetry isn't being collected — check the OTel Collector and the ClickHouse datasource."
+        "content": "## Overview\nThe single pane to open first: **is anything wrong right now, and where?** Top signals for application requests, Kubernetes health, resource utilization, logs, and recent cluster events — collected by the OpenTelemetry Collector and queried from ClickHouse. All panels honor the selected time range: **rates and percentiles cover the full range**, Kubernetes and utilization status use the **latest sample**, and time-series counts are **per chart interval**. Drill into **Infrastructure**, **Kubernetes**, **Service Health**, or **Logs** for detail. No data usually means telemetry isn't being collected — check the OTel Collector and the ClickHouse datasource."
       },
       "transparent": false
     },
     {
       "id": null,
       "type": "row",
-      "title": "Application request health",
+      "title": "1. Application Request Health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -123,7 +123,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "reqps",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "text"
@@ -270,7 +270,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "ms",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -417,6 +417,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -488,6 +489,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
+          "decimals": 2,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -526,7 +528,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Kubernetes workload health",
+      "title": "2. Kubernetes Workload Health",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -829,7 +831,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Resource utilization",
+      "title": "3. Resource Utilization",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -875,7 +877,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -952,7 +954,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -1029,7 +1031,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -1106,7 +1108,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "percent",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "thresholds"
           },
@@ -1150,7 +1152,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Application logs",
+      "title": "4. Application Logs",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1196,7 +1198,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "cps",
-          "decimals": 1,
+          "decimals": 2,
           "color": {
             "mode": "fixed",
             "fixedColor": "text"
@@ -1493,6 +1495,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1568,6 +1571,7 @@
       "fieldConfig": {
         "defaults": {
           "unit": "short",
+          "decimals": 0,
           "custom": {
             "drawStyle": "line",
             "lineInterpolation": "smooth",
@@ -1610,7 +1614,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Service health details",
+      "title": "5. Service Health Details",
       "collapsed": false,
       "gridPos": {
         "h": 1,
@@ -1642,7 +1646,7 @@
             "uid": "${clickhouseDatasource}"
           },
           "editorType": "sql",
-          "rawSql": "SELECT ServiceName AS \"Service\",\n       round(count() / dateDiff('second', $__fromTime, $__toTime), 2) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       round(100 * countIf(StatusCode = 'Error') / nullIf(count(), 0), 2) AS \"Error %\",\n       round(quantile(0.95)(Duration) / 1e6, 1) AS \"p95 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY ServiceName\nORDER BY \"Error %\" DESC, \"Req/s\" DESC",
+          "rawSql": "SELECT ServiceName AS \"Service\",\n       count() / dateDiff('second', $__fromTime, $__toTime) AS \"Req/s\",\n       countIf(StatusCode = 'Error') AS \"Errors\",\n       100 * countIf(StatusCode = 'Error') / nullIf(count(), 0) AS \"Error %\",\n       quantile(0.95)(Duration) / 1e6 AS \"p95 ms\"\nFROM ${database}.otel_traces\nWHERE $__timeFilter(Timestamp) AND SpanKind = 'Server'\nGROUP BY ServiceName\nORDER BY countIf(StatusCode = 'Error') / nullIf(count(), 0) DESC, count() / dateDiff('second', $__fromTime, $__toTime) DESC",
           "queryType": "table",
           "format": 1,
           "meta": {
@@ -1708,7 +1712,7 @@
               },
               {
                 "id": "decimals",
-                "value": 1
+                "value": 2
               }
             ]
           },
@@ -1811,7 +1815,7 @@
     {
       "id": null,
       "type": "row",
-      "title": "Recent cluster events",
+      "title": "6. Recent Cluster Events",
       "collapsed": false,
       "gridPos": {
         "h": 1,
